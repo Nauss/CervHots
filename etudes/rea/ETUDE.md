@@ -246,6 +246,40 @@ le dump ; une partie vs IA pour l'exploration live. Aucune injection, aucune
 
 ---
 
+## 11. Premier en direct : le chrono de jeu trouvé (11/10/2026, partie vs IA)
+
+Session live « La passe d'Alterac » (22 min, Tassadar, victoire) : 4 captures
+mémoire (image + tas 3,2 Go) contextualisées (début, 3e mort, objectif pris,
+fin) + vérité terrain `hotstate` du replay de la même partie.
+
+Méthode victorieuse : **value scanning par écarts** — les valeurs mémoire dont
+les écarts entre captures suivent exactement les écarts temporels (+382 s puis
++427 s), avec tolérance de dérive de simulation, sur image + tas, tous
+encodages (u32 sec/ticks/ms, f32/f64). Les scripts `heap_clock_scan3/4/5.py`.
+Écueils majeurs rencontrés et documentés : le tas est **plein de petites
+valeurs** (600 M de candidats par plage — pas de dictionnaires possibles, il
+faut comparer région par région en vectorisé/mmap), et la sim dérive légèrement
+du temps réel (le 1:1 exact tue les vrais candidats).
+
+**Résultat : le chrono de partie est localisé** — u32 en boucles 1/16 s
+(`ticks/16 = secondes`) : 514 s → 902 s → **1322,5 s qui se fige à la fin**
+(la partie = 1321 s au replay). Validation : écarts exacts + borne de fin.
+
+Il vit à `+0x40` d'une **structure de statistiques** avec ~15 compteurs
+cumulatifs voisins (croissances régulières = dégâts/XP/globules candidats,
+dont deux compteurs qui fluctuent : 56→43→36 et 23→9→17) et une zone
+d'identifiants fixes en tête. Deux autres horloges voisines : une horloge
+sous-système (+~12 s de dérive) et une horloge uptime processus (ms).
+
+**Prochaines étapes :**
+1. Corréler chaque champ de la structure avec les nombres du replay (dégâts,
+   XP, globules, morts) — la vérité terrain `hotstate_game1.json` est là pour ça.
+2. Trouver dans le code déchiffré (projet Ghidra `CervHotsMem`) les fonctions
+   qui écrivent ces champs → offsets stables → signatures.
+3. Écrire le lecteur `hotstate` en direct (le contrat est déjà prêt).
+
+---
+
 ### Sources
 - github.com/morluto/rea (README : cibles, outils, avertissement « lawful RE »)
 - morluto.github.io/rea (guides : native = Hopper/Ghidra/IDA, runtime = CDP/crashes)
