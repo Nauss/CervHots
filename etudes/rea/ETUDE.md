@@ -178,6 +178,38 @@ remplit le contrat `hotstate`. Le lecteur devra reposer sur des **signatures**
 
 ---
 
+## 9. Reprise — ce que le binaire dit vraiment (11/10/2026)
+
+Exploration du PE brut (`etudes/rea/scripts/anchors_offline.py`) pendant
+l'analyse Ghidra, avec deux découvertes qui changent la méthode :
+
+1. **Le binaire contient bien du RTTI MSVC — mais pas pour les classes UI.**
+   807 `CompleteObjectLocator` trouvés par scan structurel (la clé : x64, le COL
+   contient sa propre RVA en champ `pSelf`) : ce sont des classes moteur /
+   Battle.net (`Stream`, `Log`, `Var`, `GameStream`, `HsBnet`…). Aucune classe
+   UI (`CTimerFrame`, `CUnitStatusHealth`, `CMinimap`…) parmi elles.
+2. **Les 1892 noms « .?AV…@@ » (dont toutes les classes UI) vivent dans une
+   table `.data`** au format `{u64 commun (0x142885B38), u64 0, nom}` — sans
+   COL, donc sans RTTI exploitable par le schéma classique. Ce n'est pas du
+   RTTI standard : c'est un registre de noms du moteur (probablement le binding
+   des frames UI). Les pointeurs de fonction x64 étant des LEA RIP-relatifs,
+   seules les xrefs vues par Ghidra permettront de retrouver le code usine qui
+   consomme ce registre.
+
+**Méthode retenue :** trouver, pour chaque classe UI, les **xrefs de son entrée
+de registre** (script `scripts/anchors.py`, côté Ghidra) → fonctions
+concernées (usine/binding, constructeurs) → décompilation (Ghidra / REA
+`function`) → structure de jeu lue → offsets → lecteur mémoire.
+
+**Script livrés :**
+- `scripts/anchors_offline.py` — chasse RTTI/vtables sur le PE brut (PE parser
+  minimal, scan des COL par `pSelf`) ; utile pour toute la partie « classes
+  moteur » et pour valider des adresses sans attendre Ghidra.
+- `scripts/anchors.py` — chasse des xrefs des entrées de registre UI dans
+  Ghidra (à exécuter dès l'analyse terminée).
+
+---
+
 ### Sources
 - github.com/morluto/rea (README : cibles, outils, avertissement « lawful RE »)
 - morluto.github.io/rea (guides : native = Hopper/Ghidra/IDA, runtime = CDP/crashes)
