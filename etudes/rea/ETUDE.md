@@ -280,6 +280,37 @@ sous-système (+~12 s de dérive) et une horloge uptime processus (ms).
 
 ---
 
+## 12. Le code s'ouvre (11/10/2026, suite)
+
+- **Les xrefs fonctionnent sur le code déchiffré** (projet `CervHotsMem`,
+  `run_mem_scripts.bat`) : validées sur les chaînes libcurl, puis sur les
+  ancres moteur. Cartographie obtenue :
+  - `replay.tracker.events` → `0x7ff62bed07f0` : initialisateur statique qui
+    enregistre le nom de bloc (id **0x15**) dans la **table des blocs replay**
+    (`DAT_7ff62f63e240` ; helper `FUN_7ff62bf80150(table, flags, desc, 0)`).
+    Les entrées de cette table sont les pointeurs d'entrée vers les écritureurs
+    de blocs → **prochaine cible n°1** (le writer du bloc tracker = le code qui
+    émet chaque stat = les points de lecture exacts de l'état de jeu) ;
+  - `.StormReplay` → `0x7ff62d0844e0` : remplissage du descripteur d'application
+    (extensions `.Storm*`, produits, chemins — la config globale du jeu) ;
+  - `c_classId*` → `0x7ff62c7eeaa0` : **constructeur géant du registre de
+    tokens** (478 Ko décompilés dans `decomp/7ff62c7eeaa0.c`) ; le système
+    mappe des noms vers des IDs (`c_classId*`, `c_statFlag*`,
+    `c_talentModification*`…), helper `FUN_7ff62c7eea40` /
+    `FUN_7ff62c7ee9e0`. Ce n'est pas du RTTI : pas de taille ni de constructeur
+    par classe, mais un dictionnaire de tokens exploitable.
+- Les noms de stats replay (`LevelUp`, `PlayerDeath`, `PeriodicXPBreakdown`)
+  sont **absents de ce registre** comme du reste du client : émis ailleurs
+  (données de map / serveur) — à viser par le writer du bloc tracker.
+- **Corrélation des champs** (`correlate_fields.py`) : pas de match exact — le
+  replay ne date les scores qu'en fin de partie (séries plates). Séries
+  temps-résolues disponibles : morts (8,16,21), respawns (8,14,20),
+  talents (40,60,70), LevelUp (110,175,220), globules (64,128,170),
+  structures (0,3,6). Les compteurs de dégâts/XP se corréleront via le code
+  (qui nommera les champs), pas via le replay.
+
+---
+
 ### Sources
 - github.com/morluto/rea (README : cibles, outils, avertissement « lawful RE »)
 - morluto.github.io/rea (guides : native = Hopper/Ghidra/IDA, runtime = CDP/crashes)
