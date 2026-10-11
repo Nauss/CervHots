@@ -1,0 +1,123 @@
+{
+  "$id": "https://cervhots/hotstate/game_state.schema.json",
+  "title": "hotstate — état de jeu HotS",
+  "description": "Contrat de sortie de la couche stats de CervHots. Produit depuis un replay (aujourd'hui), une source live (à valider) ou la vision (secours). Consommé tel quel par l'agent de décision.",
+  "type": "object",
+  "required": ["meta", "players", "timeline"],
+  "properties": {
+    "meta": {
+      "type": "object",
+      "properties": {
+        "source": { "enum": ["replay", "live", "vision"] },
+        "file": { "type": "string" },
+        "map": { "type": ["string", "null"] },
+        "date_utc": { "type": ["string", "null"], "format": "date-time" },
+        "build": { "type": "integer" },
+        "protocol": { "type": "string" },
+        "protocol_shim": { "type": "boolean", "description": "true = build non listé par heroprotocol, décodé avec le dernier protocole connu" },
+        "duration_s": { "type": "number", "description": "secondes de jeu (boucles/16)" }
+      }
+    },
+    "players": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": { "type": ["integer", "null"] },
+          "index": { "type": "integer" },
+          "name": { "type": ["string", "null"] },
+          "hero": { "type": ["string", "null"] },
+          "team": { "type": ["integer", "null"] },
+          "result": { "type": ["integer", "null"], "description": "1 = victoire, 2 = défaite (fin de partie)" }
+        }
+      }
+    },
+    "timeline": {
+      "type": "object",
+      "properties": {
+        "hero_events": {
+          "type": "array",
+          "description": "Naissances, morts, respawns, choix d'upgrade (tracker).",
+          "items": {
+            "type": "object",
+            "properties": {
+              "t": { "type": "number", "description": "seconde de jeu" },
+              "type": { "enum": ["spawn", "death", "respawn", "upgrade"] },
+              "player": { "type": ["string", "null"] },
+              "hero": { "type": ["string", "null"] },
+              "pos": { "type": "array", "items": { "type": ["number", "null"] } },
+              "killer": { "type": ["string", "null"] },
+              "upgrade": { "type": ["string", "null"] }
+            }
+          }
+        },
+        "stat_events": {
+          "type": "array",
+          "description": "Événements de jeu nommés (SStatGameEvent) : LevelUp, TalentChosen, PlayerDeath, PeriodicXPBreakdown, captures de camps, objectifs de map (TributeCollected, RavenCurseActivated…), fins de partie.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "t": { "type": "number" },
+              "name": { "type": "string" },
+              "data": { "type": "object", "description": "paires clé/valeur normalisées (KillingPlayer peut être une liste)" },
+              "player": { "type": ["string", "null"] },
+              "hero": { "type": ["string", "null"] }
+            }
+          }
+        },
+        "structure_events": { "type": "array", "items": { "type": "object" } },
+        "comms": {
+          "type": "array",
+          "description": "Pings et chat.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "t": { "type": "number" },
+              "type": { "enum": ["ping", "chat"] },
+              "player": { "type": ["string", "null"] },
+              "pos": { "type": "array", "items": { "type": ["number", "null"] } },
+              "text": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    "position_snapshots": {
+      "type": "array",
+      "description": "Positions des héros, environ toutes les 15 s (SUnitPositionsEvent).",
+      "items": {
+        "type": "object",
+        "properties": {
+          "t": { "type": "number" },
+          "positions": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object",
+              "properties": { "x": { "type": "number" }, "y": { "type": "number" } }
+            }
+          }
+        }
+      }
+    },
+    "final_score": {
+      "type": "object",
+      "description": "SScoreResultEvent : Takedowns, Deaths, HeroDamage, SiegeDamage, Healing, etc. (fin de partie uniquement)",
+      "additionalProperties": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "player": { "type": "string" },
+            "value": { "type": ["number", "null"] },
+            "t": { "type": "number" }
+          }
+        }
+      }
+    },
+    "available": {
+      "type": "object",
+      "description": "Inventaire des événements réellement présents (diagnostic).",
+      "properties": { "stat_event_names": { "type": "object" } }
+    }
+  }
+}

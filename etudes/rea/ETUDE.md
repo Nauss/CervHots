@@ -103,6 +103,30 @@ peuvent partir tout de suite ; l'étape 3 attend une décision explicite.
 
 ---
 
+## 7. Progression — 10/10/2026 (suite : objectif « toutes les stats en direct »)
+
+Objectif élargi : *peu importe le moyen, sortir toutes les stats nécessaires de
+HotS en direct pour l'agent de décision.* Bilan de l'exploration :
+
+- **Le replay contient déjà presque tout** (vérifié sur 2 parties réelles avec
+  l'extracteur `hotstate/`) : niveaux (`LevelUp`), talents (`TalentChosen`),
+  morts localisées avec tueurs (`PlayerDeath`), XP par fenêtre de 60 s,
+  captures de camps, chutes de structures, **objectifs de map**
+  (`TributeCollected`, `RavenCurseActivated`…), positions des héros toutes les
+  ~15 s, pings/chat, score final. Voir `hotstate/README.md` pour l'inventaire.
+- **Question clé restante : le fichier est-il lisible *pendant* la partie ?**
+  Si oui (replay écrit au fil de l'eau), la source live est trouvée : légale,
+  complète, sans toucher à la mémoire. L'expérience `hotstate/live_probe.py`
+  tranche dès la prochaine partie (il suit le fichier en écriture).
+- **REA + Ghidra bascule donc en plan B** : à activer **seulement si**
+  l'expérience replay partiel échoue. Prérequis déjà satisfaits : Java 21
+  présent, Node 26 présent ; il manque Ghidra (gratuit) et l'enregistrement du
+  MCP. La décision ToS/Warden (étape 3 du protocole) reste inchangée.
+- Hiérarchie finale des chemins : **1. replay partiel → 2. mémoire (REA) →
+  3. vision** (qui garde un rôle de nuance sémantique dans tous les cas).
+
+---
+
 ### Sources
 - github.com/morluto/rea (README : cibles, outils, avertissement « lawful RE »)
 - morluto.github.io/rea (guides : native = Hopper/Ghidra/IDA, runtime = CDP/crashes)

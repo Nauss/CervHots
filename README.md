@@ -20,6 +20,9 @@ Chaque brique a son propre projet, ses propres dépendances.
 - `etudes/` — les petites études techniques, une par sous-répertoire.
   En cours : `etudes/rea/` — utiliser REA (reverse engineering) pour accéder
   aux infos de jeu en direct plutôt qu'aux seuls pixels.
+- `hotstate/` — **la couche stats** : tout ce qui sort de HotS (niveaux, talents,
+  morts, XP, objectifs, positions) normalisé pour l'agent de décision.
+  Extracteur de replays validé ; source live en test (`live_probe.py`).
 
 ## État
 
