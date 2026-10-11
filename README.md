@@ -17,6 +17,9 @@ Chaque brique a son propre projet, ses propres dépendances.
 - `IDEA.md` — l'idée de départ, en une ligne.
 - `CervHots-Presentation.html` / `.pdf` — la présentation pour Groco
   (API OpenAI-compatible) : 10 planches, navigation clavier.
+- `etudes/` — les petites études techniques, une par sous-répertoire.
+  En cours : `etudes/rea/` — utiliser REA (reverse engineering) pour accéder
+  aux infos de jeu en direct plutôt qu'aux seuls pixels.
 
 ## État
 
