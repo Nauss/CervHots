@@ -349,6 +349,35 @@ enregistrements (plusieurs variantes observées), et écrire le lecteur
 `hotstate` qui lit ces records dans le processus — le contrat JSON est déjà
 prêt à le recevoir.
 
+### Suite (11/10/2026) — lecteur écrit et VALIDÉ
+
+Layout final du record vivant (validé sur 3 compteurs × 3 dumps = **9/9
+valeurs exactes**) : fenêtre autour du nom `gt_*_Func\0` :
+
+| nom-32 | nom-28 | nom-24 | nom-20 | |
+|---|---|---|---|---|
+| `1` | **compteur** | miroir | `0` | variante A |
+| `1` | **compteur** | `0` | miroir | variante B |
+
+Les records de **gabarit** (tables de script de la map, chargés en mémoire)
+portent `flag != 1` et des valeurs de type pointeur/sentinel (32755,
+6648929) — le filtre `flag==1` + miroir cohérent les écarte.
+
+**`hotstate/reader.py`** (livré) : scanne les zones privées (dump ou processus
+vivant via `ReadProcessMemory`, strictement en lecture seule), extrait les
+records mappés dans `hotstate/triggers_map.json`, émet un instantané JSON.
+Résultat des tests hors-ligne :
+
+| | game2 | game3 | game4 | vérité terrain |
+|---|---|---|---|---|
+| deaths_total | 8 | 16 | 21 | 8 / 16 / 21 ✓ |
+| globes_total | 64 | 128 | 170 | 64 / 128 / 170 ✓ |
+| respawns_total | 8 | 14 | 20 | 8 / 14 / 20 ✓ |
+
+Reste : tester `reader.py --live` sur une partie réelle (le backend process
+n'a pas encore tourné), enrichir `triggers_map.json` (objectifs, niveaux,
+timers de mort) et brancher le flux sur l'agent de décision.
+
 ---
 
 ### Sources

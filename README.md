@@ -22,8 +22,9 @@ Chaque brique a son propre projet, ses propres dépendances.
   aux infos de jeu en direct plutôt qu'aux seuls pixels.
 - `hotstate/` — **la couche stats** : tout ce qui sort de HotS (niveaux, talents,
   morts, XP, objectifs, positions) normalisé pour l'agent de décision.
-  Extracteur de replays validé (vérité terrain) ; le live passe par la lecture
-  mémoire (REA + Ghidra, validée) puis la vision en secours.
+  Extracteur de replays validé (vérité terrain) ; lecteur live **validé
+  hors-ligne** (`reader.py`, 9/9 valeurs exactes vs replay) qui lit les
+  triggers de jeu en mémoire vive ; la vision reste en secours.
 
 ## État
 

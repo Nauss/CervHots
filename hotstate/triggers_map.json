@@ -1,0 +1,37 @@
+{
+  "description": "Mapping triggers de jeu (gt_*_Func) -> champs hotstate. offsets relatifs à l'adresse du nom : -28 = compteur, -20 = miroir. 'offset_fiable' = celui validé contre la vérité terrain.",
+  "triggers": {
+    "gt_KillLogOnHeroUnitDies_Func": {
+      "field": "deaths_total", "offset_fiable": -28,
+      "valide": "morts 8->16->21 vs replay"
+    },
+    "gt_PlayerRegenGlobeImpactScoreTracking_Func": {
+      "field": "globes_total", "offset_fiable": -28,
+      "valide": "globules 64->128->170 vs replay"
+    },
+    "gt_HeroDeathwingRespawn_Func": {
+      "field": "respawns_total", "offset_fiable": -28,
+      "valide": "respawns 8->14->20 vs replay"
+    },
+    "gt_CoreDiesGameOver_Func": {
+      "field": "game_over", "offset_fiable": -28,
+      "valide": "à confirmer (0 en cours de partie)"
+    },
+    "gt_CapturePointLogic_Func": {
+      "field": "alterac_capture_point", "offset_fiable": -28,
+      "valide": "à confirmer"
+    },
+    "gt_ChaosCavalrySpawnTimerExpires_Func": {
+      "field": "alterac_cavalry_chaos", "offset_fiable": -28,
+      "valide": "à confirmer"
+    },
+    "gt_OrderCavalrySpawnTimerExpires_Func": {
+      "field": "alterac_cavalry_order", "offset_fiable": -28,
+      "valide": "à confirmer"
+    },
+    "gt_NeutralRegenGlobeCreatedChangeOwner_Func": {
+      "field": "globes_neutral", "offset_fiable": -20,
+      "valide": "miroir observé = compteur plausible"
+    }
+  }
+}
