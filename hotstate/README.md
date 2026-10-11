@@ -6,7 +6,8 @@ sortie, un seul contrat : `schema/game_state.schema.json`. La source (replay,
 mémoire, vision) est un détail d'implémentation derrière ce contrat.
 
 **État (10/10/2026) :** extracteur **validé sur 2 parties réelles** (replays du
-compte). La source live est en cours d'expérience (`live_probe.py`).
+compte). Source live : la piste « replay en cours de partie » est **morte**
+(vérifiée — voir plus bas) ; il reste la vision, et la mémoire en plan B.
 
 ---
 
@@ -38,9 +39,6 @@ uv pip install --python .venv/Scripts/python.exe heroprotocol
 
 # Extraction d'un replay -> game_state.json (contrat hotstate)
 .venv/Scripts/python.exe extract.py "chemin/vers/partie.StormReplay" --summary
-
-# Expérience LIVE : à lancer pendant une partie de HotS
-.venv/Scripts/python.exe live_probe.py
 ```
 
 Sortie : JSON conforme à `schema/game_state.schema.json`
@@ -48,17 +46,26 @@ Sortie : JSON conforme à `schema/game_state.schema.json`
 
 ## Les chemins vers le « en direct » — dans l'ordre
 
-1. **Replay partiel (privilégié).** Le fichier `.StormReplay` est-il écrit
-   pendant la partie et décodable au fil de l'eau ? `live_probe.py` le prouve
-   (ou infirme) dès la prochaine partie : il suit le fichier en écriture et
-   note ce qui se décode, quand. Si oui → stats complètes, légales, zéro risque
-   de ban. Seul le score final n'arrive qu'en toute fin.
-2. **Lecture mémoire** (plan B, étude `etudes/rea/`) — localiser l'état dans le
-   binaire avec REA + Ghidra, puis petit lecteur. Coût : temps de reverse ;
-   **risque : ToS + Warden, décision explicite du propriétaire du compte**.
-3. **Vision** (plan C, plan initial) — capture de la minimap + bandeau. Ne
-   sert plus qu'à la nuance sémantique (brouillard, « lecture de la map ») si
-   les plans 1 ou 2 marchent.
+**Vérifié (10/10/2026) : le `.StormReplay` n'existe qu'après la partie.** Il
+n'arrive dans `Documents\...\Replays\` qu'une fois l'écran MVP passé ; pendant
+la partie, les données vivent dans des fichiers temporaires de reconnexion
+(`%LOCALAPPDATA%\Temp\Heroes of the Storm\TempWriteReplayP1\`), au format blob
+non documenté, effacés à la fermeture du jeu. Le forum Blizzard est explicite :
+*« Replay files aren't created until after the match has finished, so there
+isn't a way to get replay data during a live match without breaking the EULA. »*
+→ la piste « parser le replay en cours de partie » est **abandonnée**.
+
+1. **Vision (plan A).** Capture de la minimap + du bandeau, analysée par le
+   modèle vision. Légal, testable tout de suite. Les replays deviennent alors
+   **vérité terrain** : `extract.py` produit l'état réel d'une partie passée,
+   pour mesurer ce que la vision en lit vraiment (phase 2 de la roadmap).
+2. **Mémoire (plan B).** REA + Ghidra pour localiser l'état dans le binaire,
+   puis petit lecteur. Décision **ToS/Warden** requise avant toute lecture live.
+3. **Bonus gratuit, en direct** : pendant la partie, `replay.server.battlelobby`
+   (fichier temporaire, parsable — cf. Heroes.StormReplayParser) donne map,
+   compositions et identités de joueurs. C'est ce que lit HotsStats. Utile pour
+   le contexte du coach (qui joue quoi, sur quelle map), pas pour les stats de
+   match.
 
 ## Notes techniques (pièges connus)
 
@@ -77,7 +84,10 @@ Sortie : JSON conforme à `schema/game_state.schema.json`
 
 ## Prochaines étapes
 
-1. Lancer `live_probe.py` pendant une vraie partie → trancher le chemin 1.
-2. Si chemin 1 OK : `live_extract.py` (flux live → `game_state` toutes les N s)
-   et branchement sur l'agent de décision.
-3. Si non : passer au chemin 2 (REA + Ghidra, voir `etudes/rea/ETUDE.md`).
+1. **Corpus d'évaluation de la vision** : sur N replays, capturer les crops du
+   HUD (rejoués dans le client) et comparer ce que le modèle vision en lit à
+   l'état réel d'`extract.py` — LA mesure de la phase 2.
+2. Brancher le format `game_state` sur l'agent de décision (côté vision) +
+   exploiter `replay.server.battlelobby` pour le contexte (comps, map).
+3. Si la vision ne suffit pas : plan B mémoire (REA + Ghidra, `etudes/rea/`),
+   décision ToS/Warden au préalable.

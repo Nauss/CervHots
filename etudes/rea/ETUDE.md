@@ -114,16 +114,26 @@ HotS en direct pour l'agent de décision.* Bilan de l'exploration :
   captures de camps, chutes de structures, **objectifs de map**
   (`TributeCollected`, `RavenCurseActivated`…), positions des héros toutes les
   ~15 s, pings/chat, score final. Voir `hotstate/README.md` pour l'inventaire.
-- **Question clé restante : le fichier est-il lisible *pendant* la partie ?**
-  Si oui (replay écrit au fil de l'eau), la source live est trouvée : légale,
-  complète, sans toucher à la mémoire. L'expérience `hotstate/live_probe.py`
-  tranche dès la prochaine partie (il suit le fichier en écriture).
-- **REA + Ghidra bascule donc en plan B** : à activer **seulement si**
-  l'expérience replay partiel échoue. Prérequis déjà satisfaits : Java 21
-  présent, Node 26 présent ; il manque Ghidra (gratuit) et l'enregistrement du
-  MCP. La décision ToS/Warden (étape 3 du protocole) reste inchangée.
-- Hiérarchie finale des chemins : **1. replay partiel → 2. mémoire (REA) →
-  3. vision** (qui garde un rôle de nuance sémantique dans tous les cas).
+- **Vérifié et tranché : le `.StormReplay` n'existe qu'après la partie.** Le
+  fichier n'arrive dans `Documents\...\Replays\` qu'une fois l'écran MVP passé ;
+  pendant la partie, les données vivent dans des fichiers temporaires de
+  reconnexion (`%LOCALAPPDATA%\Temp\Heroes of the Storm\TempWriteReplayP1\`),
+  au format blob **non documenté**, effacés à la fermeture du jeu. Le forum
+  Blizzard le résume ainsi : « Replay files aren't created until after the
+  match has finished, so there isn't a way to get replay data during a live
+  match without breaking the EULA. » **La piste « replay partiel » est
+  abandonnée** (`live_probe.py` retiré).
+- **Petit bonus gratuit** : parmi ces fichiers temporaires,
+  `replay.server.battlelobby` (parsable, cf. Heroes.StormReplayParser) donne
+  map, compositions et identités **en direct** — c'est ce que lit HotsStats.
+  Utile pour le contexte du coach, pas pour les stats de match.
+- **REA + Ghidra = plan B**, à activer **seulement si la vision s'avère
+  insuffisante**. Prérequis déjà satisfaits : Java 21 présent, Node 26 présent ;
+  il manque Ghidra (gratuit) et l'enregistrement du MCP. La décision
+  ToS/Warden (étape 3 du protocole) reste inchangée.
+- Hiérarchie finale des chemins : **1. vision (live, légal) → 2. mémoire
+  (REA, décision ToS)**. Le replay reste utile **hors ligne** : vérité terrain
+  pour évaluer ce que la vision lit vraiment, et débriefing post-partie.
 
 ---
 
