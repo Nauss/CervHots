@@ -210,6 +210,42 @@ concernées (usine/binding, constructeurs) → décompilation (Ghidra / REA
 
 ---
 
+## 10. Le binaire est protégé — pivot dynamique (11/10/2026)
+
+**Constat décisif :** le `.text` de `HeroesOfTheStorm_x64.exe` est **chiffré
+sur disque** (entropie 7,3→8,0 sur 40 Mo, aucun prologue x64 valide, ~0 LEA
+RIP-relative réelle). En comparaison, le launcher non protégé est à 6,6 et un
+code normal à ~6. Seul `.rdata`/`.data` (chaînes, tables) sont en clair.
+
+Cela explique tous les échecs de la journée :
+- l'analyse Ghidra « réussie » en 2 h 17 ne produit que ~1 M d'instructions
+  (désassemblage de bruit) ;
+- **zéro xref** même sur des chaînes certaines (« .StormReplay », messages
+  libcurl) — le code qui les référence est illisible ;
+- les 3 388 LEA « valides » trouvées étaient du bruit statistique.
+
+**Conséquence : la RE statique sur le fichier est morte. Le protecteur
+déchiffre le code au lancement — c'est en mémoire que tout se passe.**
+
+**Nouvelle feuille de route (dynamique) :**
+1. **Dump du code déchiffré** (`scripts/dump_unpacked.py`) : le jeu lancé
+   (le menu suffit), lecture seule du processus (`ReadProcessMemory`), image
+   mémoire complète exportée → **importable dans Ghidra**, où la RE statique
+   fonctionnera enfin (xrefs, vtables, décompilation des fonctions trouvées
+   par les scripts `anchors*`).
+2. **Value scanning live** : pendant une partie (vs IA suffit), repérer l'état
+   par valeurs connues (chrono, PV, niveaux — croisés avec la vérité terrain
+   `hotstate/extract.py`) ; REA `capture-process` / `compare-process-captures`
+   est fait pour ça.
+3. Le lecteur mémoire final lira alors les structures identifiées, avec des
+   signatures pour survivre aux patches.
+
+**Ce qu'il faut au propriétaire** : lancer le jeu une fois (menu suffit) pour
+le dump ; une partie vs IA pour l'exploration live. Aucune injection, aucune
+écriture — lecture seule.
+
+---
+
 ### Sources
 - github.com/morluto/rea (README : cibles, outils, avertissement « lawful RE »)
 - morluto.github.io/rea (guides : native = Hopper/Ghidra/IDA, runtime = CDP/crashes)
