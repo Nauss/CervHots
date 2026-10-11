@@ -311,6 +311,46 @@ sous-système (+~12 s de dérive) et une horloge uptime processus (ms).
 
 ---
 
+## 13. LA source live est trouvée : les triggers de jeu (11/10/2026)
+
+`heap_series_scan6.py` cherche directement les **séries de la vérité terrain**
+dans les dumps (valeurs exactes aux 3 instants) : les champs tombent —
+
+| série replay | adresse trouvée | trigger mémoire |
+|---|---|---|
+| morts (8,16,21) | `0x29cc49bd14c` | `gt_KillLogOnHeroUnitDies_Func` |
+| globules (64,128,170) | `0x29cbd88a3bc` | `gt_PlayerRegenGlobeImpactScoreTracking_Func` |
+| respawns (8,14,20) | `0x29cbd85839c` | `gt_HeroDeathwingRespawn_Func` |
+
+**Ce que c'est :** le système de **triggers de script** du moteur Storm. La map
+et la logique de jeu sont des scripts ; chaque trigger est un enregistrement
+nommé `gt_*_Func` qui porte son **état courant en clair dans la mémoire vive**.
+Ce sont eux qui comptent les stats avant de les émettre au replay. Les noms de
+stats (`PlayerDeath`, `LevelUp`, `TalentChosen`, `JungleCampCapture`) existent
+aussi en mémoire vive (données de map chargées) — d'où leur absence du binaire.
+
+**Recette du lecteur live (validée sur 3 counters) :**
+1. scanner le tas pour `gt_<nom>_Func\0` ;
+2. lire l'état à `nom - 0x1C` (compteur) et `nom - 0x14` (miroir) ;
+3. cataloguer : `gt_catalog.py` → **2691 enregistrements** dans cette partie
+   (`gt_catalog.json`), dont `gt_CoreDiesGameOver`, `gt_CapturePointLogic`,
+   `gt_ChaosCavalrySpawnTimerExpires` (Alterac), `gt_BrettTimers*`
+   (timers de mort), etc.
+
+**Correction importante** (§11) : la « structure de stats » et son « chrono »
+étaient en réalité un tampon de config réseau Battle.net (`Uri":"test.actual.
+battle.net"`) et un timer de session de connexion — utiles mais pas l'état de
+jeu. La méthode (scan par séries) restait bonne, c'est la cible qui a été
+rattrapée ici.
+
+**Prochaine étape** : mapper les triggers utiles au coach (morts, objectifs,
+timers, niveaux) sur le contrat `hotstate`, fiabiliser le layout des
+enregistrements (plusieurs variantes observées), et écrire le lecteur
+`hotstate` qui lit ces records dans le processus — le contrat JSON est déjà
+prêt à le recevoir.
+
+---
+
 ### Sources
 - github.com/morluto/rea (README : cibles, outils, avertissement « lawful RE »)
 - morluto.github.io/rea (guides : native = Hopper/Ghidra/IDA, runtime = CDP/crashes)

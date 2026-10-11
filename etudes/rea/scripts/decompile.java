@@ -18,7 +18,9 @@ public class decompile extends GhidraScript {
 
     private static final String OUT_DIR = "C:\\Users\\Nauss\\ghidra-projects\\decomp";
     private static final long[] TARGETS = {
-        0x7ff62c7eeaa0L,   // constructeur du registre de classes (c_classId*)
+        0x7ff62d037d34L,   // consommateur table des blocs replay
+        0x7ff62d04f770L,   // consommateur table des blocs replay
+        0x7ff62d050211L,   // consommateur table des blocs replay
     };
 
     @Override
