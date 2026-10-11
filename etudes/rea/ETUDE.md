@@ -137,6 +137,47 @@ HotS en direct pour l'agent de décision.* Bilan de l'exploration :
 
 ---
 
+## 8. Mise en route de la chaîne mémoire — 10/10/2026
+
+**Décision du propriétaire du compte : la lecture mémoire est validée (ToS
+acceptée), et promue plan A** — la vitesse devient un enjeu, et des données
+structurées en mémoire coûtent bien moins cher qu'une analyse d'images.
+
+**Chaîne installée et vérifiée (`rea doctor` vert) :**
+- Ghidra **12.1.4** → `C:\Users\Nauss\tools\ghidra_12.1.4_PUBLIC`
+  (`GHIDRA_INSTALL_DIR` posé, persistant) ;
+- décompilateur natif x64, headless, Java 21 — tous les contrôles OK ;
+- REA **6.4.0** en CLI (`npx rea-agents`), commandes natives disponibles
+  (`function`, `decompile`, `inspect-native-*`, `capture-process`…).
+
+**Recon du binaire cible** (`Versions\Base98348\HeroesOfTheStorm_x64.exe`,
+53,5 Mo, x64) : 146 668 chaînes, **917 classes RTTI**. Constat important : les
+noms d'événements du protocole replay (`PeriodicXPBreakdown`, `PlayerDeath`…)
+sont **absents** du client — ils vivent côté protocole. Les bons ancrages sont
+les **classes UI qui affichent exactement les stats visées** :
+
+| Classe RTTI | Ce qu'elle affiche | Champ hotstate visé |
+|---|---|---|
+| `CTimerFrame` / `CTimerWindow` | le chrono de partie | `meta.duration_s` |
+| `CUnitStatusHealth`, `CUnitStatusHealthLabel`, `CUnitStatusShieldedHealthBar` | PV / boucliers | `heroes[].hp` |
+| `CTeamHeroLevelFrame`, `CPlayerHeroLevelFrame`, `CUnitStatusLevel` | niveaux | `teams[].level` |
+| `CPlayerDeathIndicatorFrame` | timers de mort | `heroes[].respawn_in` |
+| `CHeroState`, `CHeroTalentsPanel`, `CHeroTalentTierButton` | état / talents | `heroes[].talents` |
+| `CMinimap`, `CMinimapUnitStatusPanel`, `CUnitStatusMinimapIcon` | positions | `position_snapshots` |
+| `CGameStatsPanel`, `CPlayerScoreResultFrame` | stats de match | `final_score` |
+
+**Stratégie :** chaque frame UI lit l'état du jeu quelque part → retrouver la
+source (objet unité/héros, table de jeu) par les setters/callbacks de ces
+classes → en déduire les offsets → petit lecteur (`ReadProcessMemory`) qui
+remplit le contrat `hotstate`. Le lecteur devra reposer sur des **signatures**
+(pattern scans), pas des offsets bruts, pour survivre aux patches.
+
+**En cours :** analyse headless complète du binaire (projet Ghidra `CervHots`,
+`C:\Users\Nauss\ghidra-projects`), puis passage des ancres au crible
+(script Ghidra + REA `function`/`decompile`).
+
+---
+
 ### Sources
 - github.com/morluto/rea (README : cibles, outils, avertissement « lawful RE »)
 - morluto.github.io/rea (guides : native = Hopper/Ghidra/IDA, runtime = CDP/crashes)

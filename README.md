@@ -22,8 +22,8 @@ Chaque brique a son propre projet, ses propres dépendances.
   aux infos de jeu en direct plutôt qu'aux seuls pixels.
 - `hotstate/` — **la couche stats** : tout ce qui sort de HotS (niveaux, talents,
   morts, XP, objectifs, positions) normalisé pour l'agent de décision.
-  Extracteur de replays validé (vérité terrain) ; le live passe par la vision
-  — le replay n'existe qu'après la partie (vérifié).
+  Extracteur de replays validé (vérité terrain) ; le live passe par la lecture
+  mémoire (REA + Ghidra, validée) puis la vision en secours.
 
 ## État
 
