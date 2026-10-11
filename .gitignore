@@ -1,0 +1,48 @@
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# --- Node ---
+node_modules/
+dist/
+build/
+.vite/
+
+# --- IDE / éditeurs ---
+.vscode/
+.idea/
+*.swp
+
+# --- Secrets & config locale ---
+.env
+.env.*
+*.key
+*.pem
+secrets.*
+credentials.json
+
+# --- Sorties & artefacts ---
+*.log
+out/
+tmp/
+*.tmp
+*.bak
+
+# --- Captures / rendus temporaires ---
+captures/
+screenshots/
+*.png
+*.jpg
+!assets/**/*.png
+!assets/**/*.jpg
+
+# --- OS ---
+Thumbs.db
+desktop.ini
+.DS_Store

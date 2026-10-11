@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CervHots — coach IA pour HotS · présentation</title>
+<style>
+  :root{
+    --bg:#0F1216;
+    --panel:#161B21;
+    --panel-2:#1B212A;
+    --line:#28303B;
+    --ink:#ECEFF4;
+    --muted:#98A2B0;
+    --gold:#E8B54B;
+    --gold-soft:rgba(232,181,75,.13);
+    --danger:#E2726E;
+    --warn:#E0A34A;
+    --ok:#6FBF8B;
+    --serif:Georgia,'Times New Roman',serif;
+    --sans:'Segoe UI','Helvetica Neue',Arial,sans-serif;
+    --mono:Consolas,'Cascadia Mono',monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%;background:var(--bg);color:var(--ink);font-family:var(--sans);overflow:hidden}
+  #viewport{height:100vh;display:flex;align-items:center;justify-content:center}
+  #stage{width:1920px;height:1080px;position:relative;transform-origin:center center;flex:0 0 auto}
+
+  .slide{
+    position:absolute;inset:0;display:none;flex-direction:column;
+    padding:88px 120px 96px;
+  }
+  .slide.active{display:flex}
+
+  .overline{font-family:var(--mono);font-size:21px;letter-spacing:.32em;text-transform:uppercase;color:var(--gold);margin-bottom:28px}
+  h1{font-family:var(--serif);font-size:120px;font-weight:400;line-height:1.02;letter-spacing:-.01em}
+  h2{font-family:var(--serif);font-size:74px;font-weight:400;line-height:1.05;letter-spacing:-.01em;margin-bottom:46px}
+  .lead{font-size:31px;line-height:1.5;color:var(--muted);max-width:1280px}
+  .footer{position:absolute;left:120px;right:120px;bottom:40px;display:flex;justify-content:space-between;align-items:center;
+    font-family:var(--mono);font-size:18px;letter-spacing:.18em;text-transform:uppercase;color:#5A6472}
+  .footer .brand{color:var(--gold);opacity:.8}
+
+  /* ---- slide 1 : titre ---- */
+  .cover{justify-content:center;align-items:flex-start}
+  .cover h1{font-size:170px}
+  .cover .lead{margin-top:36px;font-size:38px;color:var(--ink);max-width:1180px}
+  .cover .rule{width:180px;height:3px;background:var(--gold);margin:52px 0 0}
+
+  /* ---- générique blocs ---- */
+  .cols{display:grid;grid-template-columns:1fr 1fr;gap:72px;flex:1;min-height:0}
+  .cols-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:40px}
+  .stack{display:flex;flex-direction:column;gap:34px}
+
+  .fact{border-top:1px solid var(--line);padding-top:22px}
+  .fact .k{font-family:var(--mono);font-size:19px;letter-spacing:.22em;text-transform:uppercase;color:var(--gold);margin-bottom:12px}
+  .fact .v{font-size:28px;line-height:1.45;color:var(--ink)}
+
+  .verdict{display:flex;flex-direction:column;justify-content:center}
+  .verdict .big{font-family:var(--serif);font-size:180px;line-height:.95;color:var(--ink)}
+  .verdict .big em{font-style:normal;color:var(--gold)}
+  .verdict p{margin-top:40px;font-size:30px;line-height:1.55;color:var(--muted);max-width:660px}
+
+  /* ---- pipeline ---- */
+  .pipe{display:flex;align-items:stretch;gap:0;flex:1}
+  .pipe .step{flex:1;display:flex;flex-direction:column;justify-content:flex-start;background:var(--panel);border:1px solid var(--line);
+    padding:46px 30px 38px;position:relative}
+  .pipe .step:first-child{border-radius:10px 0 0 10px}
+  .pipe .step:last-child{border-radius:0 10px 10px 0}
+  .pipe .arrow{display:flex;align-items:center;justify-content:center;width:56px;flex:0 0 56px;color:var(--gold);font-size:34px}
+  .pipe .num{font-family:var(--mono);font-size:17px;letter-spacing:.25em;color:var(--gold);margin-bottom:16px}
+  .pipe .name{font-family:var(--serif);font-size:38px;margin-bottom:16px}
+  .pipe .desc{font-size:21.5px;line-height:1.5;color:var(--muted)}
+  .strip{margin-top:44px;background:var(--gold-soft);border:1px solid rgba(232,181,75,.35);border-radius:10px;
+    padding:28px 36px;font-size:25px;line-height:1.5}
+  .strip b{color:var(--gold);font-weight:600}
+
+  /* ---- perception ---- */
+  #slide-4 h2{margin-bottom:34px}
+  #slide-4 .cols{flex:0 0 auto;gap:56px}
+  .lane{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:32px 38px;display:flex;flex-direction:column}
+  .lane .tag{font-family:var(--mono);font-size:18px;letter-spacing:.24em;text-transform:uppercase;margin-bottom:18px}
+  .lane h3{font-family:var(--serif);font-size:42px;font-weight:400;margin-bottom:16px}
+  .lane p{font-size:23px;line-height:1.5;color:var(--muted)}
+  .lane .items{margin-top:22px;display:flex;flex-direction:column;gap:10px}
+  .lane .items span{font-family:var(--mono);font-size:20.5px;color:var(--ink);background:var(--panel-2);border:1px solid var(--line);
+    border-radius:7px;padding:9px 15px}
+  .callout{margin-top:26px;border:1px solid rgba(232,181,75,.4);background:var(--gold-soft);border-radius:12px;padding:24px 36px}
+  .callout h4{font-family:var(--serif);font-size:30px;font-weight:400;color:var(--gold);margin-bottom:12px}
+  .callout p{font-size:22px;line-height:1.5;color:var(--ink)}
+  .note{margin-top:20px;font-size:20px;line-height:1.5;color:var(--muted)}
+  .note b{color:var(--ink);font-weight:600}
+
+  /* ---- checklist ---- */
+  .check{display:flex;flex-direction:column;gap:22px;flex:1;justify-content:center}
+  .check .row{display:flex;gap:26px;align-items:flex-start;border-bottom:1px solid var(--line);padding-bottom:22px}
+  .check .mark{font-family:var(--mono);font-size:24px;color:var(--gold);flex:0 0 52px;line-height:1.4}
+  .check .txt{font-size:27px;line-height:1.5}
+  .check .txt code{font-family:var(--mono);font-size:23px;color:var(--gold);background:var(--panel-2);
+    border:1px solid var(--line);border-radius:6px;padding:2px 10px}
+  .check .sub{display:block;font-size:21px;color:var(--muted);margin-top:8px}
+
+  /* ---- tts / mumble ---- */
+  .vs{display:grid;grid-template-columns:1fr 1fr;gap:26px;margin-top:8px}
+  .vs .card{background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:28px 30px}
+  .vs .card .name{font-family:var(--serif);font-size:34px;margin-bottom:10px}
+  .vs .card .name small{font-family:var(--mono);font-size:19px;color:var(--gold);margin-left:12px;letter-spacing:.08em}
+  .vs .card .meta{font-size:22px;line-height:1.5;color:var(--muted)}
+  .bullets{display:flex;flex-direction:column;gap:18px;margin-top:26px}
+  .bullets li{list-style:none;display:flex;gap:18px;font-size:24px;line-height:1.5;color:var(--ink)}
+  .bullets li::before{content:"—";color:var(--gold);flex:0 0 auto}
+  .bullets li code{font-family:var(--mono);font-size:21px;color:var(--gold)}
+
+  /* ---- budget bar ---- */
+  .bar{display:flex;height:120px;border-radius:12px;overflow:hidden;border:1px solid var(--line);margin-top:10px}
+  .bar .seg{display:flex;flex-direction:column;justify-content:center;padding:0 30px;position:relative}
+  .bar .seg .lbl{font-family:var(--mono);font-size:18px;letter-spacing:.2em;text-transform:uppercase;opacity:.85}
+  .bar .seg .val{font-family:var(--serif);font-size:40px;margin-top:6px}
+  .bar .s1{background:#22303C;flex:3.2}
+  .bar .s2{background:#2A2F33;flex:2.4}
+  .bar .s3{background:#242B25;flex:1.1}
+  .bar .s4{background:var(--gold);color:#14100A;flex:3}
+  .bar .s4 .lbl{opacity:.75}
+  .totals{display:flex;justify-content:space-between;margin-top:18px;font-family:var(--mono);font-size:19px;
+    letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
+  .rules{display:grid;grid-template-columns:1fr 1fr 1fr;gap:40px;margin-top:58px}
+  .rules .r .n{font-family:var(--serif);font-size:52px;color:var(--gold);line-height:1}
+  .rules .r p{font-size:23.5px;line-height:1.5;color:var(--muted);margin-top:14px}
+
+  /* ---- risques ---- */
+  .risks{display:flex;flex-direction:column;gap:0;flex:1;justify-content:center}
+  .risk{display:grid;grid-template-columns:110px 420px 1fr;gap:34px;align-items:center;
+    border-top:1px solid var(--line);padding:26px 0}
+  .risk:last-child{border-bottom:1px solid var(--line)}
+  .chip{font-family:var(--mono);font-size:16px;letter-spacing:.18em;text-transform:uppercase;text-align:center;
+    padding:8px 0;border-radius:99px}
+  .chip.h{background:rgba(226,114,110,.16);color:var(--danger);border:1px solid rgba(226,114,110,.45)}
+  .chip.m{background:rgba(224,163,74,.14);color:var(--warn);border:1px solid rgba(224,163,74,.4)}
+  .chip.l{background:rgba(111,191,139,.13);color:var(--ok);border:1px solid rgba(111,191,139,.4)}
+  .risk .name{font-size:26px;font-weight:600}
+  .risk .fix{font-size:22.5px;line-height:1.5;color:var(--muted)}
+  .risk .fix b{color:var(--ink);font-weight:600}
+
+  /* ---- roadmap ---- */
+  .phases{display:flex;flex-direction:column;gap:0;flex:1;justify-content:center}
+  .phase{display:grid;grid-template-columns:120px 480px 1fr 190px;gap:34px;align-items:baseline;
+    border-top:1px solid var(--line);padding:30px 0}
+  .phase:last-child{border-bottom:1px solid var(--line)}
+  .phase .pnum{font-family:var(--serif);font-size:56px;color:var(--gold);line-height:1}
+  .phase .pname{font-size:30px;font-weight:600}
+  .phase .pdesc{font-size:23px;line-height:1.5;color:var(--muted)}
+  .phase .pdur{font-family:var(--mono);font-size:21px;letter-spacing:.12em;color:var(--gold);text-align:right}
+  .phase.key{background:var(--gold-soft)}
+  .phase.key .pdesc b{color:var(--gold);font-weight:600}
+
+  /* ---- HUD nav ---- */
+  #hud{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);display:flex;align-items:center;gap:18px;
+    font-family:var(--mono);font-size:14px;letter-spacing:.14em;color:#6B7482;z-index:10}
+  #hud button{background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:8px;
+    width:40px;height:32px;cursor:pointer;font-size:15px}
+  #hud button:hover{border-color:var(--gold);color:var(--gold)}
+  #hud .hint{text-transform:uppercase}
+
+  /* ---- print / export PDF ---- */
+  @media print{
+    html,body{overflow:visible;background:var(--bg)}
+    #viewport{display:block;height:auto}
+    #stage{transform:none!important;width:1920px;height:auto}
+    .slide{display:flex!important;position:relative;width:1920px;height:1080px;page-break-after:always;break-after:page}
+    #hud{display:none!important}
+  }
+  @page{size:20in 11.25in;margin:0}
+  @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<div id="viewport">
+<div id="stage">
+
+  <!-- 1 · COUVERTURE -->
+  <section class="slide cover active" id="slide-1">
+    <div class="overline">Étude de faisabilité · Octobre 2026</div>
+    <h1>CervHots</h1>
+    <div class="rule"></div>
+    <p class="lead">Un coach IA qui regarde la partie de HotS en cours —<br>et te parle dans Mumble.</p>
+    <div class="footer"><span class="brand">CervHots</span><span>Présenté à Groco</span></div>
+  </section>
+
+  <!-- 2 · VERDICT -->
+  <section class="slide" id="slide-2">
+    <div class="overline">Le principe &amp; le verdict</div>
+    <div class="cols">
+      <div class="verdict">
+        <div class="big"><em>Faisable.</em></div>
+        <p>Toutes les briques existent, matures et gratuites. Le seul vrai risque n'est pas technique : c'est la lecture de la minimap par le modèle de vision.</p>
+      </div>
+      <div class="stack" style="justify-content:center">
+        <div class="fact">
+          <div class="k">Source d'information</div>
+          <div class="v">Les pixels, et rien d'autre — les replays HotS ne sont écrits qu'en fin de partie. Pas d'API live.</div>
+        </div>
+        <div class="fact">
+          <div class="k">Latence réaliste</div>
+          <div class="v">5 à 12 secondes entre une situation à l'écran et le coach qui parle.</div>
+        </div>
+        <div class="fact">
+          <div class="k">Format de sortie</div>
+          <div class="v">JSON structuré + probabilités calibrées — vérifié avant de prendre la parole.</div>
+        </div>
+      </div>
+    </div>
+    <div class="footer"><span class="brand">CervHots</span><span>02 / 09</span></div>
+  </section>
+
+  <!-- 3 · ARCHITECTURE -->
+  <section class="slide" id="slide-3">
+    <div class="overline">Architecture</div>
+    <h2>Du pixel à la voix, en cinq étapes</h2>
+    <div class="pipe">
+      <div class="step">
+        <div class="num">01</div>
+        <div class="name">Capture</div>
+        <div class="desc">dxcam · crops fixes : minimap, bandeau des héros, timer · 1–2 Hz</div>
+      </div>
+      <div class="arrow">→</div>
+      <div class="step">
+        <div class="num">02</div>
+        <div class="name">Perception</div>
+        <div class="desc">OCR local pour les faits + modèle vision pour la sémantique → état JSON</div>
+      </div>
+      <div class="arrow">→</div>
+      <div class="step">
+        <div class="num">03</div>
+        <div class="name">Cerveau</div>
+        <div class="desc">Mémoire de partie, déclencheurs, anti-répétition, choix de LA priorité</div>
+      </div>
+      <div class="arrow">→</div>
+      <div class="step">
+        <div class="num">04</div>
+        <div class="name">Voix</div>
+        <div class="desc">TTS local (Kokoro ou Piper) — gratuit, hors ligne, voix française</div>
+      </div>
+      <div class="arrow">→</div>
+      <div class="step">
+        <div class="num">05</div>
+        <div class="name">Mumble</div>
+        <div class="desc">Bot pymumble dans le canal de l'équipe — il cède la parole</div>
+      </div>
+    </div>
+    <div class="strip"><b>File « latest-wins » :</b> si une analyse est déjà en cours, la suivante la remplace — on ne joue jamais un conseil périmé.</div>
+    <div class="footer"><span class="brand">CervHots</span><span>03 / 09</span></div>
+  </section>
+
+  <!-- 4 · PERCEPTION -->
+  <section class="slide" id="slide-4">
+    <div class="overline">Perception</div>
+    <h2>La pièce maîtresse</h2>
+    <div class="cols" style="flex:0 1 auto">
+      <div class="lane">
+        <div class="tag" style="color:var(--ok)">Les faits · OCR local · ~10 ms</div>
+        <h3>Les chiffres, sans LLM</h3>
+        <p>Gros caractères, lecture fiable et instantanée : rien à inventer.</p>
+        <div class="items">
+          <span>timer de partie</span>
+          <span>niveaux d'équipe</span>
+          <span>PV / mana / timers de mort</span>
+        </div>
+      </div>
+      <div class="lane">
+        <div class="tag" style="color:var(--gold)">La sémantique · modèle vision</div>
+        <h3>Ce que raconte la map</h3>
+        <p>Crops upscalés envoyés à l'IA, réponse structurée avec niveau de confiance.</p>
+        <div class="items">
+          <span>positions des pastilles</span>
+          <span>brouillard &amp; ennemis disparus</span>
+          <span>objectifs actifs · menace par lane</span>
+        </div>
+      </div>
+    </div>
+    <div class="callout">
+      <h4>Option JEV-VL — des questions typées plutôt qu'une description libre</h4>
+      <p>yes/no · choix parmi 2–16 options · note 0–5. Chaque réponse vient avec sa probabilité calibrée : le JSON est garanti par construction, et « confiance &lt; seuil → le coach se tait » devient mesurable.</p>
+    </div>
+    <p class="note"><b>La nuance :</b> JEV évalue, il n'extrait pas — le jeu de questions devient le vrai travail de conception. Validation sans jouer : replays en mode observateur + vérité terrain <b>heroprotocol</b> (lib officielle Blizzard).</p>
+    <div class="footer"><span class="brand">CervHots</span><span>04 / 09</span></div>
+  </section>
+
+  <!-- 5 · API GROCO -->
+  <section class="slide" id="slide-5">
+    <div class="overline">Côté API</div>
+    <h2>Ce qu'on attend de toi, Groco</h2>
+    <div class="check">
+      <div class="row">
+        <div class="mark">01</div>
+        <div class="txt">Un modèle <b>vision</b>, servi au format OpenAI-compatible — images en <code>image_url</code> base64.</div>
+      </div>
+      <div class="row">
+        <div class="mark">02</div>
+        <div class="txt">La liste des modèles dispo, leur latence observée, et la taille d'image max.<span class="sub">Les pastilles de la minimap font ~10 px : la résolution d'image compte autant que le modèle.</span></div>
+      </div>
+      <div class="row">
+        <div class="mark">03</div>
+        <div class="txt">Quotas, rate limits — et dispo quand on joue.</div>
+      </div>
+      <div class="row">
+        <div class="mark">04</div>
+        <div class="txt">Sortie structurée : <code>response_format: json_schema</code>, ou LoRA / adapter si un JEV-VL passe en vLLM.</div>
+      </div>
+      <div class="row">
+        <div class="mark">05</div>
+        <div class="txt">L'API expose aussi <code>/v1/audio/speech</code> ?<span class="sub">Sinon le TTS tourne en local — c'est prévu et gratuit.</span></div>
+      </div>
+    </div>
+    <div class="footer"><span class="brand">CervHots</span><span>05 / 09</span></div>
+  </section>
+
+  <!-- 6 · VOIX & MUMBLE -->
+  <section class="slide" id="slide-6">
+    <div class="overline">De la voix à Mumble</div>
+    <h2>Le coach parle</h2>
+    <div class="cols">
+      <div>
+        <div class="tag" style="font-family:var(--mono);font-size:18px;letter-spacing:.24em;text-transform:uppercase;color:var(--gold);margin-bottom:18px">TTS local · gratuit · hors ligne</div>
+        <div class="vs">
+          <div class="card">
+            <div class="name">Kokoro<small>ff_siwis</small></div>
+            <div class="meta">Voix naturelle, ~1 s avant le premier son. Notre choix pour le rendu.</div>
+          </div>
+          <div class="card">
+            <div class="name">Piper<small>fr_FR-siwis</small></div>
+            <div class="meta">~390 ms, un peu robotique. À prendre si la latence prime.</div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="tag" style="font-family:var(--mono);font-size:18px;letter-spacing:.24em;text-transform:uppercase;color:var(--gold);margin-bottom:18px">Bot Mumble · pymumble</div>
+        <ul class="bullets">
+          <li>Texte → TTS → PCM 48 kHz mono → <code>sound_output.add_sound()</code></li>
+          <li>Audio en TCP tunneling : parfaitement suffisant pour un bot qui parle</li>
+          <li>Fork maintenu prévu si serveur récent (protocole chiffré)</li>
+          <li>Il <b>cède la parole</b> : attend un silence avant de parler</li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer"><span class="brand">CervHots</span><span>06 / 09</span></div>
+  </section>
+
+  <!-- 7 · BUDGET -->
+  <section class="slide" id="slide-7">
+    <div class="overline">Budget temps réel</div>
+    <h2>5 à 12 secondes, bout en bout</h2>
+    <div class="bar">
+      <div class="seg s1"><div class="lbl">Perception</div><div class="val">2 – 6 s</div></div>
+      <div class="seg s2"><div class="lbl">Cerveau</div><div class="val">2 – 4 s</div></div>
+      <div class="seg s3"><div class="lbl">TTS</div><div class="val">0,5 – 2 s</div></div>
+      <div class="seg s4"><div class="lbl">Total écran → voix</div><div class="val">5 – 12 s</div></div>
+    </div>
+    <div class="totals"><span>≈ situation qui vient d'arriver</span><span>jamais la frame en cours</span></div>
+    <div class="rules">
+      <div class="r">
+        <div class="n">20–30 s</div>
+        <p>une analyse toutes les 20–30 s, ou déclenchée par un événement : objectif proche, ennemis disparus…</p>
+      </div>
+      <div class="r">
+        <div class="n">≤ 25 mots</div>
+        <p>par intervention, soit 8 à 10 s de parole. Une seule priorité à la fois.</p>
+      </div>
+      <div class="r">
+        <div class="n">Silence</div>
+        <p>vaut mieux que le bruit : si rien d'utile à dire, le coach ne dit rien.</p>
+      </div>
+    </div>
+    <div class="footer"><span class="brand">CervHots</span><span>07 / 09</span></div>
+  </section>
+
+  <!-- 8 · RISQUES -->
+  <section class="slide" id="slide-8">
+    <div class="overline">Risques &amp; mitigations</div>
+    <h2>Où ça peut coincer</h2>
+    <div class="risks">
+      <div class="risk">
+        <div class="chip h">Élevé</div>
+        <div class="name">Le modèle lit mal la minimap</div>
+        <div class="fix"><b>Crops upscalés, few-shot avec légende du HUD, évaluation sur replays,</b> fallback CV classique (détection de pastilles).</div>
+      </div>
+      <div class="risk">
+        <div class="chip m">Moyen</div>
+        <div class="name">Latence / dispo de l'API</div>
+        <div class="fix">Cadence 20–30 s, file latest-wins, TTS streamé — la qualité dégrade proprement, jamais bloquante.</div>
+      </div>
+      <div class="risk">
+        <div class="chip m">Moyen</div>
+        <div class="name">Conseils répétitifs ou hors-sujet</div>
+        <div class="fix">Mémoire de partie, garde-fous de prompt (« ne commenter que le visible »), cooldown entre deux prises de parole.</div>
+      </div>
+      <div class="risk">
+        <div class="chip m">Moyen</div>
+        <div class="name">pymumble vs serveurs récents</div>
+        <div class="fix">Fork maintenu en secours — et POC audio dès la phase 0 pour lever le doute tout de suite.</div>
+      </div>
+      <div class="risk">
+        <div class="chip l">Faible</div>
+        <div class="name">DPI, résolution, HUD</div>
+        <div class="fix">Profil de calibration, résolution figée — le HUD de HotS ne se déplace pas, les crops sont stables.</div>
+      </div>
+    </div>
+    <p class="note">Pour mémoire : <b>pixels seulement</b>, comme OBS — aucun accès mémoire, aucun contournement.</p>
+    <div class="footer"><span class="brand">CervHots</span><span>08 / 09</span></div>
+  </section>
+
+  <!-- 9 · ROADMAP -->
+  <section class="slide" id="slide-9">
+    <div class="overline">Roadmap</div>
+    <h2>≈ deux semaines, découpées</h2>
+    <div class="phases">
+      <div class="phase">
+        <div class="pnum">0</div>
+        <div class="pname">POC parole</div>
+        <div class="pdesc">Un bot Mumble qui lit un texte fixe via TTS. Lève les doutes audio d'un coup.</div>
+        <div class="pdur">½ – 1 j</div>
+      </div>
+      <div class="phase">
+        <div class="pnum">1</div>
+        <div class="pname">Capture + calibration</div>
+        <div class="pdesc">dxcam, rectangles de crops ajustables, profil par résolution.</div>
+        <div class="pdur">2 – 3 j</div>
+      </div>
+      <div class="phase key">
+        <div class="pnum">2</div>
+        <div class="pname">Perception</div>
+        <div class="pdesc">Appel vision + OCR, prompts structurés, <b>évalués sur captures de replays</b> — la phase qui concentre l'incertitude.</div>
+        <div class="pdur">3 – 5 j</div>
+      </div>
+      <div class="phase">
+        <div class="pnum">3</div>
+        <div class="pname">Cerveau</div>
+        <div class="pdesc">Prompt coach, mémoire de partie, déclencheurs, anti-répétition.</div>
+        <div class="pdur">2 – 3 j</div>
+      </div>
+      <div class="phase">
+        <div class="pnum">4</div>
+        <div class="pname">Intégration live</div>
+        <div class="pdesc">Boucle temps réel, file latest-wins, réglages en vraie partie.</div>
+        <div class="pdur">1 – 2 j</div>
+      </div>
+    </div>
+    <div class="strip" style="margin-top:36px"><b>Prochaine étape :</b> le POC parole — et tes réponses sur l'API.</div>
+    <div class="footer"><span class="brand">CervHots</span><span>09 / 09</span></div>
+  </section>
+
+</div>
+</div>
+
+<div id="hud">
+  <button id="prev" aria-label="Planche précédente">‹</button>
+  <span id="counter">01 / 09</span>
+  <button id="next" aria-label="Planche suivante">›</button>
+  <span class="hint">← → pour naviguer</span>
+</div>
+
+<script>
+(function(){
+  const stage = document.getElementById('stage');
+  const slides = Array.from(document.querySelectorAll('.slide'));
+  const counter = document.getElementById('counter');
+  const total = slides.length;
+  let current = 0;
+
+  const stored = parseInt(localStorage.getItem('cervhots-slide') || '0', 10);
+  const fromHash = parseInt((location.hash || '').replace('#',''), 10);
+  if (!isNaN(fromHash) && fromHash >= 1 && fromHash <= total) current = fromHash - 1;
+  else if (!isNaN(stored) && stored >= 0 && stored < total) current = stored;
+
+  function fit(){
+    const s = Math.min(window.innerWidth / 1920, window.innerHeight / 1080);
+    stage.style.transform = 'scale(' + s + ')';
+  }
+
+  function show(i){
+    current = Math.max(0, Math.min(total - 1, i));
+    slides.forEach((sl, idx) => sl.classList.toggle('active', idx === current));
+    counter.textContent = String(current + 1).padStart(2,'0') + ' / ' + String(total).padStart(2,'0');
+    localStorage.setItem('cervhots-slide', String(current));
+    history.replaceState(null, '', '#' + (current + 1));
+  }
+
+  document.getElementById('prev').addEventListener('click', () => show(current - 1));
+  document.getElementById('next').addEventListener('click', () => show(current + 1));
+  window.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') { e.preventDefault(); show(current + 1); }
+    else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); show(current - 1); }
+    else if (e.key === 'Home') show(0);
+    else if (e.key === 'End') show(total - 1);
+  });
+  window.addEventListener('resize', fit);
+  fit();
+  show(current);
+})();
+</script>
+</body>
+</html>

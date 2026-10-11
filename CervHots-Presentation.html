@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CervHots — le coach IA pour HotS · présentation</title>
+<style>
+  :root{
+    --bg:#0F1216;
+    --panel:#161B21;
+    --panel-2:#1B212A;
+    --line:#28303B;
+    --ink:#ECEFF4;
+    --muted:#98A2B0;
+    --gold:#E8B54B;
+    --gold-soft:rgba(232,181,75,.13);
+    --blue:#5B9BE0;
+    --red:#E06B65;
+    --danger:#E2726E;
+    --warn:#E0A34A;
+    --ok:#6FBF8B;
+    --serif:Georgia,'Times New Roman',serif;
+    --sans:'Segoe UI','Helvetica Neue',Arial,sans-serif;
+    --mono:Consolas,'Cascadia Mono',monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%;background:var(--bg);color:var(--ink);font-family:var(--sans);overflow:hidden}
+  #viewport{height:100vh;display:flex;align-items:center;justify-content:center}
+  #stage{width:1920px;height:1080px;position:relative;transform-origin:center center;flex:0 0 auto}
+
+  .slide{
+    position:absolute;inset:0;display:none;flex-direction:column;
+    padding:88px 120px 96px;
+  }
+  .slide.active{display:flex}
+
+  .overline{font-family:var(--mono);font-size:21px;letter-spacing:.32em;text-transform:uppercase;color:var(--gold);margin-bottom:28px}
+  h1{font-family:var(--serif);font-size:120px;font-weight:400;line-height:1.02;letter-spacing:-.01em}
+  h2{font-family:var(--serif);font-size:74px;font-weight:400;line-height:1.05;letter-spacing:-.01em;margin-bottom:46px}
+  .lead{font-size:31px;line-height:1.5;color:var(--muted);max-width:1280px}
+  .footer{position:absolute;left:120px;right:120px;bottom:40px;display:flex;justify-content:space-between;align-items:center;
+    font-family:var(--mono);font-size:18px;letter-spacing:.18em;text-transform:uppercase;color:#5A6472}
+  .footer .brand{color:var(--gold);opacity:.8}
+
+  /* ---- couverture ---- */
+  .cover{grid-template-columns:1.02fr .98fr;align-items:center;gap:40px;padding-bottom:120px}
+  .slide.cover.active{display:grid}
+  .cover h1{font-size:170px}
+  .cover .lead{margin-top:36px;font-size:37px;color:var(--ink);max-width:760px}
+  .cover .rule{width:180px;height:3px;background:var(--gold);margin:52px 0 0}
+  .cover-art{position:relative;height:800px}
+  .cover-art svg{width:100%;height:100%;overflow:visible}
+
+  /* ---- bulles de répliques ---- */
+  .bubble{position:relative;background:var(--panel-2);border:1px solid var(--line);border-radius:20px;
+    padding:22px 30px;font-family:var(--serif);font-style:italic;font-size:27px;line-height:1.45;color:var(--ink)}
+  .bubble::after{content:"";position:absolute;width:18px;height:18px;background:var(--panel-2);
+    border-right:1px solid var(--line);border-bottom:1px solid var(--line);transform:rotate(45deg)}
+  .bubble.left::after{left:-10px;top:44px}
+  .bubble .who{display:block;font-family:var(--mono);font-style:normal;font-size:15px;letter-spacing:.22em;
+    text-transform:uppercase;color:var(--gold);margin-bottom:8px}
+
+  /* ---- générique blocs ---- */
+  .cols{display:grid;grid-template-columns:1fr 1fr;gap:72px;flex:1;min-height:0}
+  .stack{display:flex;flex-direction:column;gap:34px}
+
+  .fact{border-top:1px solid var(--line);padding-top:22px}
+  .fact .k{font-family:var(--mono);font-size:19px;letter-spacing:.22em;text-transform:uppercase;color:var(--gold);margin-bottom:12px}
+  .fact .v{font-size:28px;line-height:1.45;color:var(--ink)}
+
+  .verdict{display:flex;flex-direction:column;justify-content:center}
+  .verdict .big{font-family:var(--serif);font-size:180px;line-height:.95;color:var(--ink)}
+  .verdict .big em{font-style:normal;color:var(--gold)}
+  .verdict p{margin-top:40px;font-size:30px;line-height:1.55;color:var(--muted);max-width:660px}
+
+  /* ---- pipeline ---- */
+  .pipe{display:flex;align-items:stretch;gap:0;flex:1}
+  .pipe .step{flex:1;display:flex;flex-direction:column;justify-content:flex-start;background:var(--panel);border:1px solid var(--line);
+    padding:40px 30px 38px;position:relative}
+  .pipe .step:first-child{border-radius:10px 0 0 10px}
+  .pipe .step:last-child{border-radius:0 10px 10px 0}
+  .pipe .arrow{display:flex;align-items:center;justify-content:center;width:56px;flex:0 0 56px;color:var(--gold);font-size:34px}
+  .pipe .icon{height:54px;margin-bottom:20px}
+  .pipe .icon svg{height:54px;width:54px;display:block}
+  .pipe .num{font-family:var(--mono);font-size:17px;letter-spacing:.25em;color:var(--gold);margin-bottom:14px}
+  .pipe .name{font-family:var(--serif);font-size:37px;margin-bottom:14px}
+  .pipe .desc{font-size:21px;line-height:1.5;color:var(--muted)}
+  .strip{margin-top:40px;background:var(--gold-soft);border:1px solid rgba(232,181,75,.35);border-radius:10px;
+    padding:26px 36px;font-size:24px;line-height:1.5}
+  .strip b{color:var(--gold);font-weight:600}
+
+  /* ---- perception ---- */
+  #slide-4 h2{margin-bottom:34px}
+  #slide-4 .cols{flex:0 0 auto;gap:56px}
+  .lane{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:32px 38px;display:flex;flex-direction:column}
+  .lane .tag{font-family:var(--mono);font-size:18px;letter-spacing:.24em;text-transform:uppercase;margin-bottom:18px}
+  .lane h3{font-family:var(--serif);font-size:42px;font-weight:400;margin-bottom:16px}
+  .lane p{font-size:23px;line-height:1.5;color:var(--muted)}
+  .lane .items{margin-top:22px;display:flex;flex-direction:column;gap:10px}
+  .lane .items span{font-family:var(--mono);font-size:20.5px;color:var(--ink);background:var(--panel-2);border:1px solid var(--line);
+    border-radius:7px;padding:9px 15px}
+  .callout{margin-top:26px;border:1px solid rgba(232,181,75,.4);background:var(--gold-soft);border-radius:12px;padding:24px 36px}
+  .callout h4{font-family:var(--serif);font-size:30px;font-weight:400;color:var(--gold);margin-bottom:12px}
+  .callout p{font-size:22px;line-height:1.5;color:var(--ink)}
+  .note{margin-top:20px;font-size:20px;line-height:1.5;color:var(--muted)}
+  .note b{color:var(--ink);font-weight:600}
+
+  /* ---- persona ---- */
+  .persona{display:grid;grid-template-columns:.85fr 1.15fr;align-items:center;gap:70px;flex:1;min-height:0}
+  .persona-art{height:640px;display:flex;align-items:flex-end;justify-content:center}
+  .persona-art svg{height:640px;width:auto;overflow:visible}
+  .quips{display:flex;flex-direction:column;gap:26px}
+  .quips .bubble::after{top:40px}
+  .tone{font-size:23px;line-height:1.55;color:var(--muted);border-left:3px solid var(--gold);padding-left:22px}
+  .tone b{color:var(--ink);font-weight:600}
+
+  /* ---- checklist ---- */
+  .check{display:flex;flex-direction:column;gap:22px;flex:1;justify-content:center}
+  .check .row{display:flex;gap:26px;align-items:flex-start;border-bottom:1px solid var(--line);padding-bottom:22px}
+  .check .mark{font-family:var(--mono);font-size:24px;color:var(--gold);flex:0 0 52px;line-height:1.4}
+  .check .txt{font-size:27px;line-height:1.5}
+  .check .txt code{font-family:var(--mono);font-size:23px;color:var(--gold);background:var(--panel-2);
+    border:1px solid var(--line);border-radius:6px;padding:2px 10px}
+  .check .sub{display:block;font-size:21px;color:var(--muted);margin-top:8px}
+
+  /* ---- tts / mumble ---- */
+  .vs{display:grid;grid-template-columns:1fr 1fr;gap:26px;margin-top:8px}
+  .vs .card{background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:28px 30px}
+  .vs .card .name{font-family:var(--serif);font-size:34px;margin-bottom:10px}
+  .vs .card .name small{font-family:var(--mono);font-size:19px;color:var(--gold);margin-left:12px;letter-spacing:.08em}
+  .vs .card .meta{font-size:22px;line-height:1.5;color:var(--muted)}
+  .bullets{display:flex;flex-direction:column;gap:18px;margin-top:26px}
+  .bullets li{list-style:none;display:flex;gap:18px;font-size:24px;line-height:1.5;color:var(--ink)}
+  .bullets li::before{content:"—";color:var(--gold);flex:0 0 auto}
+  .bullets li code{font-family:var(--mono);font-size:21px;color:var(--gold)}
+
+  /* ---- budget bar ---- */
+  .bar{display:flex;height:120px;border-radius:12px;overflow:hidden;border:1px solid var(--line);margin-top:10px}
+  .bar .seg{display:flex;flex-direction:column;justify-content:center;padding:0 30px;position:relative}
+  .bar .seg .lbl{font-family:var(--mono);font-size:18px;letter-spacing:.2em;text-transform:uppercase;opacity:.85}
+  .bar .seg .val{font-family:var(--serif);font-size:40px;margin-top:6px}
+  .bar .s1{background:#22303C;flex:3.2}
+  .bar .s2{background:#2A2F33;flex:2.4}
+  .bar .s3{background:#242B25;flex:1.1}
+  .bar .s4{background:var(--gold);color:#14100A;flex:3}
+  .bar .s4 .lbl{opacity:.75}
+  .totals{display:flex;justify-content:space-between;margin-top:18px;font-family:var(--mono);font-size:19px;
+    letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
+  .rules{display:grid;grid-template-columns:1fr 1fr 1fr;gap:40px;margin-top:52px}
+  .rules .r .n{font-family:var(--serif);font-size:52px;color:var(--gold);line-height:1}
+  .rules .r p{font-size:23.5px;line-height:1.5;color:var(--muted);margin-top:14px}
+
+  /* ---- risques ---- */
+  .risks{display:flex;flex-direction:column;gap:0;flex:1;justify-content:center}
+  .risk{display:grid;grid-template-columns:110px 420px 1fr;gap:34px;align-items:center;
+    border-top:1px solid var(--line);padding:25px 0}
+  .risk:last-child{border-bottom:1px solid var(--line)}
+  .chip{font-family:var(--mono);font-size:16px;letter-spacing:.18em;text-transform:uppercase;text-align:center;
+    padding:8px 0;border-radius:99px}
+  .chip.h{background:rgba(226,114,110,.16);color:var(--danger);border:1px solid rgba(226,114,110,.45)}
+  .chip.m{background:rgba(224,163,74,.14);color:var(--warn);border:1px solid rgba(224,163,74,.4)}
+  .chip.l{background:rgba(111,191,139,.13);color:var(--ok);border:1px solid rgba(111,191,139,.4)}
+  .risk .name{font-size:26px;font-weight:600}
+  .risk .fix{font-size:22.5px;line-height:1.5;color:var(--muted)}
+  .risk .fix b{color:var(--ink);font-weight:600}
+
+  /* ---- roadmap ---- */
+  .phases{display:flex;flex-direction:column;gap:0;flex:1;justify-content:center}
+  #slide-10 h2{margin-bottom:30px}
+  .phase{display:grid;grid-template-columns:120px 480px 1fr 190px;gap:34px;align-items:baseline;
+    border-top:1px solid var(--line);padding:18px 0}
+  .phase:last-child{border-bottom:1px solid var(--line)}
+  .phase .pnum{font-family:var(--serif);font-size:56px;color:var(--gold);line-height:1}
+  .phase .pname{font-size:30px;font-weight:600}
+  .phase .pdesc{font-size:23px;line-height:1.5;color:var(--muted)}
+  .phase .pdur{font-family:var(--mono);font-size:21px;letter-spacing:.12em;color:var(--gold);text-align:right}
+  .phase.key{background:var(--gold-soft)}
+  .phase.key .pdesc b{color:var(--gold);font-weight:600}
+
+  /* ---- animations ---- */
+  @keyframes pulse-ring{0%{opacity:.9;transform:scale(1)}70%{opacity:0;transform:scale(2.1)}100%{opacity:0;transform:scale(2.1)}}
+  @keyframes blink-soft{0%,100%{opacity:.25}50%{opacity:.8}}
+  @keyframes drift{0%,100%{transform:translateX(0)}50%{transform:translateX(14px)}}
+  .dot-pulse{animation:pulse-ring 2.2s ease-out infinite;transform-origin:center;transform-box:fill-box}
+  .dot-ghost{animation:blink-soft 2.6s ease-in-out infinite}
+  .fog-drift{animation:drift 9s ease-in-out infinite}
+
+  /* ---- HUD nav ---- */
+  #hud{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);display:flex;align-items:center;gap:18px;
+    font-family:var(--mono);font-size:14px;letter-spacing:.14em;color:#6B7482;z-index:10}
+  #hud button{background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:8px;
+    width:40px;height:32px;cursor:pointer;font-size:15px}
+  #hud button:hover{border-color:var(--gold);color:var(--gold)}
+  #hud .hint{text-transform:uppercase}
+
+  /* ---- print / export PDF ---- */
+  @media print{
+    html,body{overflow:visible;background:var(--bg)}
+    #viewport{display:block;height:auto}
+    #stage{transform:none!important;width:1920px;height:auto}
+    .slide{display:flex!important;position:relative;width:1920px;height:1080px;page-break-after:always;break-after:page}
+    .slide.cover{display:grid!important}
+    .slide:last-child{page-break-after:auto;break-after:auto}
+    #hud{display:none!important}
+  }
+  @page{size:20in 11.25in;margin:0}
+  @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<div id="viewport">
+<div id="stage">
+
+  <!-- 1 · COUVERTURE -->
+  <section class="slide cover active" id="slide-1">
+    <div>
+      <div class="overline">Étude de faisabilité · Octobre 2026</div>
+      <h1>CervHots</h1>
+      <div class="rule"></div>
+      <p class="lead">Le coach IA qui regarde ta partie par-dessus ton épaule.<br>Et qui, parfois, souffle.</p>
+    </div>
+    <div class="cover-art">
+      <svg viewBox="0 0 760 720" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Carte de bataille stylisée avec les positions des héros">
+        <defs>
+          <filter id="soft" x="-40%" y="-40%" width="180%" height="180%">
+            <feGaussianBlur stdDeviation="14"/>
+          </filter>
+          <radialGradient id="dotBlue" cx="35%" cy="30%" r="80%">
+            <stop offset="0%" stop-color="#8FC1F4"/><stop offset="100%" stop-color="#3E77B8"/>
+          </radialGradient>
+          <radialGradient id="dotRed" cx="35%" cy="30%" r="80%">
+            <stop offset="0%" stop-color="#F09B95"/><stop offset="100%" stop-color="#B84842"/>
+          </radialGradient>
+          <radialGradient id="objGlow" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="rgba(232,181,75,.5)"/><stop offset="100%" stop-color="rgba(232,181,75,0)"/>
+          </radialGradient>
+        </defs>
+
+        <!-- terrain -->
+        <rect x="60" y="40" width="650" height="620" rx="30" fill="#1A222C" stroke="#394554" stroke-width="2"/>
+        <!-- jungle -->
+        <path d="M 240 200 C 320 170 380 210 360 280 C 330 340 240 330 210 280 C 190 245 205 212 240 200 Z" fill="#11161D"/>
+        <path d="M 470 380 C 560 360 610 410 585 470 C 560 525 470 520 445 470 C 425 430 435 390 470 380 Z" fill="#11161D"/>
+        <path d="M 220 430 C 280 415 320 450 305 495 C 290 535 225 535 205 495 C 192 468 198 438 220 430 Z" fill="#11161D"/>
+
+        <!-- voies -->
+        <path d="M 150 575 C 118 300 165 150 275 132 C 420 112 555 125 615 155" fill="none" stroke="#3B4859" stroke-width="26" stroke-linecap="round"/>
+        <path d="M 185 555 L 585 165" fill="none" stroke="#3B4859" stroke-width="26" stroke-linecap="round"/>
+        <path d="M 175 595 C 330 630 525 622 610 585 C 652 530 642 320 620 215" fill="none" stroke="#3B4859" stroke-width="26" stroke-linecap="round"/>
+
+        <!-- zone d'objectif -->
+        <circle cx="382" cy="352" r="86" fill="url(#objGlow)"/>
+        <circle cx="382" cy="352" r="46" fill="none" stroke="#E8B54B" stroke-width="2.5" stroke-dasharray="10 8" opacity=".75"/>
+        <path d="M 382 330 L 396 352 L 382 374 L 368 352 Z" fill="#E8B54B"/>
+
+        <!-- bases -->
+        <g>
+          <rect x="96" y="536" width="104" height="92" rx="12" fill="#1D2A3A" stroke="#5B9BE0" stroke-width="3"/>
+          <rect x="112" y="516" width="18" height="26" rx="3" fill="#5B9BE0"/>
+          <rect x="150" y="516" width="18" height="26" rx="3" fill="#5B9BE0"/>
+          <rect x="188" y="516" width="18" height="26" rx="3" fill="#5B9BE0"/>
+        </g>
+        <g>
+          <rect x="570" y="92" width="104" height="92" rx="12" fill="#38201E" stroke="#E06B65" stroke-width="3"/>
+          <rect x="586" y="72" width="18" height="26" rx="3" fill="#E06B65"/>
+          <rect x="624" y="72" width="18" height="26" rx="3" fill="#E06B65"/>
+          <rect x="662" y="72" width="18" height="26" rx="3" fill="#E06B65"/>
+        </g>
+
+        <!-- héros bleus -->
+        <circle cx="252" cy="472" r="14" fill="url(#dotBlue)" stroke="#ECEFF4" stroke-width="2.5"/>
+        <circle cx="332" cy="392" r="14" fill="url(#dotBlue)" stroke="#ECEFF4" stroke-width="2.5"/>
+        <circle cx="212" cy="298" r="14" fill="url(#dotBlue)" stroke="#ECEFF4" stroke-width="2.5"/>
+        <!-- héros rouges -->
+        <circle cx="512" cy="246" r="14" fill="url(#dotRed)" stroke="#ECEFF4" stroke-width="2.5"/>
+        <circle cx="452" cy="300" r="14" fill="url(#dotRed)" stroke="#ECEFF4" stroke-width="2.5"/>
+        <!-- ennemi « disparu » -->
+        <g class="dot-ghost">
+          <circle cx="586" cy="436" r="14" fill="url(#dotRed)" stroke="#ECEFF4" stroke-width="2" stroke-dasharray="5 5"/>
+        </g>
+        <!-- anneau qui pulse autour de l'objectif -->
+        <circle class="dot-pulse" cx="382" cy="352" r="24" fill="none" stroke="#E8B54B" stroke-width="3"/>
+
+        <!-- brouillard de guerre -->
+        <g class="fog-drift" filter="url(#soft)" opacity=".85">
+          <ellipse cx="150" cy="120" rx="120" ry="70" fill="#0B0E13"/>
+          <ellipse cx="660" cy="640" rx="130" ry="75" fill="#0B0E13"/>
+        </g>
+      </svg>
+      <div class="bubble left" style="position:absolute;top:6px;left:-24px;max-width:440px">
+        <span class="who">Le coach · 12 s de retard, 0 s de filtre</span>
+        « Trois ennemis disparus de la map. Tu leur prépares le café ? »
+      </div>
+    </div>
+    <div class="footer"><span class="brand">CervHots</span><span>Présenté à Groco</span></div>
+  </section>
+
+  <!-- 2 · VERDICT -->
+  <section class="slide" id="slide-2">
+    <div class="overline">Le principe &amp; le verdict</div>
+    <div class="cols">
+      <div class="verdict">
+        <div class="big"><em>Faisable.</em></div>
+        <p>Toutes les briques existent, elles sont matures, et elles sont gratuites. Le seul vrai sujet : l'IA doit apprendre à lire une minimap. Le reste, c'est de la plomberie.</p>
+      </div>
+      <div class="stack" style="justify-content:center">
+        <div class="fact">
+          <div class="k">Source d'information</div>
+          <div class="v">Les pixels, rien d'autre. HotS écrit ses replays à la fin de partie, comme un témoin qui arrive après la bataille.</div>
+        </div>
+        <div class="fact">
+          <div class="k">Latence</div>
+          <div class="v">5 à 12 secondes entre la scène et la voix. Le coach commente ce qui vient de se passer, pas la frame en cours.</div>
+        </div>
+        <div class="fact">
+          <div class="k">Format de sortie</div>
+          <div class="v">Du JSON avec des probas calibrées. Avant de parler, le coach vérifie qu'il ne raconte pas n'importe quoi.</div>
+        </div>
+      </div>
+    </div>
+    <div class="footer"><span class="brand">CervHots</span><span>02 / 10</span></div>
+  </section>
+
+  <!-- 3 · ARCHITECTURE -->
+  <section class="slide" id="slide-3">
+    <div class="overline">Architecture</div>
+    <h2>Du pixel à la pique, en cinq étapes</h2>
+    <div class="pipe">
+      <div class="step">
+        <div class="icon"><svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg"><rect x="5" y="13" width="38" height="28" rx="5" fill="none" stroke="#E8B54B" stroke-width="2.5"/><rect x="17" y="8" width="12" height="7" rx="2.5" fill="none" stroke="#E8B54B" stroke-width="2.5"/><circle cx="24" cy="27" r="8.5" fill="none" stroke="#E8B54B" stroke-width="2.5"/><circle cx="24" cy="27" r="3.5" fill="#E8B54B"/><circle cx="38" cy="18" r="1.8" fill="#E8B54B"/></svg></div>
+        <div class="num">01</div>
+        <div class="name">Capture</div>
+        <div class="desc">dxcam lit l'écran : minimap, bandeau des héros, timer. Une à deux images par seconde, on n'est pas la NSA.</div>
+      </div>
+      <div class="arrow">→</div>
+      <div class="step">
+        <div class="icon"><svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg"><path d="M 5 24 C 13 11 35 11 43 24 C 35 37 13 37 5 24 Z" fill="none" stroke="#E8B54B" stroke-width="2.5"/><circle cx="24" cy="24" r="7" fill="none" stroke="#E8B54B" stroke-width="2.5"/><circle cx="24" cy="24" r="3" fill="#E8B54B"/></svg></div>
+        <div class="num">02</div>
+        <div class="name">Perception</div>
+        <div class="desc">L'OCR pour les chiffres, le modèle vision pour la map. Sortie : un état de partie en JSON.</div>
+      </div>
+      <div class="arrow">→</div>
+      <div class="step">
+        <div class="icon"><svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg"><path d="M 27 5 L 13 27 L 22 27 L 18 43 L 35 21 L 25 21 Z" fill="#E8B54B"/></svg></div>
+        <div class="num">03</div>
+        <div class="name">Cerveau</div>
+        <div class="desc">Il choisit UNE chose à dire. Et il se tait quand il n'a rien à dire. Ça va être dur.</div>
+      </div>
+      <div class="arrow">→</div>
+      <div class="step">
+        <div class="icon"><svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="24" r="5" fill="#E8B54B"/><path d="M 21 14 C 29 19 29 29 21 34" fill="none" stroke="#E8B54B" stroke-width="2.5" stroke-linecap="round"/><path d="M 28 8 C 40 16 40 32 28 40" fill="none" stroke="#E8B54B" stroke-width="2.5" stroke-linecap="round"/></svg></div>
+        <div class="num">04</div>
+        <div class="name">Voix</div>
+        <div class="desc">TTS local : une vraie voix française. Pas un GPS de 2003.</div>
+      </div>
+      <div class="arrow">→</div>
+      <div class="step">
+        <div class="icon"><svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg"><path d="M 6 10 H 30 A 5 5 0 0 1 35 15 V 24 A 5 5 0 0 1 30 29 H 16 L 9 35 V 29 H 6 A 5 5 0 0 1 1 24 V 15 A 5 5 0 0 1 6 10 Z" fill="none" stroke="#E8B54B" stroke-width="2.5"/><path d="M 39 18 H 44 A 4 4 0 0 1 48 22 V 33 A 4 4 0 0 1 44 37 V 42 L 38 37 H 33" fill="none" stroke="#E8B54B" stroke-width="2.5" opacity=".7"/></svg></div>
+        <div class="num">05</div>
+        <div class="name">Mumble</div>
+        <div class="desc">Un bot rejoint votre canal et parle. Il attend que vous ayez fini, lui.</div>
+      </div>
+    </div>
+    <div class="strip"><b>File « latest-wins » :</b> un conseil périmé n'est jamais joué. Le coach peut être lent, jamais deux fois à côté de la plaque. Enfin, rarement deux fois.</div>
+    <div class="footer"><span class="brand">CervHots</span><span>03 / 10</span></div>
+  </section>
+
+  <!-- 4 · PERCEPTION -->
+  <section class="slide" id="slide-4">
+    <div class="overline">Perception</div>
+    <h2>Là où ça se joue vraiment</h2>
+    <div class="cols" style="flex:0 0 auto">
+      <div class="lane">
+        <div class="tag" style="color:var(--ok)">Les faits · OCR local · ~10 ms</div>
+        <h3>Les chiffres ne discutent pas</h3>
+        <p>Timer, niveaux, PV, timers de mort : l'OCR les lit avant que ton chat ait cligné des yeux.</p>
+        <div class="items">
+          <span>timer de partie</span>
+          <span>niveaux d'équipe</span>
+          <span>PV / mana / timers de mort</span>
+        </div>
+      </div>
+      <div class="lane">
+        <div class="tag" style="color:var(--gold)">La sémantique · modèle vision</div>
+        <h3>Ce que la map raconte</h3>
+        <p>Qui est où, qui manque à l'appel, ce qui va tomber. Les pastilles font 10 pixels : on les envoie agrandies, comme une photo de classe prise de loin.</p>
+        <div class="items">
+          <span>positions des pastilles</span>
+          <span>brouillard &amp; ennemis disparus</span>
+          <span>objectifs actifs · menace par lane</span>
+        </div>
+      </div>
+    </div>
+    <div class="callout">
+      <h4>Option JEV-VL : des questions fermées plutôt qu'une grande tirade</h4>
+      <p>yes/no, choix multiple, note de 0 à 5. Chaque réponse arrive avec sa probabilité, donc le JSON est garanti et « confiance trop basse → le coach se tait » devient un vrai réglage, pas un vœu.</p>
+    </div>
+    <p class="note"><b>La nuance :</b> JEV évalue, il n'extrait pas. Le vrai travail, c'est d'écrire les bonnes questions. Et pour savoir si l'IA lit bien la map : des replays en observateur et <b>heroprotocol</b>, la vérité terrain de Blizzard.</p>
+    <div class="footer"><span class="brand">CervHots</span><span>04 / 10</span></div>
+  </section>
+
+  <!-- 5 · LE COACH, EN VRAI -->
+  <section class="slide" id="slide-5">
+    <div class="overline">La personnalité</div>
+    <h2>Le coach, en vrai</h2>
+    <div class="persona">
+      <div class="persona-art">
+        <svg viewBox="0 0 420 560" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Silhouette encapuchonnée avec un casque audio, les yeux brillants">
+          <defs>
+            <filter id="eye-glow" x="-120%" y="-120%" width="340%" height="340%">
+              <feGaussianBlur stdDeviation="7"/>
+            </filter>
+            <radialGradient id="hood-light" cx="30%" cy="18%" r="95%">
+              <stop offset="0%" stop-color="#242C38"/><stop offset="100%" stop-color="#12161D"/>
+            </radialGradient>
+          </defs>
+          <!-- robe / épaules -->
+          <path d="M 52 560 C 62 430 118 382 210 376 C 302 382 358 430 368 560 Z" fill="#12161D"/>
+          <path d="M 52 560 C 62 430 118 382 210 376 L 210 560 Z" fill="#171D26"/>
+          <!-- capuche -->
+          <path d="M 210 78 C 122 78 84 168 92 272 C 98 352 148 402 210 408 C 272 402 322 352 328 272 C 336 168 298 78 210 78 Z" fill="url(#hood-light)"/>
+          <!-- ouverture du visage -->
+          <ellipse cx="210" cy="282" rx="92" ry="112" fill="#0A0D12"/>
+          <!-- ombre intérieure de la capuche -->
+          <path d="M 128 232 C 150 176 270 176 292 232 C 270 200 150 200 128 232 Z" fill="#000" opacity=".45"/>
+          <!-- liseré doré -->
+          <path d="M 210 78 C 122 78 84 168 92 272" fill="none" stroke="#E8B54B" stroke-width="4" opacity=".65"/>
+          <!-- yeux -->
+          <g filter="url(#eye-glow)" opacity=".9">
+            <ellipse cx="178" cy="272" rx="17" ry="15" fill="#E8B54B"/>
+            <ellipse cx="244" cy="272" rx="17" ry="15" fill="#E8B54B"/>
+          </g>
+          <ellipse cx="178" cy="272" rx="11" ry="10" fill="#FFE7AE"/>
+          <ellipse cx="244" cy="272" rx="11" ry="10" fill="#FFE7AE"/>
+          <!-- casque audio -->
+          <path d="M 118 178 C 138 96 282 96 302 178" fill="none" stroke="#2A3441" stroke-width="15"/>
+          <rect x="102" y="176" width="38" height="62" rx="16" fill="#232C38" stroke="#394554" stroke-width="3"/>
+          <rect x="280" y="176" width="38" height="62" rx="16" fill="#232C38" stroke="#394554" stroke-width="3"/>
+          <!-- micro -->
+          <path d="M 122 232 C 96 272 112 330 162 352" fill="none" stroke="#2A3441" stroke-width="8" stroke-linecap="round"/>
+          <circle cx="166" cy="354" r="10" fill="#E8B54B"/>
+          <!-- plis de robe -->
+          <path d="M 150 560 C 158 480 172 432 190 404" fill="none" stroke="#0C0F14" stroke-width="6"/>
+          <path d="M 272 560 C 264 480 250 432 232 404" fill="none" stroke="#0C0F14" stroke-width="6"/>
+        </svg>
+      </div>
+      <div class="quips">
+        <div class="bubble left">
+          <span class="who">Ennemis disparus</span>
+          « Ils sont trois à manquer à l'appel. Soit ils farment, soit ils viennent. Devine lesquels. »
+        </div>
+        <div class="bubble left">
+          <span class="who">Objectif dans 20 secondes</span>
+          « L'objectif dans vingt secondes. Tu y vas, ou tu regardes depuis le spawn ? »
+        </div>
+        <div class="bubble left">
+          <span class="who">1v3 héroïque</span>
+          « Seul contre trois. Héroïque. Con, mais héroïque. »
+        </div>
+        <div class="tone">Le ton : <b>utile d'abord, piquant quand ça aide</b>. Jamais toxique, il y a déjà les coéquipiers pour ça. Et quand rien ne mérite une remarque, il ne dit rien : le silence est le premier outil du coach.</div>
+      </div>
+    </div>
+    <div class="footer"><span class="brand">CervHots</span><span>05 / 10</span></div>
+  </section>
+
+  <!-- 6 · API GROCO -->
+  <section class="slide" id="slide-6">
+    <div class="overline">Côté API</div>
+    <h2>Ton tour, Groco</h2>
+    <div class="check">
+      <div class="row">
+        <div class="mark">01</div>
+        <div class="txt">Un modèle <b>vision</b>, format OpenAI-compatible. Les images en <code>image_url</code> base64, comme au bon vieux temps.</div>
+      </div>
+      <div class="row">
+        <div class="mark">02</div>
+        <div class="txt">La liste des modèles, leur latence, la taille d'image max.<span class="sub">Nos pastilles de minimap font 10 pixels : même la meilleure IA ne voit pas ce qu'on ne lui envoie pas.</span></div>
+      </div>
+      <div class="row">
+        <div class="mark">03</div>
+        <div class="txt">Les quotas, les rate limits, et surtout : <b>ça tient quand on joue ?</b></div>
+      </div>
+      <div class="row">
+        <div class="mark">04</div>
+        <div class="txt">Sortie structurée : <code>response_format: json_schema</code>. Ou LoRA / adapter si un JEV-VL passe en vLLM sur ta machine.</div>
+      </div>
+      <div class="row">
+        <div class="mark">05</div>
+        <div class="txt">Un endpoint <code>/v1/audio/speech</code> dans le lot ?<span class="sub">Sinon pas de souci : le TTS tournera en local. On n'est pas à un gratuit près.</span></div>
+      </div>
+    </div>
+    <div class="footer"><span class="brand">CervHots</span><span>06 / 10</span></div>
+  </section>
+
+  <!-- 7 · VOIX & MUMBLE -->
+  <section class="slide" id="slide-7">
+    <div class="overline">De la voix à Mumble</div>
+    <h2>Et là, ça parle</h2>
+    <div class="cols">
+      <div>
+        <div class="tag" style="font-family:var(--mono);font-size:18px;letter-spacing:.24em;text-transform:uppercase;color:var(--gold);margin-bottom:18px">TTS local · gratuit · hors ligne</div>
+        <div class="vs">
+          <div class="card">
+            <div class="name">Kokoro<small>ff_siwis</small></div>
+            <div class="meta">Voix naturelle, ~1 s avant de démarrer. Notre chouchou.</div>
+          </div>
+          <div class="card">
+            <div class="name">Piper<small>fr_FR-siwis</small></div>
+            <div class="meta">~390 ms, un peu robotique. Pour les pressés.</div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="tag" style="font-family:var(--mono);font-size:18px;letter-spacing:.24em;text-transform:uppercase;color:var(--gold);margin-bottom:18px">Bot Mumble · pymumble</div>
+        <ul class="bullets">
+          <li>Texte → TTS → PCM 48 kHz mono → <code>add_sound()</code>. Oui, c'est presque aussi simple.</li>
+          <li>Audio en TCP tunneling : suffisant pour un bot qui parle, pas pour un concert.</li>
+          <li>Serveur Mumble récent ? Le fork maintenu prend le relais.</li>
+          <li>Le coach <b>cède la parole</b> : il n'interrompt pas vos calls. Il les commente après.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer"><span class="brand">CervHots</span><span>07 / 10</span></div>
+  </section>
+
+  <!-- 8 · BUDGET -->
+  <section class="slide" id="slide-8">
+    <div class="overline">Budget temps réel</div>
+    <h2>Oui, il a dix secondes de retard. Et alors ?</h2>
+    <div class="bar">
+      <div class="seg s1"><div class="lbl">Perception</div><div class="val">2 – 6 s</div></div>
+      <div class="seg s2"><div class="lbl">Cerveau</div><div class="val">2 – 4 s</div></div>
+      <div class="seg s3"><div class="lbl">TTS</div><div class="val">0,5 – 2 s</div></div>
+      <div class="seg s4"><div class="lbl">Total écran → voix</div><div class="val">5 – 12 s</div></div>
+    </div>
+    <div class="totals"><span>≈ la situation qui vient de se passer</span><span>jamais la frame en cours</span></div>
+    <div class="rules">
+      <div class="r">
+        <div class="n">20–30 s</div>
+        <p>une analyse toutes les 20 à 30 secondes. Personne ne veut d'un coach toutes les trois secondes, surtout pas votre équipe.</p>
+      </div>
+      <div class="r">
+        <div class="n">≤ 25 mots</div>
+        <p>par intervention. Une remarque, pas un monologue : le coach n'est pas un streamer.</p>
+      </div>
+      <div class="r">
+        <div class="n">Silence</div>
+        <p>s'il n'y a rien d'utile à dire, il ne dit rien. Contrairement à certains coéquipiers.</p>
+      </div>
+    </div>
+    <div class="footer"><span class="brand">CervHots</span><span>08 / 10</span></div>
+  </section>
+
+  <!-- 9 · RISQUES -->
+  <section class="slide" id="slide-9">
+    <div class="overline">Risques &amp; mitigations</div>
+    <h2>Où ça peut coincer</h2>
+    <div class="risks">
+      <div class="risk">
+        <div class="chip h">Élevé</div>
+        <div class="name">L'IA lit mal la minimap</div>
+        <div class="fix"><b>Crops agrandis, exemples annotés, mesures sur replays</b>, et en dernier recours une vieille détection de pastilles qui, elle, ne se trompe pas sur les couleurs.</div>
+      </div>
+      <div class="risk">
+        <div class="chip m">Moyen</div>
+        <div class="name">L'API traîne, ou disparaît</div>
+        <div class="fix">Cadence 20–30 s, file latest-wins. Le coach se dégrade en commentaires tardifs, jamais en silence radio.</div>
+      </div>
+      <div class="risk">
+        <div class="chip m">Moyen</div>
+        <div class="name">Il se répète, il radote</div>
+        <div class="fix">Mémoire de partie et cooldown. Comme un vrai coach : on ne ressort pas la même vanne tous les quarts d'heure.</div>
+      </div>
+      <div class="risk">
+        <div class="chip m">Moyen</div>
+        <div class="name">pymumble vs serveurs récents</div>
+        <div class="fix">Le fork maintenu en secours, et un POC audio dès le premier jour pour ne pas découvrir le problème en pleine partie.</div>
+      </div>
+      <div class="risk">
+        <div class="chip l">Faible</div>
+        <div class="name">DPI, résolution, HUD</div>
+        <div class="fix">Un profil de calibration. Le HUD de HotS ne bouge pas : les crops sont stables, la flemme est de mise.</div>
+      </div>
+    </div>
+    <p class="note">Pour mémoire : <b>pixels seulement</b>, comme OBS. Aucun accès mémoire, aucun contournement. On ne triche pas, on commente.</p>
+    <div class="footer"><span class="brand">CervHots</span><span>09 / 10</span></div>
+  </section>
+
+  <!-- 10 · ROADMAP -->
+  <section class="slide" id="slide-10">
+    <div class="overline">Roadmap</div>
+    <h2>Deux semaines, cinq étapes</h2>
+    <div class="phases">
+      <div class="phase">
+        <div class="pnum">0</div>
+        <div class="pname">POC parole</div>
+        <div class="pdesc">Un bot Mumble qui lit une phrase fixe. Si ça sonne déjà bien, tout le reste est du bonus.</div>
+        <div class="pdur">½ – 1 j</div>
+      </div>
+      <div class="phase">
+        <div class="pnum">1</div>
+        <div class="pname">Capture + calibration</div>
+        <div class="pdesc">dxcam et des rectangles à déplacer. Le genre de tâche qu'on annonce en une heure et qu'on chiffre en jours.</div>
+        <div class="pdur">2 – 3 j</div>
+      </div>
+      <div class="phase key">
+        <div class="pnum">2</div>
+        <div class="pname">Perception</div>
+        <div class="pdesc">Là où on découvre si l'IA voit une map ou des taches. <b>Évaluée sur captures de replays</b>, avec des chiffres, pas des impressions.</div>
+        <div class="pdur">3 – 5 j</div>
+      </div>
+      <div class="phase">
+        <div class="pnum">3</div>
+        <div class="pname">Cerveau</div>
+        <div class="pdesc">Les prompts, la mémoire, les déclencheurs. Le charme se règle ici : piquant, mais jamais toxique.</div>
+        <div class="pdur">2 – 3 j</div>
+      </div>
+      <div class="phase">
+        <div class="pnum">4</div>
+        <div class="pname">Intégration live</div>
+        <div class="pdesc">La boucle, la file, et la première vraie partie avec le coach dans le casque.</div>
+        <div class="pdur">1 – 2 j</div>
+      </div>
+    </div>
+    <div class="strip" style="margin-top:20px;margin-bottom:18px"><b>Prochaine étape :</b> le POC parole — et tes réponses, Groco.</div>
+    <div class="footer"><span class="brand">CervHots</span><span>10 / 10</span></div>
+  </section>
+
+</div>
+</div>
+
+<div id="hud">
+  <button id="prev" aria-label="Planche précédente">‹</button>
+  <span id="counter">01 / 10</span>
+  <button id="next" aria-label="Planche suivante">›</button>
+  <span class="hint">← → pour naviguer</span>
+</div>
+
+<script>
+(function(){
+  const stage = document.getElementById('stage');
+  const slides = Array.from(document.querySelectorAll('.slide'));
+  const counter = document.getElementById('counter');
+  const total = slides.length;
+  let current = 0;
+
+  const stored = parseInt(localStorage.getItem('cervhots-slide') || '0', 10);
+  const fromHash = parseInt((location.hash || '').replace('#',''), 10);
+  if (!isNaN(fromHash) && fromHash >= 1 && fromHash <= total) current = fromHash - 1;
+  else if (!isNaN(stored) && stored >= 0 && stored < total) current = stored;
+
+  function fit(){
+    const s = Math.min(window.innerWidth / 1920, window.innerHeight / 1080);
+    stage.style.transform = 'scale(' + s + ')';
+  }
+
+  function show(i){
+    current = Math.max(0, Math.min(total - 1, i));
+    slides.forEach((sl, idx) => sl.classList.toggle('active', idx === current));
+    counter.textContent = String(current + 1).padStart(2,'0') + ' / ' + String(total).padStart(2,'0');
+    localStorage.setItem('cervhots-slide', String(current));
+    history.replaceState(null, '', '#' + (current + 1));
+  }
+
+  document.getElementById('prev').addEventListener('click', () => show(current - 1));
+  document.getElementById('next').addEventListener('click', () => show(current + 1));
+  window.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') { e.preventDefault(); show(current + 1); }
+    else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); show(current - 1); }
+    else if (e.key === 'Home') show(0);
+    else if (e.key === 'End') show(total - 1);
+  });
+  window.addEventListener('resize', fit);
+  fit();
+  show(current);
+})();
+</script>
+</body>
+</html>
