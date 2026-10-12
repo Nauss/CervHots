@@ -148,7 +148,7 @@ def scan_triggers(backend, wanted: dict):
     return found
 
 
-def snapshot(backend, mapping: dict) -> dict:
+def snapshot(backend, mapping: dict, debug: bool = False) -> dict:
     triggers = mapping["triggers"]
     found = scan_triggers(backend, triggers)
     state = {
@@ -157,22 +157,19 @@ def snapshot(backend, mapping: dict) -> dict:
             "t": dt.datetime.now().isoformat(timespec="seconds"),
         },
         "stats": {},
-        "triggers_bruts": {},
     }
+    if debug:
+        state["triggers_bruts"] = {}
     for name, spec in triggers.items():
         recs = found.get(name, [])
-        state["triggers_bruts"][name] = recs
+        if debug:
+            state["triggers_bruts"][name] = recs
         if not recs:
             continue
         vivants = [r for r in recs if r["vivant"]] or recs
         off = spec.get("offset_fiable", -28)
         vals = [r["compteur"] if off == -28 else r["miroir"] for r in vivants]
-        state["stats"][spec["field"]] = {
-            "valeur": max(vals),
-            "instances": len(recs),
-            "instances_vivantes": len(vivants),
-            "valide": spec.get("valide"),
-        }
+        state["stats"][spec["field"]] = max(vals)
     return state
 
 
@@ -184,6 +181,8 @@ def main():
     ap.add_argument("--map", type=Path,
                     default=Path(__file__).parent / "triggers_map.json")
     ap.add_argument("--out", type=Path, default=None)
+    ap.add_argument("--debug", action="store_true",
+                    help="ajoute la trace des instances (triggers_bruts)")
     args = ap.parse_args()
 
     mapping = json.loads(args.map.read_text(encoding="utf-8"))
@@ -194,17 +193,17 @@ def main():
     else:
         raise SystemExit("--dump HEAP BIN JSON ou --live")
 
-    state = snapshot(backend, mapping)
+    state = snapshot(backend, mapping, debug=args.debug)
     text = json.dumps(state, ensure_ascii=False, indent=2)
     if args.out:
         args.out.write_text(text, encoding="utf-8")
         print(f"écrit : {args.out.resolve()}")
     print(f"source : {state['meta']['source']}  ({state['meta']['t']})")
-    for field, info in state["stats"].items():
-        print(f"  {field:24s} = {info['valeur']:<10} [{info['instances']} instance(s)]")
-    missing = [n for n in mapping["triggers"] if n not in state["triggers_bruts"]
+    for field, value in state["stats"].items():
+        print(f"  {field:24s} = {value}")
+    missing = [n for n in mapping["triggers"] if n not in state.get("triggers_bruts", {})
                or not state["triggers_bruts"][n]]
-    if missing:
+    if args.debug and missing:
         print("triggers introuvables :", ", ".join(missing))
 
 
