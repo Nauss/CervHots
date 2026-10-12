@@ -36,21 +36,21 @@
         {"when": "fin de malédiction", "contestable_after_s": [150, 190], "detail": "70 s de malédiction + 50-90 s + 30 s"},
         {"when": "début de malédiction", "contestable_after_s": [220, 260], "detail": "vérifié sur replay : curse start → cap suivant à 238 s"}
       ],
-      "channel_s": 5,
-      "notes": ["Malédiction = fenêtre de push gratuite, pas de teamfight : prendre structures et XP.", "Le tribut est aléatoire : préparer la moitié de carte concernée à l'avance."]
+      "channel_s": 6,
+      "notes": ["Malédiction = fenêtre de destruction gratuite, pas de teamfight : prendre structures et XP.", "Le tribut est aléatoire : préparer la moitié de carte concernée à l'avance.", "Channel du tribut : 6 s, interrompu par dégâts ou mouvement (wiki + icy-veins, revu le 12/10/2026)."]
     },
     "Garden of Terror": {
       "slug": "garden-of-terror",
       "aliases_fr": ["Les jardins de terreur"],
-      "objective": "Nuit : collecter 100 graines (3 par monstre) = Terreur de Jardin pour chaque équipe",
+      "objective": "3 graines (1 active à la fois, channel 6 s) = 3 Terrors de Jardin, 1 par lane, qui désactivent les structures",
       "announcement_s": 120,
       "first_contestable_s": 150,
       "next_after": [
         {"when": "collecte des graines terminée", "contestable_after_s": [50, 80], "detail": "20-50 s + 30 s d'annonce"},
         {"when": "mort des Terrors", "contestable_after_s": [90, 120], "detail": "+40 s sur le spawn aléatoire 20-50 s"}
       ],
-      "channel_s": null,
-      "notes": ["Les graines tombent des camps de nuit comme des monstres neutres : le split y est très rentable."]
+      "channel_s": 6,
+      "notes": ["Version actuelle (post-rework) : 6 camps de Shamblers, la graine active alterne haut/bas ; clear les Shamblers avant de channeler (6 s).", "Mercenaires désactivés pendant l'objectif (wiki).", "L'ancienne version (100 graines, Terreur pilotable) est obsolète — vérifiée le 12/10/2026 (wiki + icy-veins)."]
     },
     "Dragon Shire": {
       "slug": "dragon-shire",
@@ -109,8 +109,8 @@
       "next_after": [
         {"when": "capture d'un autel", "contestable_after_s": [110, 110], "detail": "80 s de repos + 30 s d'annonce"}
       ],
-      "channel_s": 5,
-      "notes": ["À 12:00 : la tour bas-centre s'améliore et le tunnel s'ouvre (quand aucun autel n'est actif).", "Impossible de finir sur le Cœur sans les tours : contrôler les autels, pas les kills."]
+      "channel_s": 6,
+      "notes": ["À 12:00 : la tour bas-centre s'améliore et le tunnel s'ouvre (quand aucun autel n'est actif).", "Impossible de finir sur le Cœur sans les tours : contrôler les autels, pas les kills.", "Channel de l'autel : 6 s (wiki + icy-veins, revu le 12/10/2026 ; la source initiale disait 5 s)."]
     },
     "Battlefield of Eternity": {
       "slug": "battlefield-of-eternity",

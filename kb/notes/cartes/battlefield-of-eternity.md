@@ -1,4 +1,4 @@
-> Fiche rédigée par LLM le 12/10/2026 — **à relire** (couche jugement).
+> Fiche rédigée par LLM le 12/10/2026 — **relecture agent le 12/10/2026 : vérifiée** (sources : heroesofthestorm.fandom.com, icy-veins.com).
 > Les timings chiffrés vivent dans `kb/data/map_timings.json`, pas ici.
 
 # Les champs de l'éternité — Battlefield of Eternity
