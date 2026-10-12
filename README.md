@@ -20,6 +20,10 @@ Chaque brique a son propre projet, ses propres dépendances.
 - `etudes/` — les petites études techniques, une par sous-répertoire.
   En cours : `etudes/rea/` — utiliser REA (reverse engineering) pour accéder
   aux infos de jeu en direct plutôt qu'aux seuls pixels.
+  `etudes/api/` — accès à l'API de Groco (gateway compatible OpenAI).
+- `grocoapi/` — client minimal (zéro dépendance) de l'API de Groco : config
+  centralisée dans `.env` (racine, jamais versionné), chat, comptes, jobs
+  async. Test : `python grocoapi/smoke.py`.
 - `hotstate/` — **la couche stats** : tout ce qui sort de HotS (niveaux, talents,
   morts, XP, objectifs, positions) normalisé pour l'agent de décision.
   Extracteur de replays validé (vérité terrain) ; lecteur live **validé
