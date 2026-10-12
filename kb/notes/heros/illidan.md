@@ -1,4 +1,4 @@
-> Fiche rédigée par LLM le 12/10/2026 — **à relire** (couche jugement).
+> Fiche rédigée par LLM le 12/10/2026 — **relecture agent le 12/10/2026 : corrigée (1 corrections)** (sources : icy-veins.com, us.forums.blizzard.com).
 > Les faits chiffrés (talents, CD, descriptions) sont dans `kb/data/kb.db`,
 > pas ici. Source des jugements : méta HotS connue (guides, compétitif).
 
@@ -8,4 +8,4 @@
 **Menaces** : blinds (Johanna, Cassia, Li Li, Artanis — ses autos sont TOUT) ; Arthas (slow) ; Uther (stun) ; toute compo qui garde son peel pour lui.
 **À exploiter** : les compo sans blind ni hard CC ; les backlines isolées (Ana, Li-Ming, Chromie) ; les maps à camps (il les prend sans coût).
 **Pièges** : sans support il fond (c'est un hypercarry, pas un solo) ; The Hunt sur une cible protégée = suicide à distance.
-**Synergies** : Abathur (hat = Illidan immortel), Uther (Divine Shield), Tassadar (shields), Auriel (dégâts = heal), Brightwing (Polymorph sur ses menaces).
+**Synergies** : Abathur (hat = Illidan immortel), Uther (Divine Shield), Medivh (protection/portail), Auriel (dégâts = heal), Brightwing (Polymorph sur ses menaces).
