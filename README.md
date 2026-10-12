@@ -32,8 +32,14 @@ Chaque brique a son propre projet, ses propres dépendances.
   hors-ligne** (`reader.py`, 9/9 valeurs exactes vs replay) qui lit les
   triggers de jeu en mémoire vive. La vision n'est plus nécessaire : les
   infos viennent de la mémoire, en valeurs exactes.
+- `kb/` — **la couche savoir** : ce qui interprète l'état de jeu (cartes,
+  timings, talents, synergies, counters). Base SQLite de faits (gamedata
+  gratuite, commit épinglé) + 106 fiches curatées (16 cartes + 90 héros,
+  rédaction LLM, **à relire**). `briefing.py` compile le briefing court du
+  coach (3-4 points) ; timings validés sur 76 replays. Étude : `etudes/kb/`.
 
 ## État
 
-Étude de faisabilité validée (oct. 2026). Prochaine étape : le POC parole
-(bot Mumble + TTS).
+Étude de faisabilité validée (oct. 2026). POC parole (bot Mumble + TTS) à
+venir. Couches stats (`hotstate/`) et savoir (`kb/`) en place ; reste la
+couche stats empiriques (v3, agrégée depuis nos replays) et le cerveau.

@@ -1,0 +1,120 @@
+{
+ "La baie de Cœur-Noir": {
+  "JungleCampCapture": 156,
+  "TownStructureDeath": 36,
+  "GhostShipCaptured": 33,
+  "LootWheelUsed": 5,
+  "LootVoiceLineUsed": 2
+ },
+ "La cité d’argent": {
+  "JungleCampCapture": 8,
+  "TownStructureDeath": 2
+ },
+ "La fonderie Volskaya": {
+  "JungleCampCapture": 42,
+  "TownStructureDeath": 24,
+  "VolskayaCapturePointSpawned": 14,
+  "LootWheelUsed": 13,
+  "VolskayaCapturePointComplete": 13,
+  "LootVoiceLineUsed": 2,
+  "EndOfGameRegenMasterStacks": 1
+ },
+ "La mine hantée": {
+  "JungleCampCapture": 73,
+  "HauntedMinesGolemsSpawned": 32,
+  "TownStructureDeath": 24,
+  "GolemLanes": 5,
+  "LootWheelUsed": 1,
+  "LootVoiceLineUsed": 1
+ },
+ "La passe d’Alterac": {
+  "JungleCampCapture": 41,
+  "TownStructureDeath": 40,
+  "LootWheelUsed": 7,
+  "LootVoiceLineUsed": 2,
+  "EndOfGameRegenMasterStacks": 1
+ },
+ "La tombe de la reine araignée": {
+  "JungleCampCapture": 52,
+  "TownStructureDeath": 40,
+  "SoulEatersSpawned": 30,
+  "LootWheelUsed": 2
+ },
+ "Le comté du dragon": {
+  "JungleCampCapture": 105,
+  "TownStructureDeath": 54,
+  "DragonKnightActivated": 34,
+  "LootWheelUsed": 5
+ },
+ "Le laboratoire de Braxis": {
+  "JungleCampCapture": 38,
+  "TownStructureDeath": 16,
+  "LootWheelUsed": 14,
+  "BraxisHoldoutMapEventComplete": 12,
+  "LootVoiceLineUsed": 2
+ },
+ "Le temple céleste": {
+  "SkyTempleShotsFired": 1691,
+  "SkyTempleCaptured": 147,
+  "JungleCampCapture": 64,
+  "SkyTempleActivated": 39,
+  "TownStructureDeath": 35,
+  "LootWheelUsed": 4,
+  "LootVoiceLineUsed": 1,
+  "EndOfGameRegenMasterStacks": 1
+ },
+ "Le temple d’Hanamura": {
+  "JungleCampCapture": 90,
+  "TownStructureDeath": 23,
+  "LootWheelUsed": 1,
+  "LootVoiceLineUsed": 1
+ },
+ "Le val maudit": {
+  "JungleCampCapture": 111,
+  "TributeCollected": 59,
+  "TownStructureDeath": 52,
+  "RavenCurseActivated": 16,
+  "LootWheelUsed": 8
+ },
+ "Les champs de l’éternité": {
+  "JungleCampCapture": 57,
+  "TownStructureDeath": 29,
+  "Boss Duel Started": 25,
+  "Immortal Defeated": 23,
+  "LootWheelUsed": 10,
+  "LootVoiceLineUsed": 1,
+  "EndOfGameRegenMasterStacks": 1
+ },
+ "Les jardins de terreur": {
+  "JungleCampCapture": 76,
+  "TownStructureDeath": 23,
+  "LootWheelUsed": 11,
+  "LootVoiceLineUsed": 2
+ },
+ "Les sanctuaires infernaux": {
+  "JungleCampCapture": 71,
+  "TownStructureDeath": 28,
+  "LootWheelUsed": 22,
+  "Infernal Shrine Captured": 17,
+  "Punisher Killed": 16,
+  "LootVoiceLineUsed": 1
+ },
+ "Les tours du destin": {
+  "Altar Captured": 24,
+  "JungleCampCapture": 17,
+  "TownStructureDeath": 14,
+  "Town Captured": 14,
+  "Six Town Event Start": 1,
+  "Six Town Event End": 1
+ },
+ "Menace nucléaire": {
+  "JungleCampCapture": 94,
+  "WarheadJunctionNukeCollected": 74,
+  "WarheadJunctionNukeFired": 70,
+  "TownStructureDeath": 44,
+  "WarheadJunctionNukesSpawned": 33,
+  "WarheadJunctionNukeDropped": 14,
+  "LootWheelUsed": 8,
+  "LootVoiceLineUsed": 3
+ }
+}

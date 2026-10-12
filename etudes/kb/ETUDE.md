@@ -1,6 +1,6 @@
 # Étude — base de connaissances du coach (cartes, héros, builds, synergies, counters)
 
-**Date :** 12/10/2026 · **Statut :** étude close, architecture retenue · aucune implémentation encore
+**Date :** 12/10/2026 · **Statut :** étude close, architecture retenue, **implémentée** (livrable `kb/`) — décisions du proprio actées §8
 
 Le coach a déjà (presque) l'**état du jeu** (`hotstate/`, contrat
 `game_state.schema.json`). Cette étude pose la question de l'autre moitié :
@@ -209,29 +209,35 @@ faits, il ne les fabrique pas.
 | Stats ≠ réalité de partie (le « counter » théorique) | Moyenne | les stats pondèrent, elles ne dictent pas ; le briefing présente matchups comme tendances |
 | Traduction EN→FR des sources | Faible | fiches rédigées en français directement, sources citées en anglais |
 
-## 8. Questions à trancher (décisions de données — au proprio)
+## 8. Décisions (tranchées par le proprio, 12/10/2026)
 
-1. **Couche stats** : abonnement HeroesProfile (5 $/mo minimum pour des
-   matchups exploitables) contre gratuit strict (métadonnées `/openApi/` +
-   stats maison sur nos replays, matures après quelques centaines de parties) ?
-2. **Périmètre des fiches** : toutes les maps (~16) et tous les héros (~90),
-   ou prioriser les maps du groupe et les 20 héros les plus joués en premier ?
-3. **Briefing** : version maximale (tout le savoir de la carte + des 10 héros)
-   ou minimaliste (3–4 points actionnables par partie) ?
-4. **Approbation des fiches** : rédaction assistée par LLM avec relecture du
-   proprio, ou écriture directe du proprio ?
+1. **Couche stats : gratuit strict.** Pas d'abonnement HeroesProfile. Les
+   métadonnées gratuites (`/openApi/`) ne couvrant pas les matchups, la couche
+   stats sera **maison**, agrégée depuis nos replays (`hotstate/extract.py`) —
+   cf. roadmap v3. La couche fait (gamedata, timings) reste totalement gratuite.
+2. **Périmètre complet** : les 16 cartes et les 90 héros, dès le départ.
+3. **Briefing court** : 3-4 points actionnables par partie, jamais plus.
+4. **Fiches : rédaction LLM + relecture du proprio.** Les fiches sortent
+   marquées « à relire » ; la relecture est une étape du flux, pas une option.
 
-## 9. Roadmap
+## 9. Roadmap — état
 
-- **KB v0 (½–1 j)** : `map_timings` + fiches de carte (les maps du groupe),
-  briefing compilé à la main depuis `battlelobby` → le coach connaît déjà les
-  timings, gros gain immédiat.
-- **KB v1 (1–2 j)** : `kb.db` gamedata (talents/cartes par build) +
-  `briefing.py` automatique + calculs déterministes de timings.
-- **KB v2 (2–3 j)** : fiches héros/compo (synergies, counters) + canal de
-  requêtes typées (tools ou repli JSON) + garde-fous de provenance.
-- **KB v3** : couche stats (HeroesProfile si budget, sinon agrégation de nos
-  replays) + validation continue des timings.
+- **KB v0 — LIVRÉ** : `map_timings.json` (16 cartes) + fiches de carte.
+- **KB v1 — LIVRÉ** : `kb.db` gamedata (90 héros, ~1 900 talents, commit
+  épinglé), `briefing.py` (compilation + jalon déterministe), `refresh.py`.
+- **KB v2 — LIVRÉ** : 90 fiches héros (synergies, counters, pièges),
+  détection de duos dans la compo, garde-fous de provenance. Reste : le canal
+  de requêtes typées en cours de partie (dépend du support `tools` de la
+  gateway Groco — à vérifier, repli JSON prévu).
+- **KB v3 — À FAIRE** : couche stats maison (winrates, matchups agrégés depuis
+  nos replays, avec seuils `n`), rafraîchissement automatique à chaque build.
+
+**Validation (12/10/2026, `kb/tools/validate_timings.py`) :** table de timings
+confrontée à **76 replays du compte** — 12 cartes contrôlées, aucun 1er
+objectif prématuré ; un ajustement réel sorti des replays (Cursed Hollow :
+cap→cap dès 63 s, la source annonce 80-120 s) ; 3 cartes sans événement
+d'objectif dans le flux stat (Hanamura, Jardins, Alterac) non contrôlables
+par ce biais.
 
 ## Sources clés
 

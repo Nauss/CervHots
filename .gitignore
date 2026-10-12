@@ -34,6 +34,10 @@ tmp/
 *.tmp
 *.bak
 
+# --- kb : données régénérées ---
+kb/data/cache/
+kb/data/kb.db
+
 # --- Captures / rendus temporaires ---
 captures/
 screenshots/
