@@ -21,6 +21,8 @@ Chaque brique a son propre projet, ses propres dépendances.
   En cours : `etudes/rea/` — utiliser REA (reverse engineering) pour accéder
   aux infos de jeu en direct plutôt qu'aux seuls pixels.
   `etudes/api/` — accès à l'API de Groco (gateway compatible OpenAI).
+  `etudes/kb/` — base de connaissances du coach (cartes, timings, builds,
+  synergies, counters) : architecture retenue, sources de données.
 - `grocoapi/` — client minimal (zéro dépendance) de l'API de Groco : config
   centralisée dans `.env` (racine, jamais versionné), chat, comptes, jobs
   async. Test : `python grocoapi/smoke.py`.
