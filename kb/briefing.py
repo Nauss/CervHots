@@ -80,7 +80,12 @@ def resolve_hero(raw: str, con: sqlite3.Connection) -> str:
     row = con.execute("SELECT slug FROM heroes WHERE lower(name)=?", (raw.strip().lower(),)).fetchone()
     if row:
         return row[0]
-    sys.exit(f"héros inconnu : {raw!r} (slugs = kb.db, table heroes)")
+    # correspondance partielle unique (« morales » → ltmorales, « hammer » → sgthammer)
+    hits = [r[0] for r in con.execute("SELECT slug, name FROM heroes")
+            if n in r[0] or n in norm(r[1])]
+    if len(hits) == 1:
+        return hits[0]
+    sys.exit(f"héros inconnu ou ambigu : {raw!r} → {hits or 'aucun'} (slugs = kb.db, table heroes)")
 
 
 def hero_title(slug: str, con: sqlite3.Connection) -> str:
