@@ -95,6 +95,7 @@ class MumbleBot:
         self.model, self.style = model, style
         self.mumble: Mumble | None = None
         self._last_voice = 0.0  # dernier instant où un autre a parlé
+        self._lost = False      # le serveur a coupé la connexion
 
     # ---- connexion ----
     def connect(self, timeout: float = 20.0, attempts: int = 3) -> "MumbleBot":
@@ -108,6 +109,7 @@ class MumbleBot:
                                  password=self.password, enable_audio=True,
                                  force_tcp_only=True)
             self.mumble.callbacks.sound_received.set_handler(self._on_sound)
+            self.mumble.callbacks.disconnected.set_handler(self._on_disconnect)
             self.mumble.start()
             ok = self.mumble.wait_until_connected(timeout=timeout)
             if ok and self.mumble.users.myself is not None:
@@ -131,6 +133,11 @@ class MumbleBot:
         if user is not self.mumble.users.myself:
             self._last_voice = time.monotonic()
 
+    def _on_disconnect(self) -> None:
+        # pymumble meurt silencieusement sur toute coupure socket (socket.error
+        # avalé dans sa boucle) : on le signale pour ne pas attendre pour rien.
+        self._lost = True
+
     # ---- parole ----
     def say(self, text: str, *, model: str | None = None,
             style: str | None = None, speed: float | None = None,
@@ -145,10 +152,26 @@ class MumbleBot:
                             style=style or self.style, speed=speed)
         return self.mumble.send_audio.add_sound(speech.pcm), speech
 
-    def say_and_wait(self, text: str, **kw) -> object:
-        """Synthétise, diffuse et attend la fin réelle de la diffusion."""
+    def say_and_wait(self, text: str, margin: float = 5.0, **kw) -> object:
+        """Synthétise, diffuse et attend la fin réelle de la diffusion.
+
+        L'attente est bornée (durée de parole + ``margin``) et suit l'état de
+        la connexion : pymumble peut mourir silencieusement, et son événement
+        « buffer vide » ne vient alors jamais.
+        """
         event, speech = self.say(text, **kw)
-        event.wait()
+        deadline = time.monotonic() + speech.duration_s + margin
+        while not event.is_set():
+            if self._lost or self.mumble is None or not self.mumble.is_alive():
+                raise RuntimeError(
+                    "connexion Mumble coupée pendant la diffusion "
+                    "(parole potentiellement incomplète)")
+            if time.monotonic() >= deadline:
+                raise RuntimeError(
+                    f"diffusion bloquée après {speech.duration_s + margin:.0f} s "
+                    f"(buffer non envoyé : "
+                    f"{self.mumble.send_audio.get_buffer_size():.1f} s)")
+            event.wait(0.2)
         return speech
 
     def wait_for_quiet(self, gap: float = 0.6, timeout: float = 15.0) -> bool:
@@ -199,19 +222,27 @@ def main() -> int:
     bot = MumbleBot(args.host, args.port, args.user, args.password,
                     args.channel, model=args.model, style=args.style)
     print(f"connexion {args.host}:{args.port} en {args.user!r}…")
-    bot.connect()
-    print("connecté." + (f" canal : {args.channel!r}" if args.channel else ""))
+    try:
+        bot.connect()
+        print("connecté." + (f" canal : {args.channel!r}" if args.channel else ""))
 
-    if args.wait_quiet:
-        print("respect des tours de parole…")
-        bot.wait_for_quiet()
+        if args.wait_quiet:
+            print("respect des tours de parole…")
+            bot.wait_for_quiet()
 
-    speech = bot.say_and_wait(text, speed=args.speed)
-    print(f"diffusé : {speech.describe()}")
+        speech = bot.say_and_wait(text, speed=args.speed)
+        print(f"diffusé : {speech.describe()}")
 
-    if args.linger > 0:
-        time.sleep(args.linger)
-    bot.disconnect()
+        if args.linger > 0:
+            time.sleep(args.linger)
+    except KeyboardInterrupt:
+        print("\ninterrompu — déconnexion propre.")
+        return 130
+    except RuntimeError as e:
+        print(f"erreur : {e}", file=sys.stderr)
+        return 1
+    finally:
+        bot.disconnect()
     return 0
 
 

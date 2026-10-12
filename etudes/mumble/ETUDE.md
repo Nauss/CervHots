@@ -68,9 +68,15 @@ Recherche dans l'ordre : `OPUS_LIB` (env) → `mumblebot/lib/opus.dll` →
 - murmur génère son certificat **après** le bind : les clients qui arrivent
   dans cette fenêtre meurent en `ConnectionRejectedError` → laisser 3 s de
   sursis + retentatives dans `MumbleBot.connect()` ;
-- pymumble **libère son verrou « prêt » même sur échec de connexion** —
+- pymumble **libère son verrou « prêt » même sur échec de connexion** :
   `wait_until_connected()` renvoie alors `True` frauduleusement : vérifier
   `users.myself` (posé par ServerSync) pour valider la session.
+- pymumble **meurt silencieusement sur toute coupure socket** (les
+  `socket.error` sont avalés dans sa boucle, callback `disconnected` seul
+  témoin) : ne jamais attendre son événement « buffer vide » sans borne.
+  `say_and_wait()` attend au plus durée de parole + 5 s, suit le callback
+  de déconnexion et lève une erreur explicite (vérifié en coupant le murmur
+  en pleine diffusion : erreur claire, sortie 1, aucun blocage).
 
 ## 6. Architecture livrée
 

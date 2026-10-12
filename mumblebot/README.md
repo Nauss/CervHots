@@ -63,3 +63,8 @@ serveur (`127.0.0.1:64738` pour le conteneur de test) avec un client Mumble.
 - **Connexion** : pymumble libère son « prêt » même quand la connexion
   échoue — `MumbleBot.connect()` vérifie la session réelle (`users.myself`)
   et retente (murmur refuse les clients pendant sa génération de certificat).
+- **Coupures silencieuses** : la boucle de pymumble avale les `socket.error`
+  et meurt sans bruit — son événement « buffer vide » ne vient alors jamais.
+  `say_and_wait()` est borné (durée de parole + 5 s), surveille l'état de la
+  connexion et lève une erreur claire (jamais d'attente infinie) ; le
+  Ctrl+C de la CLI déconnecte proprement.
