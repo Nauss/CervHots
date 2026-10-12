@@ -23,6 +23,7 @@ Chaque brique a son propre projet, ses propres dépendances.
   `etudes/api/` — accès à l'API de Groco (gateway compatible OpenAI).
   `etudes/kb/` — base de connaissances du coach (cartes, timings, builds,
   synergies, counters) : architecture retenue, sources de données.
+  `etudes/tts/` — synthèse vocale : choix des moteurs, contrat audio Mumble.
 - `grocoapi/` — client minimal (zéro dépendance) de l'API de Groco : config
   centralisée dans `.env` (racine, jamais versionné), chat, comptes, jobs
   async. Test : `python grocoapi/smoke.py`.
@@ -40,9 +41,13 @@ Chaque brique a son propre projet, ses propres dépendances.
   **Relecture web effectuée le 12/10/2026** (agent délégué) : 106 fiches
   vérifiées contre wiki/icy-veins/etc., 61 corrigées, 44 OK, 1 incertaine —
   rapports sourcés dans `kb/notes/_relecture/`.
+- `tts/` — **la voix** : phrase du coach + modèle + ton → PCM s16le 48 kHz
+  mono prêt pour Mumble. Deux moteurs locaux gratuits derrière une seule API :
+  Kokoro (défaut, qualité) et Piper (latence), presets de ton, CLI et smoke
+  test. Étude : `etudes/tts/`.
 
 ## État
 
-Étude de faisabilité validée (oct. 2026). POC parole (bot Mumble + TTS) à
-venir. Couches stats (`hotstate/`) et savoir (`kb/`) en place ; reste la
-couche stats empiriques (v3, agrégée depuis nos replays) et le cerveau.
+Étude de faisabilité validée (oct. 2026). Couches stats (`hotstate/`), savoir
+(`kb/`) et voix (`tts/`, validée) en place ; reste la couche stats empiriques
+(v3, agrégée depuis nos replays), le cerveau et le POC bot Mumble.

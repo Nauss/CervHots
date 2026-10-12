@@ -38,6 +38,9 @@ tmp/
 kb/data/cache/
 kb/data/kb.db
 
+# --- tts : modèles ONNX téléchargés ---
+tts/models/
+
 # --- Captures / rendus temporaires ---
 captures/
 screenshots/
