@@ -16,7 +16,7 @@ import urllib.request
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from tts.engines import MODELS_DIR, TtsError, download_piper_voice  # noqa: E402
+from tts.engines import MODELS_DIR, TtsError, download_piper_voice
 
 KOKORO_RELEASE = ("https://github.com/thewh1teagle/kokoro-onnx/releases/"
                   "download/model-files-v1.1")

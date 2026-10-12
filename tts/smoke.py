@@ -19,8 +19,8 @@ from pathlib import Path
 import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from tts import Speech, TtsError, synthesize  # noqa: E402
-from tts.resample import resample  # noqa: E402
+from tts import Speech, TtsError, synthesize
+from tts.resample import resample
 
 OUT_DIR = Path(__file__).resolve().parent / "out"
 PHRASE = "Ils sont trois à manquer à l'appel. Devine lesquels."

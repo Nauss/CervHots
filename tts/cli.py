@@ -15,8 +15,15 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from tts import (DEFAULT_MODEL, DEFAULT_VOICES, MODELS, STYLES, TtsError,  # noqa: E402
-                 list_voices, synthesize)
+from tts import (
+    DEFAULT_MODEL,
+    DEFAULT_VOICES,
+    MODELS,
+    STYLES,
+    TtsError,
+    list_voices,
+    synthesize,
+)
 
 OUT_DIR = Path(__file__).resolve().parent / "out"
 

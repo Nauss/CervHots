@@ -11,7 +11,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from grocoapi import GrocoClient, GrocoError  # noqa: E402
+from grocoapi import GrocoClient, GrocoError
 
 
 def main():

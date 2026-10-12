@@ -22,8 +22,8 @@ from pathlib import Path
 import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from mumblebot import MumbleBot, ensure_opus  # noqa: E402
-from mumblebot.bot import DEMO_PHRASE, _root_env  # noqa: E402
+from mumblebot import MumbleBot, ensure_opus
+from mumblebot.bot import DEMO_PHRASE, _root_env
 
 FAILS: list[str] = []
 TEST_IMAGE = "mumblevoip/mumble-server"
@@ -53,7 +53,7 @@ def ensure_server(host: str, port: int) -> None:
     listed = subprocess.run(
         ["docker", "ps", "-a", "--filter", f"name={TEST_CONTAINER}",
          "--format", "{{.Names}}"],
-        capture_output=True, text=True)
+        capture_output=True, text=True, check=False)
     if TEST_CONTAINER in listed.stdout:
         subprocess.run(["docker", "start", TEST_CONTAINER], check=True,
                        capture_output=True)

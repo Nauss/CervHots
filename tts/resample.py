@@ -27,7 +27,7 @@ def resample(x: np.ndarray, sr_from: int, sr_to: int,
         return x.copy()
 
     ratio = sr_from / sr_to
-    n_out = max(1, int(round(x.size * sr_to / sr_from)))
+    n_out = max(1, round(x.size * sr_to / sr_from))
     offsets = np.arange(-taps + 1, taps + 1)            # 2*taps taps
     win = np.kaiser(2 * taps, beta).astype(np.float32)  # fenêtre fixe par tap
     # coupure relative à Nyquist d'entrée : anti-aliasing quand on descend

@@ -63,8 +63,7 @@ def ensure_opus() -> Path:
 
 
 ensure_opus()
-from mumble import Mumble  # noqa: E402  (après ensure_opus, cf. ci-dessus)
-
+from mumble import Mumble
 
 DEMO_PHRASE = ("Un, deux, trois. Test de la voix du coach : "
                "si tu m'entends, la chaîne TTS vers Mumble fonctionne.")
@@ -98,7 +97,7 @@ class MumbleBot:
         self._lost = False      # le serveur a coupé la connexion
 
     # ---- connexion ----
-    def connect(self, timeout: float = 20.0, attempts: int = 3) -> "MumbleBot":
+    def connect(self, timeout: float = 20.0, attempts: int = 3) -> MumbleBot:
         # pymumble libère son « prêt » même sur échec de connexion : on vérifie
         # la vraie session serveur (users.myself posé par ServerSync), et on
         # retente — murmur accepte mal les clients pendant sa génération de
