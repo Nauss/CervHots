@@ -59,14 +59,16 @@ L'API étant compatible OpenAI, on *pourrait* l'attaquer avec le SDK officiel
 jour un composant veut le SDK officiel, il peut brancher `base_url` dessus sans
 nous.
 
-## 3. Deux limites découvertes — à remonter à Groco
+## 3. Limites découvertes — état (mis à jour 12/10/2026)
 
 1. **Pas de vision dans le schéma** : `messages[].content` est typé `string`,
-   `additionalProperties: false`. Les images (`content` en liste de parts
-   `image_url`) ne passent pas. Or le pipeline CervHots a besoin d'analyser des
-   captures (minimap, bandeau héros). Demande à Groco d'assouplir le schéma
-   (`content: string | list[part]`) — les modèles derrière (Claude, GPT) sont
-   multimodaux, c'est la gateway qui bride.
+   `additionalProperties: false`. **Sans objet pour l'instant** : la couche
+   stats passe par la lecture mémoire (triggers `gt_*`, voir
+   `etudes/rea/ETUDE.md` §13) — valeurs exactes, sans capture d'écran. Le
+   sujet ne reposerait que si l'on voulait des infos visuelles non couvertes
+   par la mémoire (positions/HP/ults instantanés) sans décoder les structures
+   `CUnitStatusHealth` / `CUnitPositionData` — or c'est la suite prévue de la
+   descente mémoire, prioritaire.
 2. **Aucun compte rattaché** : il faut que Groco connecte au moins un compte
    (login SSO ou import de session CLI) et active des modèles. Ensuite
    `GET /v1/models` affichera la sélection réelle.

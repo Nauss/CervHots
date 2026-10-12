@@ -28,7 +28,8 @@ Chaque brique a son propre projet, ses propres dépendances.
   morts, XP, objectifs, positions) normalisé pour l'agent de décision.
   Extracteur de replays validé (vérité terrain) ; lecteur live **validé
   hors-ligne** (`reader.py`, 9/9 valeurs exactes vs replay) qui lit les
-  triggers de jeu en mémoire vive ; la vision reste en secours.
+  triggers de jeu en mémoire vive. La vision n'est plus nécessaire : les
+  infos viennent de la mémoire, en valeurs exactes.
 
 ## État
 

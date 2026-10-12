@@ -49,7 +49,8 @@ python grocoapi/smoke.py            # health → me → models → accounts → 
 
 ## Limites connues (12/10/2026)
 
-- **Pas de vision** : `messages[].content` est typé `string` côté gateway —
-  les images ne passent pas (à demander à Groco).
+- **Pas de vision** : `messages[].content` est typé `string` côté gateway.
+  Sans objet pour l'instant : la couche stats passe par la lecture mémoire
+  (pas de captures d'écran) — voir `etudes/api/ETUDE.md` §3.
 - **Aucun compte LLM rattaché** à l'utilisateur tant que Groco n'a pas fait le
   login SSO : tout appel modèle renvoie 404 « Aucun compte LLM correspondant ».
