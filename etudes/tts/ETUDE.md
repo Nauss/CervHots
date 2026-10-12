@@ -65,8 +65,9 @@ mesurée < 0,01 % vs sinus analytique). L'enveloppe WAV est un confort
 d'écoute, pas le contrat.
 
 ⚠️ FAISABILITE §6 signalait une ambiguïté : l'exemple officiel pymumble pousse
-du s32le. À confirmer au POC bot Mumble ; le format est un paramètre du
-`Speech`, le changement ne touchera pas les moteurs.
+du s32le. **Tranché au POC bot Mumble** (`etudes/mumble/ETUDE.md` §3) :
+s16le 48 kHz mono, l'exemple s32le du dépôt pymumble est erroné. Le format
+reste un paramètre du `Speech`.
 
 ### 3.3 Options de ton
 
@@ -132,7 +133,7 @@ tours de parole et file « latest-wins ».
 | 12/10/2026 | Entrée = phrase du coach + modèle + options de ton ; sortie = audio directement passable à Mumble. |
 | 12/10/2026 | Gratuit strict, local : ni abonnement ni API payante (contrainte permanente du projet). |
 | 12/10/2026 | **Modèle par défaut = Piper** (`fr_FR-siwis-medium`) — acté après écoute comparative des échantillons : « Piper semble très bien ». Kokoro reste au registre pour la qualité. |
-| 12/10/2026 | Contrat audio s16le 48 kHz mono retenu ; ambiguïté s32le (exemple pymumble) à trancher au POC bot Mumble. |
+| 12/10/2026 | Contrat audio s16le 48 kHz mono retenu — confirmé au POC Mumble (l'exemple s32le de pymumble est erroné, cf. `etudes/mumble/ETUDE.md`). |
 
 ## Sources clés
 

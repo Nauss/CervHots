@@ -24,6 +24,7 @@ Chaque brique a son propre projet, ses propres dépendances.
   `etudes/kb/` — base de connaissances du coach (cartes, timings, builds,
   synergies, counters) : architecture retenue, sources de données.
   `etudes/tts/` — synthèse vocale : choix des moteurs, contrat audio Mumble.
+  `etudes/mumble/` — bot Mumble : client pymumble, format audio tranché, POC.
 - `grocoapi/` — client minimal (zéro dépendance) de l'API de Groco : config
   centralisée dans `.env` (racine, jamais versionné), chat, comptes, jobs
   async. Test : `python grocoapi/smoke.py`.
@@ -45,9 +46,14 @@ Chaque brique a son propre projet, ses propres dépendances.
   mono prêt pour Mumble. Deux moteurs locaux gratuits derrière une seule API :
   Piper (défaut, acté à l'écoute) et Kokoro (qualité), presets de ton, CLI et
   smoke test. Étude : `etudes/tts/`.
+- `mumblebot/` — **la diffusion** : bot pymumble (fork 2.0) qui consomme
+  `tts.Speech` et parle dans un canal Mumble, avec respect basique des tours
+  de parole. POC parole validé en conditions réelles (murmur 1.5.915).
+  Étude : `etudes/mumble/`.
 
 ## État
 
 Étude de faisabilité validée (oct. 2026). Couches stats (`hotstate/`), savoir
-(`kb/`) et voix (`tts/`, validée) en place ; reste la couche stats empiriques
-(v3, agrégée depuis nos replays), le cerveau et le POC bot Mumble.
+(`kb/`), voix (`tts/`, validée) et diffusion (`mumblebot/`, POC parole
+réussi) en place ; reste la couche stats empiriques (v3, agrégée depuis nos
+replays), le cerveau et l'orchestration temps réel (faisabilité §7).

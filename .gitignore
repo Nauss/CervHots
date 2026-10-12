@@ -41,6 +41,9 @@ kb/data/kb.db
 # --- tts : modèles ONNX téléchargés ---
 tts/models/
 
+# --- mumblebot : libopus locale ---
+mumblebot/lib/
+
 # --- Captures / rendus temporaires ---
 captures/
 screenshots/
