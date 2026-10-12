@@ -8,7 +8,8 @@ aucun appel réseau à la synthèse. Les modèles vivent dans ``tts/models/``
 (téléchargés par ``python tts/download_models.py``).
 
 Options :
-- ``model``        : "kokoro" (défaut, qualité) ou "piper" (latence) ;
+- ``model``        : "piper" (défaut, acté à l'écoute du proprio) ou
+                     "kokoro" (qualité) ;
 - ``voice``        : voix du modèle (kokoro : 54 voix, ex ``ff_siwis`` FR ;
                      piper : ``fr_FR-siwis-medium``, téléchargée à la demande) ;
 - ``style``        : preset de ton — "neutre", "calme", "urgent", "enjoue" ;
@@ -39,7 +40,9 @@ MODELS_DIR = Path(
 )
 
 MODELS = ("kokoro", "piper")
-DEFAULT_MODEL = "kokoro"
+# Défaut acté par le proprio après écoute comparative (12/10/2026) :
+# « Piper semble très bien » — rendu suffisant, latence supérieure.
+DEFAULT_MODEL = "piper"
 DEFAULT_VOICES = {"kokoro": "ff_siwis", "piper": "fr_FR-siwis-medium"}
 
 # Ton → prosodie. La couleur émotionnelle vient du texte du coach ; ici on ne

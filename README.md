@@ -43,8 +43,8 @@ Chaque brique a son propre projet, ses propres dépendances.
   rapports sourcés dans `kb/notes/_relecture/`.
 - `tts/` — **la voix** : phrase du coach + modèle + ton → PCM s16le 48 kHz
   mono prêt pour Mumble. Deux moteurs locaux gratuits derrière une seule API :
-  Kokoro (défaut, qualité) et Piper (latence), presets de ton, CLI et smoke
-  test. Étude : `etudes/tts/`.
+  Piper (défaut, acté à l'écoute) et Kokoro (qualité), presets de ton, CLI et
+  smoke test. Étude : `etudes/tts/`.
 
 ## État
 

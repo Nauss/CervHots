@@ -3,8 +3,9 @@
 **Verdict :** brique `tts/` livrée et validée. Entrée = phrase du coach +
 modèle + options de ton ; sortie = PCM s16le 48 kHz mono prêt pour
 `mumble.sound_output.add_sound()`. Deux moteurs locaux gratuits derrière une
-seule API : **Kokoro** (défaut, qualité) et **Piper** (latence). Smoke test
-vert : contrat audio vérifié, presets de ton fonctionnels, RTF 0,04–0,14.
+seule API : **Piper** (défaut, acté à l'écoute par le proprio) et **Kokoro**
+(qualité). Smoke test vert : contrat audio vérifié, presets de ton
+fonctionnels, RTF 0,04–0,14.
 
 ---
 
@@ -50,8 +51,10 @@ Comparatif mesuré sur cette machine (CPU, phrase de 50 caractères) :
 | Réglage expressivité | non | oui (`noise_scale`, `noise_w`) |
 
 Les deux sont largement dans le budget latence 5–12 s bout en bout
-(faisabilité §7). **Défaut : kokoro** (exigence de rendu soigné) — un flag
-`--model piper` bascule si la latence prime.
+(faisabilité §7). **Défaut : piper** — acté par le proprio le 12/10/2026
+après écoute comparative des échantillons (`tts/out/*.wav`) : « Piper semble
+très bien » — rendu jugé suffisant, latence supérieure. Kokoro reste
+disponible via `--model kokoro` si le rendu prime.
 
 ### 3.2 Contrat de sortie : PCM s16le 48 kHz mono
 
@@ -121,6 +124,15 @@ tts/
 La brique est prête à être consommée par le **POC parole** (faisabilité
 phase 0) : bot pymumble qui lit un texte fixe via ce TTS, puis respect des
 tours de parole et file « latest-wins ».
+
+## 7. Décisions du proprio (actées)
+
+| Date | Décision |
+|---|---|
+| 12/10/2026 | Entrée = phrase du coach + modèle + options de ton ; sortie = audio directement passable à Mumble. |
+| 12/10/2026 | Gratuit strict, local : ni abonnement ni API payante (contrainte permanente du projet). |
+| 12/10/2026 | **Modèle par défaut = Piper** (`fr_FR-siwis-medium`) — acté après écoute comparative des échantillons : « Piper semble très bien ». Kokoro reste au registre pour la qualité. |
+| 12/10/2026 | Contrat audio s16le 48 kHz mono retenu ; ambiguïté s32le (exemple pymumble) à trancher au POC bot Mumble. |
 
 ## Sources clés
 

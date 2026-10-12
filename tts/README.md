@@ -2,7 +2,9 @@
 
 Phrase du coach + modèle + ton → **parole audio prête pour Mumble**.
 Local et gratuit : deux moteurs ONNX exécutés par onnxruntime, aucun appel
-réseau à la synthèse. Étude et décisions : `etudes/tts/ETUDE.md`.
+réseau à la synthèse. **Défaut : Piper** (acté à l'écoute par le proprio,
+12/10/2026), Kokoro reste disponible pour la qualité. Étude et décisions :
+`etudes/tts/ETUDE.md`.
 
 ## Contrat de sortie
 
@@ -25,14 +27,14 @@ python tts/download_models.py        # ~415 Mo dans tts/models/
 from tts import synthesize
 
 sp = synthesize("Ils sont trois à manquer à l'appel. Devine lesquels.",
-                model="kokoro", style="urgent")
+                style="urgent")            # modèle par défaut : piper
 mumble.sound_output.add_sound(sp.pcm)     # prêt à diffuser
 sp.save_wav("tts/out/extrait.wav")        # confort d'écoute
 print(sp.describe())                      # modèle, durée, temps de synthèse
 ```
 
 ```bash
-python -m tts "phrase à prononcer" --model piper --style urgent --raw out.pcm
+python -m tts "phrase à prononcer" --style urgent --raw out.pcm   # piper par défaut
 python tts/cli.py --list-voices --model kokoro
 python tts/smoke.py                       # test de bout en bout
 ```
@@ -41,7 +43,7 @@ python tts/smoke.py                       # test de bout en bout
 
 | Option | Valeurs | Effet |
 |---|---|---|
-| `model` | `kokoro` (défaut) ou `piper` | moteur : qualité (Kokoro) ou latence (Piper) |
+| `model` | `piper` (défaut) ou `kokoro` | moteur : latence (Piper) ou qualité (Kokoro) — défaut Piper acté à l'écoute |
 | `voice` | kokoro : 54 voix (`ff_siwis` = FR, défaut) ; piper : `fr_FR-siwis-medium` (défaut), toute voix `xx_XX-nom-qualité` téléchargée à la demande | timbre |
 | `style` | `neutre` (défaut), `calme`, `urgent`, `enjoue` | preset de ton : débit, expressivité, pauses |
 | `speed` | 0.5 – 2.0 | vitesse (1.0 = normal) |

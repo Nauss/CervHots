@@ -3,8 +3,7 @@
 Usage court :
 
     from tts import synthesize
-    sp = synthesize("Ils sont trois à manquer à l'appel.",
-                    model="kokoro", style="urgent")
+    sp = synthesize("Ils sont trois à manquer à l'appel.", style="urgent")
     mumble.sound_output.add_sound(sp.pcm)   # PCM s16le 48 kHz mono
 
 CLI : ``python -m tts "phrase" --out out.wav``. Test : ``python tts/smoke.py``.
