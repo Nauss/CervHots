@@ -1,4 +1,4 @@
-> Fiche rédigée par LLM le 12/10/2026 — **à relire** (couche jugement).
+> Fiche rédigée par LLM le 12/10/2026 — **relecture agent le 12/10/2026 : vérifiée** (sources : heroesofthestorm.fandom.com, icy-veins.com).
 > Les faits chiffrés (talents, CD, descriptions) sont dans `kb/data/kb.db`,
 > pas ici. Source des jugements : méta HotS connue (guides, compétitif).
 

@@ -69,6 +69,17 @@ BRIEFING — Cursed Hollow · 4:00 de jeu
 - Les stats empiriques (winrates, matchups) viendront de **nos propres
   replays** (couche v3), pas d'une API payante.
 
+## Relecture
+
+Les 106 fiches ont été **relues et vérifiées sur internet le 12/10/2026**
+(agent délégué, sources : wiki, icy-veins, psionic-storm, heroesfire,
+tempostorm, liquipedia) : 61 fiches corrigées, 44 confirmées, 1 incertaine
+(rexxar — durée de respawn de Misha, chiffre retiré faute de source).
+Détail par affirmation : `notes/_relecture/2026-10-12-*.md`. Les en-têtes de
+fiches portent le verdict (`vérifiée` / `corrigée (N)` / `partiellement
+vérifiée`). Une relecture humaine ponctuelle reste utile sur les fiches
+stratégiques les plus jouées.
+
 ## Maintenance
 
 - Les fiches `notes/` s'éditent **directement** dans les `.md` après le

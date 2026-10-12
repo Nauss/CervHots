@@ -1,4 +1,4 @@
-> Fiche rédigée par LLM le 12/10/2026 — **à relire** (couche jugement).
+> Fiche rédigée par LLM le 12/10/2026 — **relecture agent le 12/10/2026 : corrigée (2 corrections)** (sources : heroesofthestorm.blizzard.com, heroesfire.com).
 > Les faits chiffrés (talents, CD, descriptions) sont dans `kb/data/kb.db`,
 > pas ici. Source des jugements : méta HotS connue (guides, compétitif).
 
@@ -6,6 +6,6 @@
 
 **Rôle** : hypercarry ranged — autos empilées (trait), vault, strafe / Rain of Vengeance.
 **Menaces** : dive rapide (Genji, Zeratul, Tracer, Valeera) ; blinds (ses autos) ; toute compo qui la focus en premier.
-**À exploiter** : les tanks et les teamfights longues (son trait monte sans limite) ; les compo qui la protègent ; les zones de choke (Rain).
+**À exploiter** : les tanks et les teamfights longues (son trait monte vite, 10 stacks max) ; les compo qui la protègent ; les zones de choke (Rain).
 **Pièges** : elle est le premier focus de la carte — le positionnement et l'escape (Vault) sont tout ; perdre ses stacks de trait = perdre ses dégâts.
-**Synergies** : Abathur (hat), Lt. Morales (Stim), Uther (DS), Auriel (Hope infinie), Tassadar (shields), Rehgar (Bloodlust).
+**Synergies** : Abathur (hat), Lt. Morales (Stim), Uther (DS), Auriel (Hope infinie), Medivh (boucliers), Rehgar (Bloodlust).

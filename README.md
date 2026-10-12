@@ -35,8 +35,11 @@ Chaque brique a son propre projet, ses propres dépendances.
 - `kb/` — **la couche savoir** : ce qui interprète l'état de jeu (cartes,
   timings, talents, synergies, counters). Base SQLite de faits (gamedata
   gratuite, commit épinglé) + 106 fiches curatées (16 cartes + 90 héros,
-  rédaction LLM, **à relire**). `briefing.py` compile le briefing court du
+  rédaction LLM puis relecture). `briefing.py` compile le briefing court du
   coach (3-4 points) ; timings validés sur 76 replays. Étude : `etudes/kb/`.
+  **Relecture web effectuée le 12/10/2026** (agent délégué) : 106 fiches
+  vérifiées contre wiki/icy-veins/etc., 61 corrigées, 44 OK, 1 incertaine —
+  rapports sourcés dans `kb/notes/_relecture/`.
 
 ## État
 
