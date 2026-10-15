@@ -39,7 +39,7 @@ def _load_env_file(path: Path = _ENV_FILE) -> dict:
         if not line or line.startswith("#") or "=" not in line:
             continue
         key, _, val = line.partition("=")
-        values[key.strip()] = val.strip()
+        values[key.strip()] = val.strip().strip('"').strip("'")
     return values
 
 
@@ -69,15 +69,26 @@ class GrocoClient:
         if data is not None:
             req.add_header("Content-Type", "application/json")
         try:
-            with urllib.request.urlopen(req, timeout=timeout or self.timeout) as r:
-                return json.loads(r.read().decode("utf-8") or "{}")
+            with urllib.request.urlopen(
+                    req, timeout=self.timeout if timeout is None else timeout) as r:
+                result = json.loads(r.read().decode("utf-8") or "{}")
+                if not isinstance(result, dict):
+                    raise GrocoError(0, "réponse API invalide : objet JSON attendu")
+                return result
         except urllib.error.HTTPError as e:
-            raw = e.read().decode("utf-8", "replace")
+            with e:
+                raw = e.read().decode("utf-8", "replace")
             try:
-                message = json.loads(raw).get("error", {}).get("message", raw)
+                payload = json.loads(raw)
+                error = payload.get("error", payload) if isinstance(payload, dict) else payload
+                message = error.get("message", raw) if isinstance(error, dict) else str(error)
             except json.JSONDecodeError:
                 message = raw
             raise GrocoError(e.code, message) from None
+        except (urllib.error.URLError, OSError) as e:
+            raise GrocoError(0, f"réseau indisponible ou délai dépassé : {e}") from None
+        except (json.JSONDecodeError, UnicodeDecodeError):
+            raise GrocoError(0, "réponse API invalide : JSON attendu") from None
 
     # ------------------------------------------------------------- info
 
@@ -133,7 +144,7 @@ class GrocoClient:
     # ------------------------------------------------------------- async
 
     def chat_async(self, messages: list[dict], **kw) -> dict:
-        """Lance un job async ; renvoie l'objet call (avec id) à poller."""
+        """Lance un job async ; renvoie l'enveloppe avec call_id à poller."""
         body = {"messages": messages, "stream": False, "async": True}
         body.update({k: v for k, v in kw.items() if v is not None})
         return self._request("POST", "/v1/chat/completions", body)
@@ -143,8 +154,9 @@ class GrocoClient:
         """Attend la fin d'un job async via /v1/calls/{id}."""
         deadline = time.monotonic() + timeout
         while time.monotonic() < deadline:
-            call = self._request("GET", f"/v1/calls/{call_id}")
-            if call.get("status") in ("done", "error", "failed", "completed"):
+            call = self._request("GET", f"/v1/calls/{call_id}",
+                                 timeout=max(0.001, deadline - time.monotonic()))
+            if call.get("status") in ("ok", "done", "error", "failed", "completed"):
                 return call
-            time.sleep(interval)
+            time.sleep(min(interval, max(0, deadline - time.monotonic())))
         raise GrocoError(0, f"job {call_id} toujours en cours après {timeout}s")

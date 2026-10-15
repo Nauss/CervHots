@@ -78,7 +78,7 @@ class ProcessBackend:
     def _find_pid(name):
         import subprocess
         out = subprocess.run(["tasklist", "/FI", f"IMAGENAME eq {name}"],
-                             capture_output=True).stdout.decode("latin-1")
+                             check=False, capture_output=True).stdout.decode("latin-1")
         m = re.search(rf"{re.escape(name)}\s+(\d+)", out)
         return int(m.group(1)) if m else None
 
@@ -166,7 +166,9 @@ def snapshot(backend, mapping: dict, debug: bool = False) -> dict:
             state["triggers_bruts"][name] = recs
         if not recs:
             continue
-        vivants = [r for r in recs if r["vivant"]] or recs
+        vivants = [r for r in recs if r["vivant"]]
+        if not vivants:
+            continue  # Une sentinelle de gabarit n'est jamais une observation de jeu.
         off = spec.get("offset_fiable", -28)
         vals = [r["compteur"] if off == -28 else r["miroir"] for r in vivants]
         state["stats"][spec["field"]] = max(vals)

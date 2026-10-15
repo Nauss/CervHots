@@ -2,6 +2,12 @@
 
 **Date :** 12/10/2026 · **Statut :** étude close, wrapper livré (`grocoapi/`)
 
+> **Mise à jour du 15/10/2026 :** l'accès est désormais provisionné : comptes et
+> modèles disponibles, chats synchrones et async réels réussis. Le blocage et les
+> variantes de token décrits ci-dessous sont historiques et ne s'appliquent pas
+> au nouveau token configuré. Branchement du coach et mesures :
+> `etudes/cerveau/ETUDE.md`, usage dans `cerveau/README.md`.
+
 ## 1. Ce qu'est l'API
 
 `https://api.ai.ranoc.org` — **« Proxified API » v0.2.0** (Groco), doc interactive

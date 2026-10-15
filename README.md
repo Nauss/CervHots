@@ -1,8 +1,7 @@
 # CervHots
 
-Le coach IA qui regarde une partie de Heroes of the Storm en cours et te parle
-dans Mumble : capture d'écran (minimap + bandeau des héros), analyse par IA,
-texte de coaching, TTS, diffusion vocale.
+Le coach IA de Heroes of the Storm : état de jeu (mémoire ou replay), savoir
+de la KB, décision via l'API Groco, TTS local et diffusion dans Mumble.
 
 ## Ce repo
 
@@ -50,10 +49,19 @@ Chaque brique a son propre projet, ses propres dépendances.
   `tts.Speech` et parle dans un canal Mumble, avec respect basique des tours
   de parole. POC parole validé en conditions réelles (murmur 1.5.915).
   Étude : `etudes/mumble/`.
+- `cerveau/` — **le cerveau et les liens entre les briques** : hotstate → KB →
+  Groco → décision courte → TTS → Mumble. Silence par défaut, validation JSON,
+  anti-répétition, cooldown et rejet des conseils périmés. Le parcours réel
+  replay → Groco → WAV est validé sans lecture sonore. Usage :
+  `python -m cerveau --check`, puis `python -m cerveau --state partie.hotstate.json --at 73.5`.
+  Détails et activations explicites du live/de la voix : `cerveau/README.md`.
+  Étude et mesures : `etudes/cerveau/ETUDE.md`.
 
 ## État
 
-Étude de faisabilité validée (oct. 2026). Couches stats (`hotstate/`), savoir
-(`kb/`), voix (`tts/`, validée) et diffusion (`mumblebot/`, POC parole
-réussi) en place ; reste la couche stats empiriques (v3, agrégée depuis nos
-replays), le cerveau et l'orchestration temps réel (faisabilité §7).
+Au 15/10/2026 : couches stats (`hotstate/`), savoir (`kb/`), voix (`tts/`) et
+diffusion (`mumblebot/`) reliées par `cerveau/`. L'API Groco est provisionnée et
+le parcours réel jusqu'au WAV est vérifié. La diffusion de ce nouveau parcours
+en partie reste à autoriser et valider ; le lecteur mémoire actuel ne fournit
+que des compteurs globaux, pas encore les informations tactiques détaillées
+des replays. La couche stats empiriques (v3) reste hors de ce branchement.
