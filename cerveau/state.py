@@ -20,7 +20,8 @@ def _native_heroes(raw, players, local, team):
             or any(sum(p["team"] == t for p in players) != 5 for t in (0, 1))):
         raise ValueError("composition native incomplète")
     roster = {p["id"]: p for p in players}
-    if any(roster[local["id"]].get(k) != local[k] for k in ("hero", "team")):
+    if (local["id"] not in roster
+            or any(roster[local["id"]].get(k) != local[k] for k in ("hero", "team"))):
         raise ValueError("identité locale native incohérente")
     observed, seen = [], set()
     for hero in heroes:
@@ -125,29 +126,31 @@ def snapshot(raw: dict, *, at: float | None = None, team: int | None = None,
             if (not _number(event.get("t")) or event["t"] > clock
                     or event.get("name", "").startswith("EndOfGame")):
                 continue
+            data = event.get("data", {})
+            if not isinstance(data, dict):
+                data = {}
             member = roster.get(event.get("player"))
             if member is not None:
                 if event.get("type") in ("spawn", "respawn", "death"):
                     member["alive"] = event["type"] != "death"
                 if event.get("name") == "LevelUp":
-                    level = event.get("data", {}).get("Level")
-                    if type(level) is int and level > 0:
+                    level = data.get("Level")
+                    if type(level) is int and 1 <= level <= 30:
                         member["level"] = level
             # Noms des joueurs, chat, score et résultat finaux ne partent pas vers le LLM.
             clean = {k: v for k, v in event.items()
                      if k in ("t", "type", "name", "hero", "team", "upgrade", "pos")}
             if member is not None:
                 clean["team"] = member["team"]
-            data = dict(event.get("data", {}))
-            fixed_team = data.pop("TeamID", None)
-            if fixed_team in (4096, 8192):
+            fixed_team = data.get("TeamID")
+            if type(fixed_team) is int and fixed_team in (4096, 8192):
                 clean["team"] = fixed_team // 4096 - 1
-            for key in list(data):
-                if (key in ("PlayerID", "KillingPlayer", "GameTime", "PreviousGameTime",
-                            "PositionX", "PositionY") or key.endswith("XP")):
-                    del data[key]
-            if data:
-                clean["data"] = data
+            # Typed allowlist: never forward arbitrary strings, nested values,
+            # account identifiers or unknown future tracker fields. Event kind,
+            # hero, team, upgrade and positions still carry tactical facts.
+            level = data.get("Level")
+            if event.get("name") == "LevelUp" and type(level) is int and 1 <= level <= 30:
+                clean["data"] = {"Level": level}
             events.append(clean)
     result["heroes"] = list(roster.values())
     result["events"] = sorted(events, key=lambda e: e["t"])[-24:]

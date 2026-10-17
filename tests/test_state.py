@@ -4,6 +4,44 @@ from cerveau.state import snapshot
 
 
 class StateTests(unittest.TestCase):
+    def test_replay_keeps_tactical_facts_but_not_private_data_or_malformed_level(self):
+        raw = {"meta": {"source": "replay"}, "players": [
+            {"name": "PRIVATE_TEST", "hero": "Jaina", "team": 0}], "timeline": {
+                "stat_events": [{"t": 1, "name": "LevelUp", "player": "PRIVATE_TEST", "data": None}],
+                "hero_events": [{"t": 2, "type": "upgrade", "hero": "Jaina",
+                                 "upgrade": "SyntheticTalent", "pos": [2, 3],
+                                 "data": {"TeamID": 8192, "ToonHandle": "PRIVATE_TEST"}}]}}
+        result = snapshot(raw, at=2)
+        self.assertNotIn("PRIVATE_TEST", str(result))
+        self.assertEqual(result["events"][-1], {
+            "t": 2, "type": "upgrade", "hero": "Jaina", "upgrade": "SyntheticTalent",
+            "pos": [2, 3], "team": 1})
+
+    def test_replay_stat_data_is_typed_allowlist_not_private_passthrough(self):
+        import json
+
+        for private in ("PlayerName", "ToonHandle", "Account", "AccountId", "Unknown"):
+            for value in ("PRIVATE_TEST", {"nested": ["PRIVATE_TEST"]}):
+                for field in (private, "Level"):
+                    with self.subTest(private=private, value=value, field=field):
+                        raw = {"meta": {"source": "replay"}, "timeline": {"stat_events": [
+                            {"t": 1, "name": "LevelUp", "data": {field: value}},
+                            {"t": 2, "name": "LevelUp", "data": {"Level": 7}},
+                            {"t": 3, "name": "LevelUp", "data": {"Level": 20}},
+                        ]}}
+                        result = snapshot(raw, at=2)
+                        self.assertNotIn("PRIVATE_TEST", json.dumps(result))
+                        self.assertEqual(result["events"][-1]["data"], {"Level": 7})
+                        self.assertEqual(len(result["events"]), 2)
+
+    def test_native_local_id_outside_roster_is_explicitly_rejected(self):
+        raw = {"meta": {"native_status": "valide"}, "stats": {},
+               "local_player": {"id": 15, "team": 1, "hero": "ragnaros"},
+               "players": [{"id": i, "team": i // 5, "hero": "ragnaros"} for i in range(10)],
+               "heroes": [{} for _ in range(10)]}
+        with self.assertRaisesRegex(ValueError, "identité locale native"):
+            snapshot(raw)
+
     def test_native_tactical_fields_reach_the_coach_without_private_or_unvalidated_fields(self):
         raw = {"meta": {"source": "live", "t_s": 123.5, "native_status": "valide",
                         "native_build": 98348}, "stats": {}, "composition_complete": True,

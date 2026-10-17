@@ -64,6 +64,66 @@ def validate(observed, truth, aliases):
     return rows
 
 
+def validate_respawn_timers(observed, tracker):
+    """Post-hoc reference, exact loops/16; never modify the captured observation.
+
+    Match the dead hero unit active at the capture, including its recycle count.
+    A replacement birth ends that unit's lifetime. Missing timers/revivals remain
+    unknown (None), not zero and not a successful comparison.
+    """
+    clock = observed["meta"]["t_s"]
+    events = sorted(tracker, key=lambda e: e["_gameloop"])
+    units = {}
+    future = []
+    for event in events:
+        if event["_gameloop"] / 16 > clock:
+            future.append(event)
+            continue
+        kind = event["_event"].rsplit(".", 1)[-1]
+        index, generation = event.get("m_unitTagIndex"), event.get("m_unitTagRecycle")
+        if kind == "SUnitBornEvent":
+            units[index] = {"generation": generation,
+                            "owner": event.get("m_controlPlayerId"), "alive": True,
+                            "hero": event.get("m_unitTypeName", b"").startswith(b"Hero")}
+        elif index in units and units[index]["generation"] == generation:
+            if kind in ("SUnitDiedEvent", "SUnitRevivedEvent"):
+                units[index]["alive"] = kind == "SUnitRevivedEvent"
+            elif kind == "SUnitOwnerChangeEvent":
+                units[index]["owner"] = event.get("m_controlPlayerId")
+    rows = []
+    for hero in observed["heroes"]:
+        if hero["alive"]:
+            continue
+        candidates = [(index, unit) for index, unit in units.items()
+                      if unit["hero"] and unit["owner"] == hero["id"] + 1 and not unit["alive"]]
+        expected = None
+        if len(candidates) == 1:
+            index, unit = candidates[0]
+            for event in future:
+                if event.get("m_unitTagIndex") != index:
+                    continue
+                kind = event["_event"].rsplit(".", 1)[-1]
+                if kind == "SUnitBornEvent":
+                    break
+                if (kind == "SUnitRevivedEvent"
+                        and event.get("m_unitTagRecycle") == unit["generation"]):
+                    expected = event["_gameloop"] / 16 - clock
+                    break
+        timer = hero.get("respawn_s")
+        matches = None
+        if timer is not None and expected is not None:
+            matches = type(timer) in (int, float) and timer == expected
+        rows.append({"id": hero["id"], "observed_respawn_s": timer,
+                     "expected_respawn_s": expected, "respawn_matches": matches})
+    return rows
+
+
+def respawn_timer_status(rows):
+    """No observed timer is unknown; an observed but unproved timer fails closed."""
+    observed = [row for row in rows if row["observed_respawn_s"] is not None]
+    return all(row["respawn_matches"] is True for row in observed) if observed else None
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     for name in ("image", "heap", "manifest", "replay", "out"):
@@ -89,6 +149,8 @@ def main():
 
     archive = mpyq.MPQArchive(str(args.replay))
     rows = validate(observed, truth, reference_aliases(truth, archive))
+    timers = validate_respawn_timers(observed, load_protocol().decode_replay_tracker_events(
+        archive.read_file("replay.tracker.events")))
     init = load_protocol().decode_replay_initdata(archive.read_file("replay.initData"))
     identity = (init["m_syncLobbyState"]["m_lobbyState"]["m_randomSeed"],
                 tuple(init["m_syncLobbyState"]["m_gameDescription"]["m_cacheHandles"]))
@@ -99,17 +161,20 @@ def main():
               "ten_hero_choices": len(rows) == 10 and all(r["choice_matches"] for r in rows),
               "ten_teams": len(rows) == 10 and all(r["team_matches"] for r in rows),
               "ten_levels": len(rows) == 10 and all(r["level_matches"] for r in rows),
-              "ten_alive_flags": len(rows) == 10 and all(r["alive_matches"] for r in rows)}
+              "ten_alive_flags": len(rows) == 10 and all(r["alive_matches"] for r in rows),
+              "observed_respawn_timers_match": respawn_timer_status(timers)}
     dead = [hero for hero in observed["heroes"] if not hero["alive"]]
     report = {"source": "native_memory_captured_during_game", "clock_s": clean["meta"]["t_s"],
               "checks": checks, "heroes": rows, "audio_played": False,
               "respawn_real_case_present": bool(dead),
               "respawn_timers_observed": sum("respawn_s" in hero for hero in dead),
+              "respawn_timer_reference": timers,
+              "respawn_timers_compared": sum(r["respawn_matches"] is not None for r in timers),
               "not_collected": ["objective_state", "camp_state", "structure_state",
                                 "positions_and_visibility", "ability_cooldowns"]}
     report_path = args.out / "report.json"
     report_path.write_text(json.dumps(report, indent=2), encoding="utf-8")
-    if not all(checks.values()):
+    if any(value is False for value in checks.values()):
         raise SystemExit("Capture/replay checks failed: no API request sent")
     if args.api:
         from grocoapi import GrocoClient

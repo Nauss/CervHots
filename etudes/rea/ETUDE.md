@@ -561,3 +561,32 @@ Preuves locales : `out/rea-collection/live-validation/report.json`,
 `final-cli-state.json`, `final-cli-decision.json`. Les objectifs/camps/structures,
 positions/visibilité, talents et cooldowns restent explicitement hors collecte
 live ; les compteurs globaux ne sont pas transformés en ces observations.
+
+## 17. Durcissements hors ligne du normaliseur et de la référence (17/10/2026)
+
+- Le normaliseur replay ne transmet plus les champs arbitraires de `event.data` :
+  seul `Level` entier entre 1 et 30 pour `LevelUp` est sérialisé ; `TeamID` entier
+  4096/8192 devient une équipe anonyme. Les noms/types d'événement, héros,
+  upgrades et positions tactiques restent disponibles. Les chaînes libres,
+  comptes, ToonHandle et valeurs imbriquées ne sont pas transmis dans `data`.
+- Une identité locale native absente du roster provoque un `ValueError` explicite,
+  sans sélection de joueur par défaut.
+- `validate_native.py` compare maintenant les timers observés au prochain
+  `SUnitRevivedEvent` de l'unité morte active à la capture, par index et génération,
+  à partir de `_gameloop / 16` sans arrondi. Un index réutilisé termine la recherche ;
+  les changements de propriétaire antérieurs à la capture sont pris en compte.
+  Cette référence après coup ne modifie jamais l'observation envoyée au coach.
+- Timer absent : comparaison et statut agrégé inconnus (`null`), pas zéro ni
+  succès artificiel ; le rapport compte les comparaisons effectivement faites.
+  Un timer présent mais non prouvé (référence tronquée, par exemple) fait échouer
+  les contrôles avant tout appel API optionnel.
+- La capture Volskaya existante à 291,875 s a été réexaminée hors ligne avec
+  ce comparateur : deux égalités exactes, 15,3125 s et 3,5625 s. Aucune de ces
+  valeurs n'est une constante du validateur. Aucun nouveau live, API ou audio.
+- Tests RED puis GREEN : confidentialité synthétique, identité hors roster,
+  générations/unités distinctes, cycles successifs, frontière de résurrection,
+  référence tronquée, timer absent, non-mutation et propriétaire. Le test du chrono
+  mission utilise désormais un fichier temporaire et un briefing simulé, sans KB
+  locale ignorée. 80 tests passent sur les deux Python ; Ruff passe sur les cinq
+  fichiers Python touchés. Le contrôle global conserve les 11 défauts préexistants
+  de la base, sans ajout ; `git diff --check` passe.

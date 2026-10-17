@@ -12,8 +12,15 @@ class PipelineTests(unittest.TestCase):
     def test_mission_time_including_preparation_is_not_used_as_hud_time_for_map_timings(self):
         state = {"meta": {"map": "Dragon Shire", "t_s": 291.875, "clock_kind": "mission"},
                  "composition": {"allies": [], "enemies": []}}
-        with patch("kb.briefing.build", return_value="SYNTHETIC_KB") as build:
-            knowledge_for(state)
+        import tempfile
+        from pathlib import Path
+
+        with tempfile.TemporaryDirectory() as directory:
+            database = Path(directory) / "synthetic.sqlite"
+            database.touch()
+            with (patch("kb.briefing.DB", database),
+                  patch("kb.briefing.build", return_value="SYNTHETIC_KB") as build):
+                knowledge_for(state)
         build.assert_called_once_with("Dragon Shire", [], [], None)
 
     def test_small_vital_changes_and_respawn_countdown_do_not_starve_native_coaching(self):
