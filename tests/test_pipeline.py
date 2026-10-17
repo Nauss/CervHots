@@ -1,13 +1,52 @@
 import copy
 import unittest
+from unittest.mock import patch
 
 from test_cerveau import Gateway
 
 from cerveau.brain import Coach
-from cerveau.runner import Pipeline
+from cerveau.runner import Pipeline, knowledge_for, tactical_key
 
 
 class PipelineTests(unittest.TestCase):
+    def test_mission_time_including_preparation_is_not_used_as_hud_time_for_map_timings(self):
+        state = {"meta": {"map": "Dragon Shire", "t_s": 291.875, "clock_kind": "mission"},
+                 "composition": {"allies": [], "enemies": []}}
+        with patch("kb.briefing.build", return_value="SYNTHETIC_KB") as build:
+            knowledge_for(state)
+        build.assert_called_once_with("Dragon Shire", [], [], None)
+
+    def test_small_vital_changes_and_respawn_countdown_do_not_starve_native_coaching(self):
+        self.state["heroes"] = [
+            {"hero": "ragnaros", "team": 1, "alive": True, "level": 19,
+             "health": 2990, "health_max": 3000, "resource": 590, "resource_max": 600},
+            {"hero": "jaina", "team": 1, "alive": False, "level": 19, "respawn_s": 40}]
+
+        def synthesize(decision):
+            self.state["heroes"][0]["health"] -= 10
+            self.state["heroes"][0]["resource"] -= 10
+            self.state["heroes"][1]["respawn_s"] -= 8
+
+        self.assertTrue(self.pipeline(synthesize=synthesize).cycle().parler)
+
+    def test_native_critical_health_level_and_respawn_changes_still_cancel_old_advice(self):
+        for change in ("health", "level", "alive"):
+            with self.subTest(change=change):
+                self.setUp()
+                self.state["heroes"] = [{"hero": "ragnaros", "team": 1, "alive": True,
+                                          "level": 19, "health": 2900, "health_max": 3000}]
+
+                def synthesize(decision, change=change):
+                    self.state["heroes"][0][change] = {"health": 300, "level": 20, "alive": False}[change]
+
+                self.assertEqual(self.pipeline(synthesize=synthesize).cycle().raison, "périmé")
+
+    def test_match_change_invalidates_otherwise_identical_observations(self):
+        left = {"meta": {"source": "live", "match_id": "SYNTHETIC_A"}, "stats": {}}
+        right = copy.deepcopy(left)
+        right["meta"]["match_id"] = "SYNTHETIC_B"
+        self.assertNotEqual(tactical_key(left), tactical_key(right))
+
     def setUp(self):
         self.now = 100.0
         self.state = {"meta": {"source": "live"}, "stats": {"deaths_total": 8},

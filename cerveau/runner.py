@@ -20,6 +20,8 @@ def knowledge_for(state: dict) -> str:
         raise ValueError("KB absente : exécuter python kb/refresh.py")
     composition = state["composition"]
     clock = meta.get("t_s")
+    if meta.get("clock_kind") == "mission":
+        clock = None  # La préparation compte dans le replay, pas dans les timings HUD de la KB.
     try:
         return build(meta["map"], composition["allies"], composition["enemies"],
                      None if clock is None else int(clock))
@@ -27,11 +29,25 @@ def knowledge_for(state: dict) -> str:
         raise ValueError(f"Contexte KB invalide : {exc}") from None
 
 
+def _hero_key(hero):
+    # Countdown/regeneration are continuous; keep meaningful tactical transitions.
+    volatile = {"health", "health_max", "resource", "resource_max", "respawn_s"}
+    result = {key: value for key, value in hero.items() if key not in volatile}
+    for value, maximum in (("health", "health_max"), ("resource", "resource_max")):
+        if value in hero and hero.get(maximum, 0) > 0:
+            result[value + "_band"] = min(3, int(hero[value] / hero[maximum] * 4))
+    if "respawn_s" in hero:
+        result["respawn_band"] = 0 if hero["respawn_s"] <= 5 else 1 if hero["respawn_s"] <= 15 else 2
+    return result
+
+
 def tactical_key(state: dict) -> str:
     # Les globes et l'horloge murale changent sans invalider une consigne tactique.
     return json.dumps({
         "map": state["meta"].get("map"), "composition": state.get("composition"),
-        "heroes": state.get("heroes"), "ally_team": state.get("ally_team"),
+        "match_id": state["meta"].get("match_id"), "local_player": state.get("local_player"),
+        "heroes": [_hero_key(h) for h in state["heroes"]] if "heroes" in state else None,
+        "ally_team": state.get("ally_team"),
         "stats": {k: v for k, v in state.get("stats", {}).items() if k != "globes_total"},
         "events": state.get("events"), "positions": state.get("positions"),
     }, sort_keys=True, ensure_ascii=False)

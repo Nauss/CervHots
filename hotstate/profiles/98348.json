@@ -1,0 +1,74 @@
+{
+  "build": 98348,
+  "image_size": 73064448,
+  "pe_timestamp": 1791173268,
+  "signatures": [
+    {
+      "name": "clock_root",
+      "rva": 10000640,
+      "size": 32,
+      "sha256": "294cf14e0ad4542863c5d2522d33d62329a61dc4ac9aa3f1cb2610192c753279"
+    },
+    {
+      "name": "unit_resolver",
+      "rva": 6601424,
+      "size": 80,
+      "sha256": "6eece1a483adac9d70eb4ef01b499c23849a6cb414593d9f23a3c8f5a9f5cf6c"
+    },
+    {
+      "name": "unit_alive",
+      "rva": 33896144,
+      "size": 32,
+      "sha256": "3c78d99818c60c4e517ee93b6b4687fe543c6ea9fcfe33aae7b79ed9f5e2c2ec"
+    },
+    {
+      "name": "player_resolver",
+      "rva": 10309264,
+      "size": 64,
+      "sha256": "dfd0d4b10cd72e67a2e084cfb0ab49e3dcf89a0ed7ad89b894ba536ffbb1aba4"
+    },
+    {
+      "name": "player_decode14",
+      "rva": 3256032,
+      "size": 128,
+      "sha256": "db1f1aac11dc36e9ba3ef2592490aab5b551bfde9580040292fac125632157df"
+    },
+    {
+      "name": "unit_level",
+      "rva": 33897152,
+      "size": 64,
+      "sha256": "c262d7edd5933df75a858a9087c04fa53a33ec91decb8d8b0abcffae3dd82068"
+    },
+    {
+      "name": "hero_catalog",
+      "rva": 10359984,
+      "size": 64,
+      "sha256": "d174c5266c54516d237c90b9315131aea35c665121236fd4cee8f22f83e925f3"
+    },
+    {
+      "name": "main_hero_unit",
+      "rva": 34352528,
+      "size": 64,
+      "sha256": "936e75d6eeb5e61cdd3110bb6b4bc1c7babf70e8d3b5850c26fff51ded4cc4c9"
+    },
+    {
+      "name": "death_timer",
+      "rva": 10359232,
+      "size": 64,
+      "sha256": "2276a3ecc3c8b9b34c872cd7c0bbce9fb81dfeb4727f4efab60ce7d757ef57fe"
+    },
+    {
+      "name": "timer_remaining",
+      "rva": 11461920,
+      "size": 32,
+      "sha256": "48f446eb80b743032e5c3c66627d1fbab5564811968de6b802dc48d4d20c548b"
+    },
+    {
+      "name": "unit_properties",
+      "rva": 33884192,
+      "size": 64,
+      "sha256": "a7560199d486164695e25728456f8c189c6fd5a78061cef3d47930a7f1c1a82c"
+    }
+  ],
+  "evidence": "Native Galaxy dispatch cases, instruction-checked in Ghidra; identical code across two ASLR instances. Unknown builds are rejected."
+}

@@ -29,10 +29,12 @@ Chaque brique a son propre projet, ses propres dépendances.
   async. Test : `python grocoapi/smoke.py`.
 - `hotstate/` — **la couche stats** : tout ce qui sort de HotS (niveaux, talents,
   morts, XP, objectifs, positions) normalisé pour l'agent de décision.
-  Extracteur de replays validé (vérité terrain) ; lecteur live **validé
-  hors-ligne** (`reader.py`, 9/9 valeurs exactes vs replay) qui lit les
-  triggers de jeu en mémoire vive. La vision n'est plus nécessaire : les
-  infos viennent de la mémoire, en valeurs exactes.
+  Extracteur de replays (vérité terrain), trois compteurs mémoire validés,
+  contexte initData et lecteur natif (`native.py`, profil build 98348) :
+  horloge, dix héros, niveaux, état de vie, PV/ressources alliés. Les dix héros,
+  équipes, niveaux et états de vie sont recoupés avec le replay de la capture.
+  Timers de mort validés en partie puis contre le tracker ; objectifs,
+  camps, structures et positions/visibilité restent hors collecte live.
 - `kb/` — **la couche savoir** : ce qui interprète l'état de jeu (cartes,
   timings, talents, synergies, counters). Base SQLite de faits (gamedata
   gratuite, commit épinglé) + 106 fiches curatées (16 cartes + 90 héros,
@@ -59,9 +61,12 @@ Chaque brique a son propre projet, ses propres dépendances.
 
 ## État
 
-Au 15/10/2026 : couches stats (`hotstate/`), savoir (`kb/`), voix (`tts/`) et
+Au 17/10/2026 : couches stats (`hotstate/`), savoir (`kb/`), voix (`tts/`) et
 diffusion (`mumblebot/`) reliées par `cerveau/`. L'API Groco est provisionnée et
-le parcours réel jusqu'au WAV est vérifié. La diffusion de ce nouveau parcours
-en partie reste à autoriser et valider ; le lecteur mémoire actuel ne fournit
-que des compteurs globaux, pas encore les informations tactiques détaillées
-des replays. La couche stats empiriques (v3) reste hors de ce branchement.
+le parcours réel replay → Groco → Piper → Mumble a été vérifié, écoute humaine
+confirmée. Le lecteur natif fournit maintenant composition, niveaux, états de
+vie, timers de mort et PV/ressources alliés. Une partie IA sur Volskaya a vérifié
+dix héros/équipes/niveaux/états et deux timers non nuls, exacts au tracker.
+L'horloge suit le temps de mission du replay, préparation incluse ; elle n'est
+pas confondue avec le chrono HUD. Objectifs/camps/structures/positions/visibilité
+et capacités restent hors collecte live ; les statistiques empiriques (v3) aussi.

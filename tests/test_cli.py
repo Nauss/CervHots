@@ -13,6 +13,13 @@ from cerveau.__main__ import main, make_source
 
 
 class CliTests(unittest.TestCase):
+    def test_reader_help_exposes_native_capture_options_without_opening_the_game(self):
+        result = subprocess.run([sys.executable, "-m", "hotstate.reader", "--help"],
+                                check=False, capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("--image", result.stdout)
+        self.assertIn("--player", result.stdout)
+
     def test_file_source_age_policy(self):
         for source in (None, "memory", "current", "unknown", "live", "dump", "replay"):
             for watch in (False, True):
@@ -48,11 +55,14 @@ class CliTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn("--mumble", result.stdout)
         self.assertIn("--state", result.stdout)
+        self.assertIn("--player", result.stdout)
+        self.assertIn("--image", result.stdout)
 
     def test_no_source_or_negative_timing_is_rejected(self):
         for argv in ([], ["--state", "x.json", "--interval", "-1"],
                      ["--state", "x.json", "--timeout", "nan"],
-                     ["--dump", "x.bin", "x.json", "--watch"]):
+                     ["--dump", "x.bin", "x.json", "--watch"],
+                     ["--state", "x.json", "--image", "module.bin"]):
             with (self.subTest(argv=argv), contextlib.redirect_stderr(io.StringIO()),
                   self.assertRaises(SystemExit)):
                 main(argv)

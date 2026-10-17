@@ -4,6 +4,42 @@ from cerveau.state import snapshot
 
 
 class StateTests(unittest.TestCase):
+    def test_native_tactical_fields_reach_the_coach_without_private_or_unvalidated_fields(self):
+        raw = {"meta": {"source": "live", "t_s": 123.5, "native_status": "valide",
+                        "native_build": 98348}, "stats": {}, "composition_complete": True,
+               "local_player": {"id": 5, "team": 1, "hero": "ragnaros"},
+               "players": [{"id": i, "team": i // 5, "hero": "ragnaros"} for i in range(10)],
+               "heroes": [{"id": i, "team": i // 5, "hero": "ragnaros", "alive": True,
+                           "level": 19, "health": 2500, "health_max": 3000,
+                           "resource": 500, "resource_max": 600,
+                           "name": "PRIVATE_TEST", "unit_pointer": "DO_NOT_SEND"}
+                          for i in range(10)]}
+        result = snapshot(raw)
+        self.assertEqual(len(result["heroes"]), 10)
+        self.assertEqual(result["heroes"][5]["level"], 19)
+        self.assertEqual(result["heroes"][5]["health"], 2500)
+        self.assertNotIn("health", result["heroes"][0])
+        self.assertNotIn("PRIVATE_TEST", str(result))
+        self.assertNotIn("DO_NOT_SEND", str(result))
+        self.assertEqual(result["meta"]["native_status"], "valide")
+
+    def test_live_local_team_overrides_only_the_unspecified_default_and_stays_anonymous(self):
+        raw = {"meta": {"source": "live", "map": "Dragon Shire",
+                        "context_source": "initdata_memory"},
+               "stats": {"deaths_total": 2}, "composition_complete": False,
+               "local_player": {"id": 5, "team": 1, "hero": "Ragnaros", "name": "PRIVATE_TEST"},
+               "players": [{"id": i, "team": i // 5,
+                            "hero": "Ragnaros" if i == 5 else None} for i in range(10)]}
+        result = snapshot(raw)
+        self.assertEqual(result["ally_team"], 1)
+        self.assertEqual(result["composition"]["allies"], ["Ragnaros"])
+        self.assertFalse(result["composition_complete"])
+        self.assertEqual(result["local_player"], {"id": 5, "team": 1, "hero": "Ragnaros"})
+        self.assertNotIn("PRIVATE_TEST", str(result))
+        self.assertNotIn("heroes", result)
+        self.assertNotIn("t_s", result["meta"])
+        self.assertEqual(snapshot(raw, team=0)["ally_team"], 0)
+
     def test_replay_is_cut_at_observation_time_without_final_results(self):
         replay = {
             "meta": {"source": "replay", "map": "Cursed Hollow", "duration_s": 999},

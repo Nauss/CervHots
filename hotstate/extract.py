@@ -21,9 +21,6 @@ import sys
 from collections import Counter
 from pathlib import Path
 
-import mpyq
-from heroprotocol import versions
-
 LOOPS_PER_SECOND = 16.0  # boucles de jeu HotS par seconde
 FILETIME_EPOCH = 11644473600  # 1601 -> 1970, en secondes
 HERO_PREFIX = "Hero"
@@ -61,15 +58,20 @@ def filetime_to_iso(ft):
 
 def load_protocol(archive):
     """Header -> protocole. Shim : build inconnu -> dernier protocole connu."""
-    latest = versions.latest()
+    if __package__:
+        from .protocols import load_protocol as get_protocol
+    else:
+        from protocols import load_protocol as get_protocol
+
+    latest = get_protocol()
     header = to_str(latest.decode_replay_header(
         archive.header["user_data_header"]["content"]))
     base_build = header["m_version"]["m_baseBuild"]
     shim = False
     try:
-        proto = versions.build(base_build)
-    except Exception:
-        proto, shim = versions.latest(), True
+        proto = get_protocol(base_build)
+    except ModuleNotFoundError:
+        proto, shim = latest, True
     return proto, header, base_build, shim
 
 
@@ -85,7 +87,15 @@ def decode_positions(ev):
 
 # ------------------------------------------------------------------- extraction
 
+def optional_events(archive, name, decoder):
+    """Un bloc optionnel absent/vide n'est pas un flux binaire à décoder."""
+    payload = archive.read_file(name)
+    return decoder(payload) if payload else ()
+
+
 def extract(replay_path: Path) -> dict:
+    import mpyq
+
     archive = mpyq.MPQArchive(str(replay_path))
     proto, header, base_build, shim = load_protocol(archive)
 
@@ -210,7 +220,7 @@ def extract(replay_path: Path) -> dict:
         elif short in ("SUnitOwnerChangeEvent", "SUnitTypeChangeEvent"):
             pass  # utile plus tard (camps de mercenaires, objectifs de map)
 
-    for ev in proto.decode_replay_message_events(archive.read_file("replay.message.events")):
+    for ev in optional_events(archive, "replay.message.events", proto.decode_replay_message_events):
         short = ev.get("_event", "").rsplit(".", 1)[-1]
         t = t_sec(ev.get("_gameloop", 0))
         uid = ev.get("_userid", {}).get("m_userId") if isinstance(ev.get("_userid"), dict) else None

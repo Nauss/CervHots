@@ -4,8 +4,8 @@
 aux informations de la partie **pendant** le jeu, plutôt que de se contenter des
 pixels de la capture d'écran ?
 
-*Sous-projet CervHots · état : étude écrite, pas encore d'expérience exécutée ·
-dernière MAJ : 10/10/2026*
+*Sous-projet CervHots · lecteur natif livré et vérifié sur capture/replay ;
+validation d'une mort réelle encore requise · dernière MAJ : 17/10/2026*
 
 ---
 
@@ -380,8 +380,184 @@ timers de mort) et brancher le flux sur l'agent de décision.
 
 ---
 
+## 14. Premier contexte enrichi, vérifié contre la partie IA (17/10/2026)
+
+La chaîne des compteurs a été exercée en live jusqu'à Mumble (trois sessions
+bornées, six cycles chacune, sans erreur). Pour l'enrichissement, une capture
+du processus a été prise **pendant** la partie, avant sa fin. Les analyses
+suivantes ont ensuite utilisé cette capture et le replay final séparément.
+
+### Champs effectivement livrés
+
+- Le buffer `replay.initData` complet a été retrouvé dans le tas capturé et
+  décodé par le protocole Blizzard. Ses slots donnent l'équipe de chacun des
+  dix joueurs ; `userId` identifie le slot local sans supposer l'équipe 0.
+- Les handles de cache du buffer pointent sur les archives Battle.net `.s2ma`.
+  Le MapScript de l'archive de carte contient `mAPMapStringID="DragonShire"` ;
+  rapprochement avec la KB : **Dragon Shire / Le comté du dragon**.
+- Résultat : **Ragnaros, slot 5, équipe 1**, dix appartenances d'équipe
+  conformes au replay final. L'identité seed+cache du contexte correspond
+  aussi au replay : ce n'est pas une simple coïncidence de carte/héros.
+- `hotstate/context.py` observe les régions pendant le scan existant du
+  lecteur. Activation explicite : `--player NOM` dans les CLI du cerveau et
+  du diagnostic. L'identifiant de partie entre dans le contrôle de fraîcheur.
+- Requête Groco réellement effectuée avec le **contexte capturé** normalisé,
+  pas avec les données supplémentaires du replay. Réponse : silence, conforme
+  aux informations tactiques encore absentes. Aucun TTS/Mumble lancé ici.
+
+### Limites non résolues (ne pas les confondre avec le contexte livré)
+
+- Les neuf héros IA sont vides dans initData/lobby : choix tardifs de la
+  simulation. Leur présence dans le replay final ne justifie pas de remplir
+  l'observation mémoire rétroactivement. `composition_complete=false`.
+- Aucun chronomètre, niveau d'équipe, état vivant/mort par héros ou délai de
+  réapparition n'a été validé dans cette capture. Les labels de variables
+  Galaxy existent dans le tas ; un label ne prouve pas l'adresse de sa valeur.
+- Des octets de `replay.sync.events` sont présents en mémoire, mais leur
+  sémantique/longueur active n'est pas validée : aucune horloge n'en est tirée.
+  Les flux tracker/game complets n'ont pas été retrouvés par leurs préfixes.
+- La sonde initData est actuellement validée pour le premier nom utilisateur,
+  ici l'unique humain. Les cas multi-humains et les autres cartes restent à
+  exercer. Ambiguïté, vieux contextes concurrents ou lobby inactif => omission.
+- Pour identifier les champs dynamiques, il manque une série de captures
+  synchronisées avec des états connus du HUD (changement de niveau, mort et
+  réapparition). La partie utilisée s'est terminée avant ces prélèvements.
+- Un recoupement supplémentaire sur les trois anciennes captures d'Alterac
+  a isolé **255 candidats** suivant les séries de niveaux du replay, dont des
+  copies répétées à pas de 0x620. Leur sémantique et leur relocalisation ne sont
+  pas prouvées ; aucun de ces candidats n'est publié. Les compteurs servent
+  seulement à retrouver une fenêtre de vérité terrain pour ce travail hors
+  ligne, jamais à fabriquer un niveau ou une horloge dans l'observation live.
+
+### Outils et preuves
+
+- `etudes/rea/scripts/validate_context.py` : validation reproductible avec mmap
+  et option `--api` (aucun son, aucun accès live).
+- `out/recon-live/validation/report.json`, `observed.json`, `groco-trace.json` :
+  résultats locaux ; dumps privés et données du compte restent ignorés par Git.
+- Bug réel corrigé : le replay de cette partie IA n'a pas de bloc de messages ;
+  `extract.py` ignore désormais un bloc optionnel absent/vide.
+- Le chargeur amont de heroprotocol utilise `imp`, incompatible Python 3.12.
+  `hotstate/protocols.py` charge les modules officiels avec importlib, sans
+  modifier le package. Vérifié avec l'environnement Python 3.12 du coach.
+- Sources primaires consultées pour le format de lobby/cache :
+  HeroesToolChest/Heroes.StormReplayParser, commit
+  `d381dd9c273205c0fd7ac402c75eef98c6fa6c78` (MIT), et les protocoles installés
+  de Blizzard heroprotocol 2.55.4.91756. Le parseur .NET a servi à une vérification
+  séparée du lobby, il n'est pas une dépendance du lecteur livré.
+
 ### Sources
 - github.com/morluto/rea (README : cibles, outils, avertissement « lawful RE »)
 - morluto.github.io/rea (guides : native = Hopper/Ghidra/IDA, runtime = CDP/crashes)
 - Environnement local : `C:\Program Files (x86)\Heroes of the Storm`, Node v26.7
 - Contexte projet : `FAISABILITE.md` (replays post-game, pas d'API live, plan pixels)
+
+---
+
+## 15. Lecteur natif de simulation livré (17/10/2026)
+
+Les limites chrono/niveaux/vie/composition décrites au §14 sont maintenant
+levées sur la capture, sans publier les 255 candidats corrélés de cette étape.
+
+### Méthode et outils réellement exécutés
+
+- `rea-agents@6.5.0 doctor --provider ghidra` : moteur Ghidra sain. Le doctor
+  global teste aussi des fournisseurs optionnels ; ne pas installer Hopper/IDA
+  pour résoudre l'absence d'un moteur qu'on n'utilise pas.
+- Projet existant `CervHotsMem`, image mémoire déchiffrée, `-readOnly -noanalysis`.
+  Les scripts `NativeBindings.java`, `ExportFunctions.java` et
+  `InspectNativeCases.java` ont été exécutés et leurs sorties relues.
+- Plusieurs chaînes natives avaient zéro xref dans la base partielle. Les LEA
+  RIP-relatives réelles et les bornes `.pdata` ont retrouvé leurs fonctions.
+  Le registre décrit les natives dans des enregistrements de 24 octets ;
+  l'index mène à une table de cas du VM (2016 entrées). Ghidra ne récupérait
+  pas cette table entière (« too many branches ») : chaque cas utile a été
+  désassemblé séparément pour vérifier son appel C++ effectif.
+- Fonctions suivies : `GameGetMissionTime`, `PlayerSetHero`,
+  `PlayerSetHeroUnit`, `UnitIsAlive`, `UnitLevel`, propriétés d'unité,
+  `PlayerSetDeathTimer` et `TimerGetRemaining`. Aucune fonction cliente n'est
+  appelée par le lecteur ; il ne reproduit que leurs lectures de données.
+
+### Lecture et garde-fous
+
+`hotstate/native.py` lit les globals du **module** puis les objets du tas :
+les anciens scans MEM_PRIVATE seuls omettaient les racines des structures.
+Le profil `hotstate/profiles/98348.json` exige empreinte PE et onze empreintes
+de code identiques dans deux images ASLR. Le live obtient sa base par PSAPI ;
+le dump la déduit d'une déclaration native encodée. Aucun déplacement absolu
+de l'ancienne instance n'est réutilisé.
+
+Les pointeurs CPlayer sont décodés avec la variante 14 inspectée ; une variante
+différente est refusée. Le tag du héros principal est résolu avec contrôle de
+génération et de propriétaire. Le nom vient du catalogue héros. Les IDs internes
+`Monk`/`Wizard`, etc., sont rapprochés des slugs KB à partir des `cHeroId` du cache.
+Le niveau est celui du **premier** composant XP actif, comme `UnitLevel` :
+plusieurs héros possèdent deux composants XP ; exiger une occurrence unique
+éliminait à tort huit héros de cette capture.
+
+Les PV/ressources ennemis restent omis tant que la visibilité n'est pas validée.
+L'état destiné au modèle ne contient ni nom de joueur, compte, pointeur ni tag.
+Les triggers non prouvés restent dans `--debug` ; un compteur d'appels de
+capture de point n'est pas transformé en état d'objectif.
+
+### Résultats vérifiés
+
+- Capture native à **1163,5625 s** : dix héros, équipes et états vivant/mort,
+  chacun identique au replay correspondant. Niveaux : équipe 0 = 21, équipe 1 = 19.
+- Les neuf choix IA sont lus dans la simulation, pas remplis depuis le replay.
+- Validation de l'identité seed+cache et du joueur local conservée.
+- `validate_native.py --api` a fait un vrai appel avec l'état capturé normalisé.
+  Groco a reconnu le 5v5 et l'écart de deux niveaux, mais a évalué sa phrase à
+  0,55 ; seuil 0,75 conservé, donc silence. Ni synthèse ni diffusion audio.
+- CLI du lecteur exercée sur la vraie capture ; lecture module/tas + contexte
+  + normalisation mesurée à environ 2,45 s dans cette exécution.
+- Artefacts privés : `out/rea-collection/validation/{report,observed,api-state}.json`
+  et `groco-trace.json`. Aucun replay ni fait futur n'entre dans le payload API.
+
+### Ce qui n'est pas encore validé/collecté
+
+- Tous les héros sont vivants dans cette première capture. Le contrôle réel
+  des timers non nuls a ensuite été effectué sur Volskaya (§16).
+  Les vieilles captures de tas sont tronquées et n'ont pas une image
+  de module correspondante en partie ; l'image prise au menu porte un compteur
+  de table d'unités nul. Elles ne constituent donc pas une validation native.
+- Objectifs, camps, structures, positions/visibilité et cooldowns restent hors
+  lecteur live. La sonde initData conserve ses limites multi-utilisateurs.
+- Un nouveau patch doit recevoir un profil vérifié ; aucune tolérance n'est
+  abaissée pour faire passer un champ ou un conseil.
+
+## 16. Nouvelle partie IA : timers réels et validation finale (17/10/2026)
+
+- Capture live sur Volskaya à **291,875 s de mission**, Diablo local, équipe 0 :
+  dix choix de héros/équipes/niveaux/états concordants avec le tracker de cette
+  même partie. Niveaux observés : 6 contre 7 ; Li-Ming et Qhira mortes.
+- Valeurs natives non nulles : Li-Ming **15,3125 s**, Qhira **3,5625 s** avant
+  réapparition. Le contrôle après coup sur les boucles tracker brutes donne
+  exactement les mêmes valeurs. Le résumé replay arrondi à deux décimales crée
+  artificiellement 2,5 ms d'écart ; il ne faut pas confondre cet arrondi avec
+  une erreur de lecture native.
+- Deux fichiers de référence existent pour la même identité seed+cache. Le
+  tracker du plus court est exactement un préfixe du plus long : ce sont deux
+  sauvegardes de la même partie, pas deux validations indépendantes. Leur mode
+  de création n'est pas établi ; aucune cadence de sauvegarde partielle n'est
+  supposée et aucun producteur live ne dépend de ces fichiers.
+- Le MapScript fournit `Volskaya`, traduit vers `Volskaya Foundry` dans la KB.
+  Les archives sans MPQ lisible sont ignorées ; une résolution encore incomplète
+  est retentée au cycle suivant au lieu d'être figée dans un cache négatif.
+- `clock_kind=mission` identifie explicitement la préparation incluse dans
+  `GameGetMissionTime` et les boucles replay. Aucun décalage fixe supposé vers
+  le chrono HUD n'est soustrait. Ce temps n'alimente plus les prédictions horaires
+  HUD de la KB ; cette normalisation de temps de jeu reste à sourcer.
+- CLI finale réellement exécutée avec le module et le tas capturés, joueur local
+  résolu automatiquement : profil accepté, dix héros avec niveaux/vie, temps
+  de mission correct. CLI cerveau également exercée avec un vrai appel Groco :
+  conseil sur le déficit 19 contre 21 accepté à **0,85**, seuil par défaut
+  **0,75 inchangé**. Cette exécution utilise la capture hors ligne, pas la partie
+  actuelle ; aucune synthèse ni diffusion sonore.
+- Contrôle qualité : **68 tests** passent sous Python système et sous le Python
+  de `tts/.venv` ; Ruff sur le code touché et `git diff --check` passent.
+
+Preuves locales : `out/rea-collection/live-validation/report.json`,
+`final-cli-state.json`, `final-cli-decision.json`. Les objectifs/camps/structures,
+positions/visibilité, talents et cooldowns restent explicitement hors collecte
+live ; les compteurs globaux ne sont pas transformés en ces observations.

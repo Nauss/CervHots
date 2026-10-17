@@ -40,13 +40,15 @@ def make_source(args):
         return read_file, None
 
     # Aucun import/accès mémoire tant que --dump ou --live n'est pas demandé.
+    from hotstate.context import make_probe
     from hotstate.reader import DumpBackend, ProcessBackend
     from hotstate.reader import snapshot as memory_snapshot
 
     mapping = json.loads((ROOT / "hotstate/triggers_map.json").read_text(encoding="utf-8"))
-    backend = (DumpBackend(*map(Path, args.dump)) if args.dump
+    context = make_probe(getattr(args, "player", None), live=not args.dump)
+    backend = (DumpBackend(*map(Path, args.dump), image=getattr(args, "image", None)) if args.dump
                else ProcessBackend(args.pid))
-    return lambda: snapshot(memory_snapshot(backend, mapping), **options), backend
+    return lambda: snapshot(memory_snapshot(backend, mapping, context=context), **options), backend
 
 
 def main(argv=None) -> int:
@@ -61,8 +63,11 @@ def main(argv=None) -> int:
     source_group.add_argument("--live", action="store_true", help="lecture mémoire du jeu, opt-in")
     source_group.add_argument("--check", action="store_true", help="santé et modèles, sans chat ni son")
     parser.add_argument("--pid", type=int)
+    parser.add_argument("--player", help="nom local pour résoudre le contexte initData (mémoire)")
+    parser.add_argument("--image", type=Path, help="module capturé avec --dump, pour l'état natif")
     parser.add_argument("--at", type=float, help="temps observé du replay, requis pour éviter le futur")
-    parser.add_argument("--team", type=int, choices=(0, 1), default=0)
+    parser.add_argument("--team", type=int, choices=(0, 1),
+                        help="équipe observée ; sinon équipe locale détectée, ou 0 sans contexte")
     parser.add_argument("--map", help="carte si absente de hotstate")
     for name in ("allies", "enemies"):
         parser.add_argument(f"--{name}", type=lambda s: [x.strip() for x in s.split(",") if x.strip()],
@@ -84,6 +89,10 @@ def main(argv=None) -> int:
     parser.add_argument("--user", default=config("MUMBLE_USER", "Coach"))
     parser.add_argument("--channel", default=config("MUMBLE_CHANNEL", ""))
     args = parser.parse_args(argv)
+    if args.player is not None and not (args.live or args.dump):
+        parser.error("--player nécessite --live ou --dump")
+    if args.image is not None and not args.dump:
+        parser.error("--image nécessite --dump")
     if not math.isfinite(args.min_confidence) or not 0 <= args.min_confidence <= 1:
         parser.error("--min-confidence doit être entre 0 et 1")
     if args.watch and args.interval < 15:
@@ -141,12 +150,8 @@ def main(argv=None) -> int:
     finally:
         if bot is not None:
             bot.disconnect()
-        if backend is not None and hasattr(backend, "handle"):
-            import ctypes
-            close = backend.k32.CloseHandle
-            close.argtypes = [ctypes.c_void_p]
-            close.restype = ctypes.c_int
-            close(backend.handle)
+        if backend is not None and hasattr(backend, "close"):
+            backend.close()
 
 
 if __name__ == "__main__":
