@@ -2,11 +2,13 @@
 
 ## Statut exact
 
-Implémentation de branche et vérifications hors ligne, pas encore une livraison
-intégrée sur main. La résolution depuis la VM active est établie ci-dessous ;
-la recette temporelle ciblée en processus avec HUD reste à coordonner. Aucun
-nouveau lancement de partie, accès live, changement de premier plan, appel
-coach, TTS ou Mumble n'a été effectué pour cette implémentation.
+Lecteur implémenté et recette ciblée Volskaya effectuée le 18 octobre 2026,
+sur le code de production gelé `cd9cc25bddf2fd42fd86a2c198553ba343345ce1`.
+La session opérateur a conduit deux lancements privés coordonnés (10 IA,
+hôte observateur, `local_player=null`) avec l'accord explicite du propriétaire.
+Le présent contrôle est entièrement hors ligne : aucun nouveau live ni GUI.
+La livraison ne vaut que pour le chrono build 98348 et le périmètre ci-dessous,
+pas pour les autres familles P2, la visibilité joueur ou une recette Dragon.
 
 Les dumps existants permettent de tester le vrai résolveur et ses refus, mais
 leurs fenêtres roulantes de plusieurs secondes ne certifient pas le contrat
@@ -173,7 +175,7 @@ Preuves privées du run : `out/p2/active-clock-audit.json`,
 `vm-static/` et journaux RED/GREEN. Aucun dump, PNG source, nom de compte,
 adresse absolue de tas ou handle réel n'est ajouté à Git.
 
-## Tests, revue et recette restant nécessaire
+## Tests et revues du lecteur
 
 Tests hermétiques : préparation, zéro ambigu, zéro réellement démarré,
 progression, delta debug positif/négatif, pause/reprise de timer, reset,
@@ -194,23 +196,84 @@ explicitement que la recette HUD/lecteur reste bloquante pour la livraison.
 Suggestions non bloquantes conservées : simulation complète de la boucle CLI
 du collector et tests de frontières supplémentaires du budget de liste/expiry.
 
-La résolution VM hors ligne n'est plus le blocage. Il reste à coordonner UNE
-courte recette du lecteur ciblé sur Volskaya : préparation, passage des portes,
-zéro réellement démarré et au moins deux instants après portes. Prévoir reset
-ou changement de partie si disponible ; ne pas exiger une pause indisponible.
-Les PNG doivent être horodatés et encadrés, et les taux de rejet/latences réels
-mesurés, avec la cadence 0,2 s du HUD explicitement distinguée du budget 125 ms.
-Aucun besoin d'un nouveau dump roulant de plusieurs gigaoctets.
+La suite de 102 tests a été réexécutée avec succès sur Python système et Python
+du coach après la recette. Le code produit n'a pas été ajusté pour faire passer
+les mesures. Les tests de reset, delta debug et pause/reprise de timer sont
+synthétiques ; ils ne sont pas présentés comme des observations HUD réelles.
+La revue finale indépendante a rendu PASSED pour ce périmètre limité : diff,
+documentation, 102 tests sur chaque Python, empreintes des JSONL et sept PNG
+relus. Sa tentative de réexécuter l'audit a été bloquée par sa politique
+d'exécution ; elle ne la revendique pas. L'exécution intégrale réussie de cet
+audit est celle de l'implémenteur, distincte de la revue indépendante.
 
-`etudes/rea/scripts/capture_clock.py` est prêt pour cette recette, mais n'a été
-exercé qu'avec mémoire synthétique et `--help`, sans ouvrir de processus réel.
-Il exige `--live`, est borné à 120 s, n'enregistre que les lectures ciblées du
-lecteur et leurs bornes, conserve les refus, écrit exclusivement un nouveau
-JSONL privé dans `out/` et ne capture aucun écran. Il doit être couplé au sampler
-HUD coordonné, sans prise de premier plan automatique. Il ne lance pas de partie,
-ne modifie aucune mémoire et ne produit aucune certification HUD automatique.
+## Recette ciblée réelle et contrôle des preuves
 
-Le commit de branche conserve cette implémentation sans l'intégrer prématurément.
-Après recette seulement : corriger d'éventuelles divergences réelles, revue
-finale, intégration et vérification remote de main. Ne pas libérer le
-lot positions en clôturant prématurément cette carte.
+Preuves privées durables sous `out/clock-live-validation/2026-10-18/` du dépôt
+principal : `paired_capture.py`, `audit_recipe.py`, `validation.json`, puis
+`volskaya-complete/{session.json,targeted-frames.jsonl,capture-summary.json,frame-*.png}`
+et une série courte `playing-check/`. Aucun de ces paquets mémoire ou PNG privés
+n'est versionné. Les SHA-256 des JSONL contrôlés sont :
+
+- série complète : `64a43c39ee22d60af0c2b4efa7052a9e638e865ac533ef67673ae4f91285cf26` ;
+- série courte : `4b1d6e9cf5c0f17279b002bc6eef06826447ac4141097eb128cdaa3fcc662c91`.
+
+Le sampler appelle exactement `RecordingBackend` et `capture_one` du script
+`etudes/rea/scripts/capture_clock.py`, donc `GameplayClock.read()`, avant et
+après la capture écran OS. Pas `inspect_saved()`, pas de dump roulant, pas de
+replay de partie ni d'appel de fonction client. L'audit hors ligne a été relancé :
+chaque accès enregistré est consommé dans son ordre exact (adresse, taille,
+octets), et chaque valeur ou motif de refus est reproduit. La reconstruction
+du module de cet audit est un auxiliaire hors ligne, jamais une source live.
+Les horodatages de chaque accès ont aussi été vérifiés à l'intérieur de son
+paquet, et ceux de la capture OS entre les deux lectures.
+
+Résultats de la série complète :
+
+- 402 lignes et 306 PNG ; 612 tentatives du lecteur, dont 584 acceptées
+  (210 préparation, 374 jeu) et 28 refusées, soit 4,58 % des tentatives.
+- Refus reproduits : racine VM invalide 2, début gameplay non prouvé 25,
+  lecture déchirée 1. Les lignes antérieures à la construction du lecteur
+  ne sont pas comptées comme tentatives natives ; le taux n'est donc pas
+  un taux de disponibilité de bout en bout sur les 402 lignes.
+- 291 paires avec PNG et deux lectures acceptées : 290 de même phase et une
+  qui encadre réellement les portes (frame214 : préparation -0,0625 s puis
+  jeu 0 s). Cette paire n'est PAS un instantané de phase unique.
+- Lecture acceptée maximale observée : 1,046 ms ; fenêtre complète
+  avant + capture OS + après maximale : 70,882 ms, médiane 54,709 ms.
+  Budget lecteur inchangé : 125 ms ; toutes ces paires sont sous ce budget.
+- Série courte : 25 lignes/PNG, 49 lectures acceptées, un refus déchiré
+  (2 % des 50 tentatives), 24 paires acceptées.
+
+Six images témoins ont été chargées et relues visuellement lors du contrôle
+final (et non l'ensemble des 291 paires) :
+
+| Frame | HUD lu | Gameplay avant → après (s) | Phase |
+|---|---|---|---|
+| 152 | -00:20 | -20,6875 → -20,625 | préparation |
+| 211 | -00:01 | -1,0625 → -1 | préparation |
+| 215 | 00:00 | 0,25 → 0,3125 | jeu |
+| 274 | 00:19 | 19,9375 → 20 | jeu |
+| 282 | 00:22 | 22,5625 → 22,625 | jeu |
+| 351 | 00:45 | 45,5625 → 45,625 | jeu |
+
+Les intervalles rencontrent les secondes affichées quantifiées ; ils ne
+prouvent pas une égalité continue exacte. Une septième image, frame154,
+affiche encore -00:20 pour un timer à -19,9375 s : frontière de quantification
+et rafraîchissement HUD nominal 0,2 s, non anomalie corrigée par un offset.
+Le budget de lecture 125 ms n'est pas une garantie de latence d'affichage HUD.
+
+Le premier essai a 646 lignes, 1048 paquets acceptés et 44 rejets reproduits,
+mais aucun PNG (jeu hors premier plan) : explicitement exclu de la validation
+HUD. La série complète suit un nouveau lancement ; cela exerce une nouvelle
+initialisation, pas une certification de reset continu avec un même backend.
+Pause/reprise de partie non exercée : pas de commande Pause dans le menu
+observé, aucun raccourci supposé. Delta debug non nul testé synthétiquement,
+pas provoqué dans le client. Les deux parties ont été quittées après mesure,
+ce ne sont pas des recettes de matchs complets. L'opérateur a fermé le jeu et
+vérifié la restauration audio ; aucun TTS, Mumble ou appel coach n'a été émis.
+
+Le CLI de capture reste explicite `--live`, borné à 120 s et limité à un nouveau
+JSONL privé sous `out/`. Sa boucle CLI n'a pas été utilisée pour les images :
+ce sont ses fonctions de production qui l'ont été, via le sampler coordonné.
+Aucun futur live ni élargissement Dragon/visibilité ne découle de cette recette.
+L'intégration doit conserver ces limites et vérifier main distant avant clôture.
