@@ -5,6 +5,7 @@ from unittest.mock import patch
 
 from test_positions import PositionMemory
 from test_positions_contract import raw_packet
+from test_native_match import add_match
 from hotstate.native import NativeReader, NativeUnavailable
 
 from hotstate.visibility import CurrentVisibility
@@ -15,6 +16,7 @@ from cerveau.state import snapshot
 class VisibilityMemory(PositionMemory):
     def __init__(self, base=0x40000000):
         super().__init__(base)
+        add_match(self)
         self.visibility_profile = copy.deepcopy(self.position_profile)
         self.pack(base + 0x2fadd9c, 'I', 0xf)
         # Player6 shares CURRENT sight/detection with players6..10.
@@ -37,7 +39,8 @@ class VisibilityMemory(PositionMemory):
 
     def visibility(self):
         return CurrentVisibility(NativeReader(self, profile=self.profile),
-                                 profile=self.visibility_profile, position_profile=self.position_profile)
+                                 profile=self.visibility_profile, position_profile=self.position_profile,
+                                 match_profile=self.match_profile)
 
     def enemy(self):
         return self.visibility().diagnose('Volskaya', context=self.context,

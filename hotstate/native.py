@@ -262,6 +262,12 @@ class NativeReader:
             positions = AlliedPositions(optional_native).read(context, hero_ids=hero_ids)
         except NativeUnavailable:
             pass  # No recipe/identity/consistent read => no coordinates, not zeros.
+        from .visibility import CurrentVisibility
+        visibility = None
+        try:
+            visibility = CurrentVisibility(optional_native).read(context, hero_ids=hero_ids)
+        except NativeUnavailable:
+            pass  # Unknown current sight never grants enemy tactical permissions.
         finished = self.read_clock()
         if not 0 <= finished - started <= 1:
             raise NativeUnavailable("observation_native_non_synchrone")
@@ -274,4 +280,6 @@ class NativeReader:
                   "composition_complete": len(players) == 10}
         if positions is not None:
             result["positions"] = positions
+        if visibility is not None:
+            result['visibility'] = visibility
         return result

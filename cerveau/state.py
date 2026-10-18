@@ -87,6 +87,48 @@ def _native_positions(raw, heroes, local, team):
             "heroes": sorted(clean, key=lambda h: h["id"])}
 
 
+def _native_visibility(raw, heroes, local, team):
+    """Boolean current sight only. Never a permission for enemy tactical fields."""
+    from hotstate import visibility
+    from hotstate.acquisition import fresh
+
+    p, meta = raw.get('visibility'), raw['meta']
+    if (not isinstance(p, dict) or local is None or team != local['team']
+            or meta.get('source') != 'live' or meta.get('native_build') != 98348
+            or meta.get('context_source') != 'initdata_memory'
+            or p.get('status') != 'validated' or not fresh(p)
+            or p.get('map_id') not in visibility.VALIDATED_MAPS
+            or p.get('map_id') != meta.get('map_id')
+            or not isinstance(meta.get('match_id'), str)
+            or not re.fullmatch('[0-9a-f]{64}', meta['match_id'])
+            or p.get('match_id') != meta['match_id']
+            or type(p.get('local_id')) is not int or p['local_id'] != local['id']
+            or type(p.get('team')) is not int or p['team'] != team
+            or p.get('local_hero') != local['hero']
+            or not _number(p.get('mission_t_s')) or not _number(meta.get('t_s'))
+            or not 0 <= meta['t_s'] - p['mission_t_s'] <= 1
+            or not _number(p.get('read_window_s')) or p['read_window_s'] > 0.125):
+        return None
+    samples = p.get('heroes')
+    if not isinstance(samples, list) or len(samples) != 10:
+        return None
+    roster = {h['id']: h for h in heroes}
+    clean, seen = [], set()
+    for sample in samples:
+        if not isinstance(sample, dict) or type(sample.get('id')) is not int:
+            return None
+        member = roster.get(sample['id'])
+        if (member is None or sample['id'] in seen or sample.get('hero') != member['hero']
+                or 'visible' not in sample
+                or (sample['visible'] is not None and type(sample['visible']) is not bool)
+                or (not member['alive'] and sample['visible'] is not None)):
+            return None
+        seen.add(sample['id'])
+        clean.append({'id': sample['id'], 'hero': member['hero'], 'visible': sample['visible']})
+    return {'t': p['mission_t_s'], 'map_id': p['map_id'],
+            'heroes': sorted(clean, key=lambda h: h['id'])}
+
+
 def _native_heroes(raw, players, local, team):
     heroes = raw.get("heroes")
     if (local is None or len(players) != 10 or not isinstance(heroes, list) or len(heroes) != 10
@@ -191,6 +233,9 @@ def snapshot(raw: dict, *, at: float | None = None, team: int | None = None,
             positions = _native_positions(raw, result["heroes"], local, team)
             if positions is not None and (map_name is None or map_name == meta.get("map")):
                 result["positions"] = positions
+            visibility = _native_visibility(raw, result['heroes'], local, team)
+            if visibility is not None and (map_name is None or map_name == meta.get('map')):
+                result['visibility'] = visibility
             result["meta"]["native_status"] = "valide"
             gameplay_clock = validated_gameplay_clock(meta)
             if gameplay_clock is not None:

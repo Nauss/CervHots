@@ -13,7 +13,7 @@ class CaptureVisibilityTests(unittest.TestCase):
     def test_same_reader_exact_replay_consumes_every_read_and_clock(self):
         m = VisibilityMemory(); m.fog(True)
         options = dict(native_profile=m.profile, visibility_profile=m.visibility_profile,
-                       position_profile=m.position_profile, hero_ids=m.hero_ids)
+                       position_profile=m.position_profile, match_profile=m.match_profile, hero_ids=m.hero_ids)
         row = attempt(m, 'Volskaya', **options)
         self.assertNotIn('rejected', row)
         self.assertLess(row['bytes_requested'], 2**20)
@@ -33,7 +33,7 @@ class CaptureVisibilityTests(unittest.TestCase):
             return {'skipped': 'synthetic_pixels_not_evidence'}
         row = capture_frame(m, 'Volskaya', screenshot=image, native_profile=m.profile,
                             visibility_profile=m.visibility_profile,
-                            position_profile=m.position_profile, hero_ids=m.hero_ids)
+                            position_profile=m.position_profile, match_profile=m.match_profile, hero_ids=m.hero_ids)
         self.assertIs(row['before']['visibility']['heroes'][0]['visible'], True)
         self.assertIs(row['after']['visibility']['heroes'][0]['visible'], False)
         self.assertLessEqual(row['before']['monotonic_after'], row['image']['monotonic_before'])
@@ -43,7 +43,7 @@ class CaptureVisibilityTests(unittest.TestCase):
     def test_observer_refusal_is_exactly_replayable(self):
         m = VisibilityMemory(); m.pack(0x120000, 'I', 0x20)
         options = dict(native_profile=m.profile, visibility_profile=m.visibility_profile,
-                       position_profile=m.position_profile, hero_ids=m.hero_ids)
+                       position_profile=m.position_profile, match_profile=m.match_profile, hero_ids=m.hero_ids)
         row = attempt(m, 'Volskaya', **options)
         self.assertEqual(row['rejected'], 'perspective_observateur_ou_replay')
         replay = ReplayTrace(m.module_base, row['reads'], row['core_monotonic'])

@@ -25,13 +25,14 @@ from hotstate.reader import ProcessBackend
 
 
 def attempt(backend, map_id, *, native_profile=None, visibility_profile=None,
-            position_profile=None, hero_ids=None):
+            position_profile=None, match_profile=None, hero_ids=None):
     trace = TraceMemory(backend)
     row = {'wall_before': utc(), 'monotonic_before': time.monotonic()}
     try:
         native = NativeReader(trace, profile=native_profile)
         row['visibility'] = CurrentVisibility(native, profile=visibility_profile,
-                                             position_profile=position_profile).diagnose(map_id, hero_ids=hero_ids)
+                                             position_profile=position_profile,
+                                             match_profile=match_profile).diagnose(map_id, hero_ids=hero_ids)
     except NativeUnavailable as exc:
         row['rejected'] = str(exc)
     row.update(wall_after=utc(), monotonic_after=time.monotonic(), reads=trace.reads,
@@ -63,7 +64,7 @@ def main(argv=None):
     parser.add_argument('--interval', type=float, default=0.5)
     parser.add_argument('--png', action='store_true')
     args = parser.parse_args(argv)
-    if not 0 < args.duration <= 120 or not 0.25 <= args.interval <= 10:
+    if not 0 < args.duration <= 300 or not 0.25 <= args.interval <= 10:
         parser.error('duration/interval hors bornes')
     out = args.out.resolve()
     if not out.is_relative_to(ROOT / 'out') or out.suffix != '.jsonl':

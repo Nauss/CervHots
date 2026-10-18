@@ -50,6 +50,9 @@ def tactical_key(state: dict) -> str:
         # A repeated reading of the same coordinates is not a movement.
         # Any actual movement/availability change still cancels the advice.
         positions = {k: v for k, v in positions.items() if k != "t"}
+    visibility = state.get('visibility')
+    if isinstance(visibility, dict):
+        visibility = {k: v for k, v in visibility.items() if k != 't'}
     return json.dumps({
         "map": state["meta"].get("map"), "composition": state.get("composition"),
         "match_id": state["meta"].get("match_id"), "local_player": state.get("local_player"),
@@ -58,7 +61,7 @@ def tactical_key(state: dict) -> str:
         "gameplay": ((gameplay["phase"], gameplay["timer_paused"], int(gameplay["t_s"] // 30))
                      if gameplay is not None else None),
         "stats": {k: v for k, v in state.get("stats", {}).items() if k != "globes_total"},
-        "events": state.get("events"), "positions": positions,
+        "events": state.get("events"), "positions": positions, 'visibility': visibility,
     }, sort_keys=True, ensure_ascii=False)
 
 

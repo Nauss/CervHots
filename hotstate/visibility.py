@@ -26,10 +26,11 @@ class _UnknownVisibility(NativeUnavailable):
 
 
 class CurrentVisibility:
-    def __init__(self, native, *, profile=None, position_profile=None):
+    def __init__(self, native, *, profile=None, position_profile=None, match_profile=None):
         self.native = native
         self.profile = PROFILE if profile is None else profile
         self.position_profile = position_profile
+        self.match_profile = match_profile
 
     def _verify(self, n):
         p = self.profile
@@ -158,6 +159,11 @@ class CurrentVisibility:
 
     def diagnose(self, map_id, *, context=None, hero_ids=None):
         """Fresh RO acquisition, no tactical payload, NEVER a validated packet."""
+        result = self._observe(map_id, context=context, hero_ids=hero_ids)
+        result.pop('_acquired')
+        return dict(result, status='diagnostic_unreleased')
+
+    def _observe(self, map_id, *, context=None, hero_ids=None):
         if getattr(self.native.memory, 'recorded_non_atomic', False):
             raise NativeUnavailable('capture_visibilite_non_atomique')
         expected = copy.deepcopy(context)
@@ -171,10 +177,14 @@ class CurrentVisibility:
         helper = AlliedPositions(n, profile=self.position_profile)
         helper._verify(n)
         helper._bounds(n, map_id)
+        from .match import ActiveMatch
+        active_match = ActiveMatch(profile=self.match_profile).observe(n)
         result = self._sample(n, helper, hero_ids)
+        result['native_match_id'] = active_match['match_id']
         if expected is not None:
             expected_map, _, local_id, team, _ = helper._context(expected)
-            if (expected_map != map_id or result['local_id'] != local_id or result['team'] != team
+            if (expected_map != map_id or active_match['match_id'] != expected['meta']['match_id']
+                    or result['local_id'] != local_id or result['team'] != team
                     or result['local_hero'] != hero_ids.get(expected['local_player']['hero'], expected['local_player']['hero'])
                     or any(p['team'] != result['members'][p['id']]['team'] for p in expected['players'])):
                 raise NativeUnavailable('perspective_visibilite_incoherente')
@@ -185,11 +195,15 @@ class CurrentVisibility:
         if not 0 <= after - before <= MAX_WINDOW_S or not 0 <= window <= MAX_WINDOW_S or context != expected:
             raise NativeUnavailable('fenetre_ou_contexte_visibilite_invalide')
         return dict(result, map_id=map_id, mission_t_s=after, read_window_s=window,
-                    status='diagnostic_unreleased')
+                    _acquired=start)
 
     def read(self, context, *, hero_ids=None):
         map_id, _, _, _, _ = AlliedPositions._context(context)
-        # Deliberately no issue()/publication path until the real recipe is reviewed.
         if map_id not in VALIDATED_MAPS:
             raise NativeUnavailable('recette_visibilite_joueur_absente')
-        raise NativeUnavailable('publication_visibilite_non_implementee')
+        result = self._observe(map_id, context=context, hero_ids=hero_ids)
+        acquired = result.pop('_acquired')
+        result['match_id'] = result.pop('native_match_id')
+        result['status'] = 'validated'
+        from .acquisition import issue
+        return issue(result, acquired)
