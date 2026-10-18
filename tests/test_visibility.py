@@ -9,6 +9,24 @@ from cerveau.state import snapshot
 
 
 class PerspectivePrivacyTests(unittest.TestCase):
+    def test_optional_torn_xy_omits_only_positions_not_public_core_or_vitals(self):
+        m = PositionMemory(); original = m.read_memory; fired = False
+        def changing(address, size):
+            nonlocal fired
+            data = original(address, size)
+            if not fired and address == 0x900000 + 5 * 0x2f0 + 0x60:
+                fired = True; m.position(6, 70, 80)
+            return data
+        m.read_memory = changing
+        with patch('hotstate.positions.PROFILE', m.position_profile):
+            raw = NativeReader(m, profile=m.profile).read_state(m.context, hero_ids=m.hero_ids)
+        raw['meta'].update(m.context['meta'], source='live')
+        self.assertTrue(fired)
+        self.assertNotIn('positions', raw)
+        self.assertEqual(len(raw['heroes']), 10)
+        self.assertEqual(raw['heroes'][5]['level'], 19)
+        self.assertIn('health', snapshot(raw)['heroes'][5])
+
     def test_vitals_require_untampered_same_process_receipt_and_live_source(self):
         for change in ('receipt', 'source', 'value', 'time', 'window', 'override'):
             raw = raw_packet()

@@ -72,6 +72,8 @@ périmé comme permission. Ce chemin a été corrigé :
    refuse l'enrichissement, sans repli vers une ancienne observation.
 2. Relecture de tout le read-set du cœur natif, budget mural125 ms et contexte
    inchangé. Tag/propriétaire/racines/équipe modifiés pendant lecture => refus.
+   Les lecteurs optionnels conservent des read-sets séparés : une lecture XY
+   refusée ne doit pas invalider les niveaux/états de vie indépendants.
 3. Reçu HMAC éphémère du même processus, liant identité, match déclaré, données
    héroïques et fenêtre. Le normaliseur exige ce reçu frais (âge0..1 s), le même
    héros local, l'équipe, le match, les données et une source live avant PV ou
@@ -98,6 +100,10 @@ hors worktree avant blocage. Ne pas versionner dumps, traces privées ou PNG.
   visibilité entre ennemis, mais il s'agit d'UN dump roulant, non atomique, sans
   comparaison temporelle/pixels applicable. `diagnose` le refuse explicitement.
   Cela n'est PAS une validation de visibilité joueur, ni une recette Dragon.
+- Le cœur P0/P1 durci a aussi été exercé sur ce dump historique : dix héros
+  conservés, aucun reçu de perspective/positions émis, aucun PV/ressource au
+  normaliseur. Le contexte de cette sonde utilise un label match synthétique,
+  explicitement sans prétendre résoudre le seed/cache actif.
 - Les trois traces de la recette positions Volskaya précédente contiennent872
   tentatives ; les racines/champs du brouillard n'y étaient pas demandés.
   Elles peuvent corroborer la perspective joueur, mais ne permettent pas de
@@ -106,7 +112,8 @@ hors worktree avant blocage. Ne pas versionner dumps, traces privées ou PNG.
 
 ## Vérification automatisée
 
-159 tests passent sur Python système et sur Python du coach au stade pré-revue.
+160 tests passent sur Python système et sur Python du coach après correction
+du premier retour de revue indépendante.
 Les journaux RED de confidentialité et GREEN complets sont dans l'audit privé.
 
 Couverture ajoutée : visible → brouillard → révélé → brouillard → visible,
@@ -118,6 +125,15 @@ changement d'équipe/partie/identité, rejet des données ennemies et cooldowns 
 normaliseur. Le collecteur est rejoué dans l'ordre exact, lectures et horloges
 consommées, et le refus observateur est aussi rejoué. Aucun de ces tests ne
 constitue une mesure réelle de visible → brouillard → révélé chez un joueur.
+
+La première revue indépendante du commit `1303bf0` a validé le périmètre
+diagnostic/confidentialité, mais reproduit une régression : le read-set externe
+incluait les XY d'un enrichissement optionnel pourtant déjà refusé. Un test RED
+reproduit le défaut ; les lecteurs optionnels utilisent maintenant leur propre
+acquisition, le cœur conservant sa relecture obligatoire. Le test GREEN vérifie
+que XY déchiré => positions absentes, dix héros/niveaux et PV alliés frais
+conservés. La liaison native seed/cache au match déclaré reste une limite,
+pas un critère satisfait par cette correction.
 
 ## Recette précise nécessaire, sans nouvelle demande d'autorisation de P2
 

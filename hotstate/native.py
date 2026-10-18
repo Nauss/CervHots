@@ -186,7 +186,9 @@ class NativeReader:
                 or any(p['team'] != next(m['team'] for m in members if m['id'] == p['id'])
                        for p in expected['players'])):
             raise NativeUnavailable('perspective_native_incoherente')
-        result = n._read_state(expected, hero_ids=hero_ids)
+        # Optional enrichments own their read-sets and rejection policy. An XY
+        # read already refused as torn must not poison the independent core.
+        result = n._read_state(expected, hero_ids=hero_ids, optional_native=self)
         for address, data in memory.read_set:
             if self.read(address, len(data)) != data:
                 raise NativeUnavailable('lecture_native_dechiree')
@@ -202,7 +204,7 @@ class NativeReader:
             }, acquired)
         return result
 
-    def _read_state(self, context, *, hero_ids=None):
+    def _read_state(self, context, *, hero_ids=None, optional_native=None):
         if not isinstance(context, dict):
             raise NativeUnavailable("contexte_natif_absent")
         local = context.get("local_player")
@@ -248,15 +250,16 @@ class NativeReader:
         if local_player["hero"] != expected:
             raise NativeUnavailable("identite_locale_native_incoherente")
         from .gameplay import GameplayClock
+        optional_native = self if optional_native is None else optional_native
         gameplay_clock = None
         try:
-            gameplay_clock = GameplayClock(self).read()
+            gameplay_clock = GameplayClock(optional_native).read()
         except NativeUnavailable:
             pass  # HUD unknown does not invalidate the independent P0/P1 fields.
         from .positions import AlliedPositions
         positions = None
         try:
-            positions = AlliedPositions(self).read(context, hero_ids=hero_ids)
+            positions = AlliedPositions(optional_native).read(context, hero_ids=hero_ids)
         except NativeUnavailable:
             pass  # No recipe/identity/consistent read => no coordinates, not zeros.
         finished = self.read_clock()
