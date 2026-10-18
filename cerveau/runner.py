@@ -45,6 +45,11 @@ def _hero_key(hero):
 def tactical_key(state: dict) -> str:
     # Les globes et l'horloge murale changent sans invalider une consigne tactique.
     gameplay = validated_gameplay_clock(state["meta"])
+    positions = state.get("positions")
+    if state["meta"].get("native_status") == "valide" and isinstance(positions, dict):
+        # A repeated reading of the same coordinates is not a movement.
+        # Any actual movement/availability change still cancels the advice.
+        positions = {k: v for k, v in positions.items() if k != "t"}
     return json.dumps({
         "map": state["meta"].get("map"), "composition": state.get("composition"),
         "match_id": state["meta"].get("match_id"), "local_player": state.get("local_player"),
@@ -53,7 +58,7 @@ def tactical_key(state: dict) -> str:
         "gameplay": ((gameplay["phase"], gameplay["timer_paused"], int(gameplay["t_s"] // 30))
                      if gameplay is not None else None),
         "stats": {k: v for k, v in state.get("stats", {}).items() if k != "globes_total"},
-        "events": state.get("events"), "positions": state.get("positions"),
+        "events": state.get("events"), "positions": positions,
     }, sort_keys=True, ensure_ascii=False)
 
 

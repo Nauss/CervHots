@@ -1,0 +1,14 @@
+{
+  "build": 98348,
+  "image_size": 73064448,
+  "pe_timestamp": 1791173268,
+  "signatures": [
+    {"name": "unit_position", "rva": 33883056, "size": 260, "sha256": "508f25f291c693234315ad9fbaea851b22322b3872ab92ba3039761125bfdd69"},
+    {"name": "position_decode14", "rva": 3233024, "size": 176, "sha256": "67abba32f9be8ac35f514722bf237a6d04d5fb143d6b20c69193b840c382bf76"},
+    {"name": "playable_bounds", "rva": 34410496, "size": 399, "sha256": "d4e2ba1ec518304e5800e3995b72566cb0865012e171160e0a77b8f9b02af767"},
+    {"name": "simulation_region", "rva": 9939968, "size": 56, "sha256": "dd447dd46aafd22b12c3ae305a9ac6a26e3bae1b036d3b9d3e3ecc245e206560"},
+    {"name": "region_fixed", "rva": 32629392, "size": 35, "sha256": "9b063eabbca8193fabadfc553d864458a88d0dfc933f9d59fadf600daa820ae4"}
+  ],
+  "maps": {"Volskaya": {"bounds": [4, 4, 244, 196]}},
+  "evidence": "Instruction-checked Galaxy UnitGetPosition dispatch 1477; unit+0x60 vector via decode14, fixed4096. RegionPlayableMap dispatch 1216 -> simulation region16. Bounds observed on three rolling Volskaya dumps only; not a synchronized minimap/player-perspective recipe. Publication remains closed in positions.VALIDATED_MAPS."
+}

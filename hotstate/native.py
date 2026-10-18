@@ -212,6 +212,12 @@ class NativeReader:
             gameplay_clock = GameplayClock(self).read()
         except NativeUnavailable:
             pass  # HUD unknown does not invalidate the independent P0/P1 fields.
+        from .positions import AlliedPositions
+        positions = None
+        try:
+            positions = AlliedPositions(self).read(context, hero_ids=hero_ids)
+        except NativeUnavailable:
+            pass  # No recipe/identity/consistent read => no coordinates, not zeros.
         finished = self.read_clock()
         if not 0 <= finished - started <= 1:
             raise NativeUnavailable("observation_native_non_synchrone")
@@ -219,6 +225,9 @@ class NativeReader:
                 "native_build": self.profile["build"]}
         if gameplay_clock is not None:
             meta["gameplay_clock"] = gameplay_clock
-        return {"meta": meta,
-                "players": players, "heroes": heroes, "local_player": local_player,
-                "composition_complete": len(players) == 10}
+        result = {"meta": meta,
+                  "players": players, "heroes": heroes, "local_player": local_player,
+                  "composition_complete": len(players) == 10}
+        if positions is not None:
+            result["positions"] = positions
+        return result

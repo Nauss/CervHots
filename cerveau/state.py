@@ -32,6 +32,59 @@ def validated_gameplay_clock(meta):
                                         "read_window_s", "mission_t_s")}
 
 
+def _native_positions(raw, heroes, local, team):
+    """Fail closed at the model boundary, independently of the native producer."""
+    from hotstate import positions
+
+    packet, meta = raw.get("positions"), raw["meta"]
+    if (not isinstance(packet, dict) or local is None or team != local["team"]
+            or meta.get("source") != "live" or meta.get("native_build") != 98348
+            or packet.get("status") != "validated"
+            or packet.get("map_id") not in positions.VALIDATED_MAPS
+            or packet.get("map_id") != meta.get("map_id")
+            or meta.get("context_source") != "initdata_memory"
+            or not isinstance(meta.get("match_id"), str)
+            or not re.fullmatch("[0-9a-f]{64}", meta["match_id"])
+            or packet.get("match_id") != meta["match_id"]
+            or type(packet.get("local_id")) is not int or packet["local_id"] != local["id"]
+            or type(packet.get("team")) is not int or packet["team"] != team
+            or not _number(packet.get("mission_t_s")) or packet["mission_t_s"] > 21600
+            or not _number(meta.get("t_s")) or meta["t_s"] > 21600
+            or not 0 <= meta["t_s"] - packet["mission_t_s"] <= 1
+            or not _number(packet.get("read_window_s")) or packet["read_window_s"] > 0.125):
+        return None
+    bounds = packet.get("bounds")
+    if (not isinstance(bounds, list) or len(bounds) != 4
+            or bounds != positions.playable_bounds(packet["map_id"])
+            or any(type(value) is not int for value in bounds)
+            or not -256 <= bounds[0] < bounds[2] <= 512
+            or not -256 <= bounds[1] < bounds[3] <= 512):
+        return None
+    samples = packet.get("heroes")
+    if not isinstance(samples, list) or len(samples) > 5:
+        return None
+    roster = {h["id"]: h for h in heroes}
+    clean, seen = [], set()
+    xmin, ymin, xmax, ymax = bounds
+    for sample in samples:
+        if not isinstance(sample, dict) or type(sample.get("id")) is not int:
+            return None
+        member = roster.get(sample["id"])
+        if (member is None or member["team"] != team or not member["alive"]
+                or sample["id"] in seen or sample.get("hero") != member["hero"]
+                or type(sample.get("x")) not in (int, float)
+                or type(sample.get("y")) not in (int, float)
+                or not xmin <= sample["x"] <= xmax or not ymin <= sample["y"] <= ymax):
+            return None
+        seen.add(sample["id"])
+        x, y = sample["x"], sample["y"]
+        clean.append({"id": sample["id"], "hero": member["hero"], "team": team,
+                      "x": x, "y": y, "u": (x - xmin) / (xmax - xmin),
+                      "v": 1 - (y - ymin) / (ymax - ymin)})
+    return {"t": packet["mission_t_s"], "map_id": packet["map_id"],
+            "heroes": sorted(clean, key=lambda h: h["id"])}
+
+
 def _native_heroes(raw, players, local, team):
     heroes = raw.get("heroes")
     if (local is None or len(players) != 10 or not isinstance(heroes, list) or len(heroes) != 10
@@ -119,6 +172,9 @@ def snapshot(raw: dict, *, at: float | None = None, team: int | None = None,
                            if type(stats.get(key)) is int and stats[key] >= 0}
         if meta.get("native_status") == "valide":
             result["heroes"] = _native_heroes(raw, players, local, team)
+            positions = _native_positions(raw, result["heroes"], local, team)
+            if positions is not None and (map_name is None or map_name == meta.get("map")):
+                result["positions"] = positions
             result["meta"]["native_status"] = "valide"
             gameplay_clock = validated_gameplay_clock(meta)
             if gameplay_clock is not None:
