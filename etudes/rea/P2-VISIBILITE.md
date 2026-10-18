@@ -1,6 +1,9 @@
 # P2 — visibilité courante joueur : travail conservé, recette manquante
 
 État au 18 octobre 2026 : **NON LIVRÉ, publication ennemie fermée**.
+Historique de la première préparation. État actuel, recettes autonomes et
+identité native : voir `P2-VISIBILITE-RECETTE.md`. Les demandes de créneau humain
+ci-dessous sont remplacées par la conduite de l'opérateur assistant autorisé.
 Base de départ vérifiée : main `12bbe713a06807200c5c9edfdf8ccf38a91d03df`,
 contenant la livraison du lot positions alliées. Carte `t_92c40f76`.
 Ce document ne remplace ni la recette humaine ni la revue avant intégration.

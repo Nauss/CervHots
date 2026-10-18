@@ -1,4 +1,4 @@
-# Reprise visibilité — préparation de la seconde recette
+# Reprise visibilité — identité active vérifiée, cycles brouillard non prouvés
 
 État : travail de branche NON LIVRÉ ; allowlist visibilité vide. Ce document
 remplace les demandes historiques de créneau humain dans P2-VISIBILITE.md :
@@ -71,7 +71,83 @@ de visibilité, pas sur le seul nouveau timestamp. Le seuil0.75 et les opt-ins
 sonores sont inchangés ; aucun appel de décision ou son n'est nécessaire.
 
 Tests RED : module identité absent puis chemin de publication absent. GREEN :
-171 tests sur les deux Python. La nouvelle revue indépendante et la seconde
-recette réelle incluant identité native et deux cycles annotables restent
-nécessaires avant ouverture, intégration et push. La première revue de reprise
-(deleg_7648e464) couvre b2d8cb5/100b71b seulement, pas ces nouveaux changements.
+171 tests sur les deux Python. La revue indépendante isolée
+`20261018_205828_1e2cbe` a approuvé le diff exact de préparation ensuite committé
+`08eed35aeada66699b15bdab824b51514b8539ae`, sans défaut security/logic identifié,
+mais explicitement sans approbation live. Le snapshot approuvé a été relu avant
+commit. La première revue de reprise (`deleg_7648e464`) couvre b2d8cb5/100b71b.
+
+## Seconde recette réellement exécutée, budget épuisé
+
+La seconde et dernière tentative autorisée a duré240s :307 frames,614 tentatives
+et307 PNG acceptés, aucun saut hors premier plan. Le rejeu exact du code gelé
+08eed35 consomme614/614 read-sets/horloges :557 diagnostics acceptés,57 refus de
+déchirure.660 états héroïques inconnus restent inconnus (554 mort hors périmètre,
+106 callback de révélation non traduit), et ne sont pas des frames/refus globaux.
+Acquisition maximale16ms, image encadrée maximale422ms ; horloge Windows
+quantifiée, jamais une garantie d'atomicité ni de coût nul.
+
+Le hash natif initial seed/cache est identique dans toutes les acquisitions
+acceptées. Sa comparaison au hash dérivé indépendamment du replay sauvegardé
+est exacte, après sortie normale du jeu. Le replay build98348 reste décodé avec
+le shim déclaré91756 ; il n'a jamais servi de producteur live. Les deux séries
+principales cumulent477 frames,954 tentatives exactement rejouées (860 acceptées,
+94 refus) et427 PNG vérifiés, hors pré-échantillons. Le code gelé16 fichiers de
+la première série a aussi été rechargé depuis sa copie durable pour la rejouer
+indépendamment du nouveau code18 fichiers.
+
+La comparaison des trois captures par partie aux replays observateurs historiques
+retrouve aussi exactement les deux identités distinctes Volskaya et Braxis ;
+l'ancien Dragon donne une troisième identité concordante. Ces sept dumps sont
+des corroborations STRUCTURELLES de la source initiale, pas des validations de
+visibilité joueur, d'atomicité, ou une extension Dragon/Braxis.
+
+Le chemin public `read(context)` a été réellement exercé en rejeu sur les614
+tentatives v2 :557 résultats/57 refus concordants.557 contrôles du normaliseur
+sur enveloppe SYNTHÉTIQUE vérifient l'absence de XY/vitaux/ressources/cooldowns
+ennemis malgré le booléen. L'allowlist n'a été patchée que dans ce processus
+d'audit historique ; elle reste VIDE dans le produit. Ces enveloppes ne sont
+pas une capture complète P0/P1/initData et ne prouvent pas une acquisition live
+fraîche du chemin complet ; aucune valeur replay ne remplit le live.
+
+Roster effectif v2, confirmé par le replay : Diablo local ; Abathur, Auriel,
+Lunara, Kerrigan alliés ; Asmodan, Uther, Kramer, Ragnaros, Chen ennemis. L'UI
+avait accepté quatre choix Abathur en lobby mais les a réassignés : ne pas
+utiliser le roster prévu comme preuve de vision absente. Toujours neuf IA,
+zéro observateur actif et aucun humain externe. Le jeu a été fermé normalement
+et les états audio initiaux restaurés/relus par l'opérateur, pas par Cody.
+
+## Critère encore manquant — ne pas livrer partiellement
+
+Les annotations indépendantes ne prouvent pas deux cycles du même ennemi
+visible→brouillard→revisible. Première série : six observations positives
+étiquetées, dont trois seulement encadrées par deux lectures acceptées ; aucune
+comparaison négative certaine de brouillard. Seconde série : Asmodan est nommé,
+avec modèle/barre rouge à la frame102/HUD09:33 ; la frame143/HUD10:06 montre une
+caméra plus au nord sur le pointB vide, sans prouver qu'Asmodan y est encore.
+Les disparitions pendant apparition/embarquement du protecteur, une mort ou
+un simple départ hors cadre ne sont PAS des transitions de brouillard validées.
+Une inspection complémentaire de six frames régulièrement espacées et des
+frames102/143 confirme cette ambiguïté, pas un deuxième cycle inventé.
+
+L'opérateur a épuisé les deux tentatives autorisées et a explicitement interdit
+une troisième sous le mandat courant. Aucune nouvelle partie n'est lancée pour
+ce lot. Le besoin de reprise est un scénario instrumenté permettant d'identifier
+et de garder la même région ennemie avant/après pertes de vision, sans vision
+partagée persistante ni embarquement/transformation ; il appartient à la
+coordination opérateur et à une décision de budget, pas au propriétaire de jouer.
+Tant que ce critère manque : carte NON LIVRÉE, allowlist vide, aucun descendant
+libéré, aucune intégration/push main. Sources, traces, captures, replays, revues
+et audits sont conservés dans le handoff privé durable, jamais des dumps en Git.
+
+La revue finale RO indépendante `20261018_213201_f1fd6e` a réellement relancé
+171 tests sur chacun des deux Python, rejoué les340 acquisitions avec le code
+gelé v1 et les614 avec le code v2, vérifié les427 PNG et les16/18 sources gelées.
+Verdict : `code_review_passed=true`, zéro défaut security/logic identifié,
+`release_approved=false`. Outre les deux cycles non attestés, elle exige avant
+une future livraison la trace du chemin LIVE COMPLET réel
+initData/P0P1→NativeReader.read_state→normaliseur→clé antipéremption, en un même
+processus avec fraîcheur non simulée. Les557 enveloppes synthétiques de rejeu
+public-core ne remplissent pas ce critère. Préparer ce collecteur/tests hors
+ligne avant toute éventuelle nouvelle recette décidée par la coordination ;
+ne pas simplement rejouer une troisième fenêtre du diagnostic existant.
