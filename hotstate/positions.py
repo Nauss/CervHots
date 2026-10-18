@@ -117,6 +117,43 @@ class AlliedPositions:
                            'v': 1 - (y - ymin) / (ymax - ymin)})
         return {'map_id': map_id, 'bounds': [xmin, ymin, xmax, ymax], 'heroes': heroes}
 
+    def _identity(self, n, hero_ids):
+        """Active client perspective, never the observed/spectated player branch.
+
+        UI LocalPlayer/Teammate path: getter6579d0 -> CPlayer table -> team+1c.
+        A root stamp identifies this acquisition's native objects, NOT replay
+        seed/cache identity; no cached initData buffer can grant permissions.
+        """
+        signatures = self.profile.get('identity_signatures')
+        if not signatures:
+            raise NativeUnavailable('profil_identite_positions_absent')
+        for s in signatures:
+            if hashlib.sha256(n.read(n.base + s['rva'], s['size'])).hexdigest() != s['sha256']:
+                raise NativeUnavailable('signature_identite_positions_invalide')
+        low = ~(n.global_u32(0x339FEC8) - n.global_u32(0x32C51F8)) & MASK
+        high = ~(n.global_u32(0x339FECC) - n.global_u32(0x32C403C)) & MASK
+        client = self._pointer((high << 32) | low)
+        if (n.value(client) ^ n.global_u32(0x32C3850)) & 0x30:
+            raise NativeUnavailable('perspective_observateur_ou_replay')
+        local = n.value(client + 0xC, 'B')
+        if not 1 <= local <= 10:
+            raise NativeUnavailable('identite_locale_native_absente')
+        members, pointers = [], []
+        for index in range(10):
+            player = self._pointer(n.player_pointer(index + 1))
+            team, kind = struct.unpack('<BB', n.read(player + 0x1C, 2))
+            if team not in (0, 1) or kind not in (1, 2) or (index == local - 1 and kind != 1):
+                raise NativeUnavailable('identite_ou_equipe_native_invalide')
+            members.append({'id': index, 'team': team})
+            pointers.append(player)
+        if any(sum(p['team'] == t for p in members) != 5 for t in (0, 1)):
+            raise NativeUnavailable('equipes_natives_non_5v5')
+        hero = n.hero_id(pointers[local - 1], hero_ids)
+        team = members[local - 1]['team']
+        # Simulation roots are independently recorded/rechecked by read_clock/bounds.
+        stamp = hashlib.sha256(struct.pack('<Q10Q', client, *pointers)).hexdigest()
+        return local - 1, team, hero, members, stamp
+
     @staticmethod
     def _context(context):
         if not isinstance(context, dict):
@@ -159,10 +196,38 @@ class AlliedPositions:
             raise NativeUnavailable('capture_positions_non_atomique')
         if map_id not in VALIDATED_MAPS:
             raise NativeUnavailable('recette_positions_absente')
-        wall = time.monotonic()
+        result = self._observe(map_id, context=context, hero_ids=hero_ids)
+        from .acquisition import issue
+        acquired = result.pop('_acquired')
+        result.update(status='validated', match_id=match_id)
+        return issue(result, acquired)
+
+    def diagnose(self, map_id, *, hero_ids=None):
+        """Same acquisition core with publication CLOSED; never a coach packet."""
+        result = self._observe(map_id, hero_ids=hero_ids)
+        result.pop('_acquired')
+        return dict(result, status='diagnostic_unreleased')
+
+    def _observe(self, map_id, *, context=None, hero_ids=None):
+        if getattr(self.native.memory, 'recorded_non_atomic', False):
+            raise NativeUnavailable('capture_positions_non_atomique')
+        if hero_ids is None:
+            hero_ids = json.loads((Path(__file__).parent / 'hero_ids.json').read_text(encoding='utf-8'))
+        expected_context = self._context(context) if context is not None else None
+        clock = getattr(self.native.memory, 'positions_clock', time.monotonic)
+        wall = clock()
         memory = _RecordedMemory(self.native.memory)
         n = NativeReader(memory, profile=self.native.profile)
         before = n.read_clock()
+        local_id, team, hero, members, stamp = self._identity(n, hero_ids)
+        allies = [dict(p) for p in members if p['team'] == team]
+        if expected_context is not None:
+            _, _, expected_id, expected_team, expected_allies = expected_context
+            expected_hero = hero_ids.get(context['local_player']['hero'], context['local_player']['hero'])
+            if (expected_id != local_id or expected_team != team or expected_hero != hero
+                    or [p['id'] for p in expected_allies] != [p['id'] for p in allies]):
+                raise NativeUnavailable('identite_positions_native_incoherente')
+            allies = expected_allies
         result = self._sample(n, map_id, allies, hero_ids)
         # No retry/cached fallback: keys, roots, code, owner, tag, flags and XY
         # are all reread. This is a conservative torn-read detector, not a lock.
@@ -170,10 +235,10 @@ class AlliedPositions:
             if self.native.read(address, len(data)) != data:
                 raise NativeUnavailable('lecture_positions_dechiree')
         after = n.read_clock()
-        window = time.monotonic() - wall
+        window = clock() - wall
         if not 0 <= after - before <= MAX_WINDOW_S or not 0 <= window <= MAX_WINDOW_S:
             raise NativeUnavailable('fenetre_positions_trop_large')
-        if self._context(context) != (map_id, match_id, local_id, team, allies):
+        if context is not None and self._context(context) != expected_context:
             raise NativeUnavailable('contexte_positions_modifie')
-        return dict(result, status='validated', mission_t_s=after, read_window_s=window,
-                    match_id=match_id, local_id=local_id, team=team)
+        return dict(result, mission_t_s=after, read_window_s=window, _acquired=wall,
+                    native_session=stamp, local_id=local_id, team=team)

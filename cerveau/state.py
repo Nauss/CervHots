@@ -35,11 +35,13 @@ def validated_gameplay_clock(meta):
 def _native_positions(raw, heroes, local, team):
     """Fail closed at the model boundary, independently of the native producer."""
     from hotstate import positions
+    from hotstate.acquisition import fresh
 
     packet, meta = raw.get("positions"), raw["meta"]
     if (not isinstance(packet, dict) or local is None or team != local["team"]
             or meta.get("source") != "live" or meta.get("native_build") != 98348
             or packet.get("status") != "validated"
+            or not fresh(packet)
             or packet.get("map_id") not in positions.VALIDATED_MAPS
             or packet.get("map_id") != meta.get("map_id")
             or meta.get("context_source") != "initdata_memory"

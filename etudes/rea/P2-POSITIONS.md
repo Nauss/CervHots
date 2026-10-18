@@ -133,7 +133,7 @@ le chemin actuellement activé, 120 tests exécutés sur chacun des deux Python.
 Ce verdict n'est PAS une revue de livraison ni une autorisation d'ouvrir la liste.
 Après ajout du test de mutation du contexte fourni : 121 tests passent sur
 Python système et Python du coach ; `git diff --check` passe.
-Trois obligations supplémentaires à vérifier avant cette ouverture :
+Trois obligations supplémentaires identifiées à cette revue (état initial) :
 
 - Le contrôle final de `_context` compare le dictionnaire Python fourni ; il
   détecte sa mutation, PAS une nouvelle identité native active. Établir la liaison
@@ -152,3 +152,87 @@ empreintes/fixtures et l'audit temporel, revue indépendante finale, ouvrir seul
 la carte réellement validée, tests des deux Python, commit/intégration/push main
 et vérification du hash distant. Ne pas clore cette carte sur ce travail partiel
 et ne pas débloquer le lot visibilité suivant avant livraison effective.
+
+## Reprise : gardes et collecteur préparatoire (toujours NON LIVRÉ)
+
+La conduite GUI est exclusivement réservée à l'opérateur de recette ; ce worker
+ne lance pas le jeu et ne prend pas le premier plan. Le propriétaire a autorisé
+la partie privée Volskaya avec héros local, neuf IA, sans humain externe ni son.
+
+### Identité native active, et non simple relecture du contexte Python
+
+Chemin UI suivi en lecture seule : `LocalPlayer` / `Teammate` dans la fonction
+RVA `0x8b8820` et ses fragments `0x8b8847`, `0x8b88ac`. Elle appelle le getter
+local `0x6579d0`, résout les CPlayer par `0x9d5080` et compare leur octet `+0x1c`
+pour distinguer un coéquipier. Le getter décode la racine client avec :
+
+    low  = ~(global[0x339fec8] - global[0x32c51f8]) & 0xffffffff
+    high = ~(global[0x339fecc] - global[0x32c403c]) & 0xffffffff
+
+Le helper mode `0x2694d0` teste les bits 4/5 du DWORD racine XOR global
+`0x32c3850`. Le lecteur refuse ces deux modes : il n'emploie JAMAIS la branche
+spectateur du getter (`+0xe`, puis `+0x11`), même si elle désigne un héros.
+Le chemin joueur lit uniquement `client+0xc`, exige un slot natif 1..10, puis
+un CPlayer local de type humain 1 (`PlayerType` suit `+0x1d` ; IA = 2 dans les
+captures applicables). Les équipes de tous les CPlayer doivent être natives 0/1
+et 5v5. Le contexte externe doit concorder avec ces appartenances et ce héros
+local avant toute lecture de XY. Aucun bloc supposé de cinq slots n'accorde
+la permission : le dump observateur Volskaya comporte justement des permutations.
+
+Six empreintes supplémentaires couvrent ces chemins. Leur vérification a été
+exécutée sur les trois dumps Volskaya ET l'ancienne Dragon : les trois observateurs
+sont refusés (`perspective_observateur_ou_replay`) ; Dragon retrouve le slot anonyme
+5, équipe 1, type humain et héros déjà recoupés dans P1. Ce résultat structurel
+n'est ni une capture synchrone, ni une ouverture du support Dragon. Tous les dumps
+roulants restent refusés par le noyau live.
+
+`native_session` est une empreinte des objets client/CPlayer de cette acquisition,
+pas une identité de replay seed/cache, ni un identifiant persistant garanti à
+travers une réutilisation d'adresses. Le `match_id` initData demeure un label
+de corrélation du contexte existant, PAS l'autorité de publication. La permission
+vient des racines natives re-lues dans chaque acquisition ; aucune position n'est
+conservée d'une acquisition à l'autre. L'ABA entre lectures reste une limite.
+
+### Âge d'acquisition indépendant de la mission
+
+Le chemin direct en processus `--live -> normaliseur` émet un reçu HMAC sur le
+paquet complet, daté au début d'acquisition par l'horloge monotone. La clé aléatoire
+de processus n'est jamais stockée. Le normaliseur exige ce reçu intact et âgé de
+0..1 s, même en pause mission. Le reçu et les racines ne sont jamais transmis au
+modèle. Un JSON d'un autre processus, une date modifiée, des coordonnées modifiées
+ou un paquet réutilisé après expiration ne peuvent ouvrir ce champ. Ce n'est PAS
+un protocole d'authentification interprocessus : la voie `--state` alimentée par un
+autre processus perd volontairement les positions ; ne pas contourner ce refus.
+
+### Collecteur réellement exécutable avant publication
+
+`etudes/rea/scripts/capture_positions.py` appelle `AlliedPositions.diagnose`, qui
+utilise exactement `_observe` du chemin public, sans ouvrir `VALIDATED_MAPS` et
+sans faux paquet validated. Statut obligatoire `diagnostic_unreleased` : aucune
+consommation coach. Durée 0..120 s, intervalle 0.25..10 s, deux tentatives RO par
+image facultative, chacune bornée à 8192 reads / 1 Mio demandés. Aucun scan de tas,
+contrôle GUI, invocation client ou audio. PID/base ASLR/commit, empreintes réelles
+des sources gelées, UTC/monotone, ordre/adresse/taille/bytes et échecs sont conservés.
+Les horloges exactes du noyau sont enregistrées et rejouables elles aussi : un
+rejet du budget temporel ne devient pas une réussite en relecture plus rapide.
+
+La vérification de gel exige les sources suivies à HEAD et compare leur contenu
+au commit attendu ; un module non suivi n'est pas couvert par le seul git diff
+et est explicitement refusé. Création exclusive du JSONL ET de chaque PNG, aucune
+preuve préexistante écrasée. `PIL.ImageGrab` est importé seulement avec `--png`.
+Interpréteur de recette préparé par l'opérateur sous son `out/`, pas une nouvelle
+dépendance produit ; aucune modification des venv du coach/lecteur.
+
+Tests préparatoires : identité native changée avec dictionnaire Python inchangé,
+mode observateur, local IA, racine locale changée durant lecture, mission figée et
+paquet âgé, falsifications, aller-retour des traces exactes (y compris refus 125 ms),
+collision PNG et source non suivie. 133 tests passent réellement sur Python
+système 3.14, coach 3.12 et interpréteur privé opérateur 3.13. Revue indépendante
+préparatoire `deleg_023652f3` : trois findings collecteur corrigés (sources gelées,
+PNG exclusifs, rejeu temporel), pas une revue de livraison finale.
+
+La recette réelle doit encore mesurer acceptations/rejets, fenêtres, axe X/Y,
+projection minicarte sur positions stables et mort/respawn. Le lecteur garde
+volontairement la relecture exacte de l'horloge initiale, susceptible de refuser
+un tick : ne pas l'affaiblir pour améliorer un taux. Ne déclarer aucune erreur
+pixel ni livraison tant que ces mesures n'ont pas été reçues et vérifiées.

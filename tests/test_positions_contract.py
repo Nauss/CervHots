@@ -28,6 +28,10 @@ class PositionContractTests(unittest.TestCase):
         raw = raw_packet()
         raw['positions']['pointer'] = 'PRIVATE'
         raw['positions']['heroes'][0].update(name='PRIVATE', owner='PRIVATE')
+        # Deliberately re-issue a SYNTHETIC acquisition to test the typed
+        # sanitizer independently of tamper/provenance rejection.
+        from hotstate.acquisition import issue
+        issue(raw['positions'], raw['positions']['acquisition']['monotonic_s'])
         with patch('hotstate.positions.VALIDATED_MAPS', ('Volskaya',)):
             state = snapshot(raw)
         self.assertEqual([h['id'] for h in state['positions']['heroes']], list(range(5, 10)))
@@ -55,6 +59,9 @@ class PositionContractTests(unittest.TestCase):
             elif change == 'team': p['team'] = 0
             elif change == 'map': raw['meta']['map_id'] = 'DragonShire'
             else: p['read_window_s'] = 1
+            from hotstate.acquisition import issue
+            if change not in ('nan', 'infinite'):
+                issue(p, p['acquisition']['monotonic_s'])
             with self.subTest(change=change), patch('hotstate.positions.VALIDATED_MAPS', ('Volskaya',)):
                 self.assertNotIn('positions', snapshot(raw))
         raw = raw_packet(); raw['local_player'] = None

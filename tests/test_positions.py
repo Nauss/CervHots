@@ -15,6 +15,15 @@ class PositionMemory(NativeMemory):
         super().__init__(base)
         self.add_roster()
         self.position_profile = copy.deepcopy(self.profile)
+        self.position_profile['identity_signatures'] = copy.deepcopy(self.profile['signatures'])
+        self.pack(base + 0x339fec8, 'II', (~0x120000) & MASK, MASK)
+        self.pack(base + 0x32c51f8, 'I', 0)
+        self.pack(base + 0x32c403c, 'I', 0)
+        self.pack(base + 0x32c3850, 'I', 0)
+        self.pack(0x120000, 'I', 0)
+        self.pack(0x120000 + 0xc, 'B', 6)
+        for slot in range(1, 11):
+            self.pack(0x600000 + slot * 0x1000 + 0x1c, 'BB', (slot - 1) // 5, 1 if slot == 6 else 2)
         self.position_profile['maps'] = {'Volskaya': {'bounds': [4, 4, 244, 196]}}
         self.context['meta'] = {'map_id': 'Volskaya', 'context_source': 'initdata_memory',
                                 'match_id': 'a' * 64}
