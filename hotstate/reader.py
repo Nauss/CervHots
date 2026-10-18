@@ -238,7 +238,8 @@ def scan_triggers(backend, wanted: dict, *, observe_region=None):
     return found
 
 
-def snapshot(backend, mapping: dict, debug: bool = False, *, context=None) -> dict:
+def snapshot(backend, mapping: dict, debug: bool = False, *, context=None,
+             native_profile=None) -> dict:
     triggers = mapping["triggers"]
     if context is not None:
         context.begin()
@@ -281,7 +282,9 @@ def snapshot(backend, mapping: dict, debug: bool = False, *, context=None) -> di
             state["meta"]["native_status"] = "contexte_requis"
         else:
             try:
-                native = NativeReader(backend).read_state(state)
+                reader = (NativeReader(backend) if native_profile is None
+                          else NativeReader(backend, profile=native_profile))
+                native = reader.read_state(state)
             except NativeUnavailable as exc:
                 state["meta"]["native_status"] = str(exc)
             else:

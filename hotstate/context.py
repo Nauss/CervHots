@@ -116,6 +116,7 @@ class ContextProbe:
 
     def begin(self):
         self.contexts = {}
+        self.candidate_addresses = {}  # Private diagnostic only, never finish() output.
         self.attempts = 0
         self.rejected = 0
         self.reason = "contexte_absent"
@@ -147,6 +148,10 @@ class ContextProbe:
                     self.attempts = 128
                     return
                 self.contexts[key] = context
+                addresses = self.candidate_addresses.setdefault(key, [])
+                address = base + position - 2
+                if address not in addresses:
+                    addresses.append(address)
             except self.decode_errors:
                 # Le tas contient aussi du texte et des copies partielles : ce ne
                 # sont pas des contextes. Ne jamais publier un décodage incomplet.

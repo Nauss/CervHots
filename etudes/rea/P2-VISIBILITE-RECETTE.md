@@ -151,3 +151,41 @@ processus avec fraîcheur non simulée. Les557 enveloppes synthétiques de rejeu
 public-core ne remplissent pas ce critère. Préparer ce collecteur/tests hors
 ligne avant toute éventuelle nouvelle recette décidée par la coordination ;
 ne pas simplement rejouer une troisième fenêtre du diagnostic existant.
+
+## Outil de preuve pipeline préparé hors ligne, sans troisième capture
+
+`etudes/rea/scripts/capture_visibility_pipeline.py` prépare maintenant ce chemin
+réel : buffer initData lu à chaque prélèvement → vrai ContextProbe →
+reader.snapshot/NativeReader.read_state → normaliseur → tactical_key, dans un
+même processus. Aucun roster, niveau ou paquet P0/P1 n'est fabriqué par ce
+collecteur. La région ciblée est celle d'initData : aucun compteur gt_* du tas
+entier n'est revendiqué. Une seconde lecture des octets initData détecte leur
+modification pendant l'acquisition ; le hash initial natif doit aussi concorder.
+
+La découverte RO est séparée et bornée (256MiB demandés,20s,16384 requêtes de
+régions, lectures de1MiB avec recouvrement64KiB). Elle ne donne qu'une adresse
+privée candidate, pas une permission de réutiliser le contexte. Chaque tentative
+redécode et revérifie le buffer et la perspective active. Un label joueur est
+fourni dans un petit fichier UTF8 privé sous out/, jamais une credential ni une
+valeur imprimée. Le collecteur peut aussi utiliser une adresse déjà identifiée,
+mais ne remplace pas une découverte manquante par une adresse supposée.
+
+Pour évaluer le booléen encore non livré, le processus DIAGNOSTIC privé active
+explicitement sa seule allowlist candidate, avec le flag obligatoire
+`--candidate-visibility`, puis la restaure même en erreur. Le produit reste
+fermé ; aucun paquet ne va à une API/coach/audio. L'horloge live est transmise à
+la vraie monotonic, en enregistrant ses valeurs, jamais gelée. Sont tracés les
+octets demandés/échecs, horloges, paquets réellement lus, sortie normalisée,
+âges des reçus, clé antipéremption et refus optionnels. Le rejeu est étiqueté
+historique, génère ses propres reçus éphémères et consomme les lectures/horloges
+dans l'ordre ; il ne revendique pas la fraîcheur live de l'ancien JSON.
+
+Les tests hermétiques supplémentaires exercent ce vrai code de chaîne sur
+mémoire et initData SYNTHÉTIQUES, y compris une horloge réellement transmise,
+rejeu exact, refus observateur/match périmé/initData déchiré/dump roulant,
+expiration murale malgré mission en pause, transition encadrant l'image,
+confidentialité ennemie, sélection native du candidat et budget discovery.
+185 tests passent sur chacun des deux Python à ce stade. Cela prépare l'outil ;
+cela ne fournit NI deux cycles réels NI une nouvelle capture du pipeline live.
+Aucune troisième partie n'est lancée. La commande future reste conditionnée à
+l'arbitrage explicite du budget/scénario par la coordination opérateur.
