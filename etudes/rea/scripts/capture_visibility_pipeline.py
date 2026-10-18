@@ -184,7 +184,7 @@ def capture_frame(backend, probe, address, size=65536, *, screenshot=None, **opt
     return row
 
 
-def bounded_regions(backend, *, max_bytes=256 * 1024 ** 2, max_seconds=20):
+def bounded_regions(backend, *, max_bytes=256 * 1024 ** 2, max_seconds=20, diagnostics=None):
     """Finite RO discovery; ≤1MiB request, overlap for a ≤64KiB initData buffer."""
     class MBI(ctypes.Structure):
         _fields_ = [('BaseAddress', ctypes.c_void_p), ('AllocationBase', ctypes.c_void_p),
@@ -193,29 +193,51 @@ def bounded_regions(backend, *, max_bytes=256 * 1024 ** 2, max_seconds=20):
     if not 0 < max_bytes <= 256 * 1024 ** 2 or not 0 < max_seconds <= 20:
         raise ValueError('discovery limits invalid')
     address, requested, queries = 0, 0, 0
+    chunks = read_bytes = failures = readable = 0
     deadline = REAL_CLOCK() + max_seconds
-    while address < 0x800000000000 and requested < max_bytes and queries < 16384 and REAL_CLOCK() < deadline:
-        mbi = MBI(); queries += 1
-        if not backend.k32.VirtualQueryEx(backend.handle, ctypes.c_void_p(address),
-                                         ctypes.byref(mbi), ctypes.sizeof(mbi)):
-            break
-        base, size = mbi.BaseAddress or 0, mbi.RegionSize or 0x1000
-        if base + size <= address:
-            break
-        if (mbi.State == 0x1000 and mbi.Type == 0x20000
-                and not mbi.Protect & 0x100 and mbi.Protect & 0xff != 1):
-            cursor = base
-            while cursor < base + size and requested < max_bytes and REAL_CLOCK() < deadline:
-                count = min(1024 ** 2, base + size - cursor, max_bytes - requested)
-                requested += count
-                data = backend.read_memory(cursor, count)
-                if data:
-                    yield cursor, data
-                cursor += max(1, count - 65536) if count > 65536 else count
-        address = base + size
+    reason = 'consumer_stopped'
+    try:
+        while address < 0x800000000000 and requested < max_bytes and queries < 16384 and REAL_CLOCK() < deadline:
+            mbi = MBI(); queries += 1
+            if not backend.k32.VirtualQueryEx(backend.handle, ctypes.c_void_p(address),
+                                             ctypes.byref(mbi), ctypes.sizeof(mbi)):
+                reason = 'query_failed'
+                break
+            base, size = mbi.BaseAddress or 0, mbi.RegionSize or 0x1000
+            if base + size <= address:
+                reason = 'invalid_region_progress'
+                break
+            if (mbi.State == 0x1000 and mbi.Type == 0x20000
+                    and not mbi.Protect & 0x100 and mbi.Protect & 0xff != 1):
+                readable += 1
+                cursor = base
+                while cursor < base + size and requested < max_bytes and REAL_CLOCK() < deadline:
+                    count = min(1024 ** 2, base + size - cursor, max_bytes - requested)
+                    requested += count; chunks += 1
+                    data = backend.read_memory(cursor, count)
+                    if data:
+                        read_bytes += len(data)
+                        yield cursor, data
+                    else:
+                        failures += 1
+                    cursor += max(1, count - 65536) if count > 65536 else count
+            address = base + size
+    finally:
+        if diagnostics is not None:
+            now = REAL_CLOCK()
+            if reason == 'consumer_stopped':
+                if requested >= max_bytes: reason = 'byte_limit'
+                elif queries >= 16384: reason = 'query_limit'
+                elif now >= deadline: reason = 'time_limit'
+                elif address >= 0x800000000000: reason = 'address_space_end'
+            diagnostics.update(query_count=queries, readable_regions=readable,
+                read_requests=chunks, bytes_requested=requested, bytes_read=read_bytes,
+                read_failures=failures, elapsed_s=max(0, now - (deadline - max_seconds)),
+                stop_reason=reason, max_bytes=max_bytes, max_seconds=max_seconds,
+                max_queries=16384, max_request_bytes=1024 ** 2)
 
 
-def discover_context(backend, probe, *, regions=None, native_profile=None):
+def discover_context(backend, probe, *, regions=None, native_profile=None, diagnostics=None):
     """Select a private address by native initial identity, NOT by uniqueness alone."""
     acquired = REAL_CLOCK(); recorded = _RecordedMemory(backend)
     n = NativeReader(recorded, profile=native_profile)
@@ -226,26 +248,45 @@ def discover_context(backend, probe, *, regions=None, native_profile=None):
             raise NativeUnavailable('identite_discovery_dechiree')
     if not 0 <= REAL_CLOCK() - acquired <= 0.125:
         raise NativeUnavailable('identite_discovery_perimee')
-    probe.begin(); total = 0
-    for base, data in bounded_regions(backend) if regions is None else regions:
-        total += len(data)
-        probe.feed(base, data)
-        if probe.reason == 'contexte_ambigu' or probe.attempts >= 128:
-            raise NativeUnavailable('contexte_discovery_ambigu')
-        for key, context in probe.contexts.items():
-            digest = hashlib.sha256(key[0].to_bytes(4, 'little') + b''.join(key[1])).hexdigest()
-            if digest == active['match_id']:
-                handles = tuple(context['_cache_handles'])
-                metadata = probe.map_resolver(handles)
-                if metadata.get('map_id') != 'Volskaya':
-                    raise NativeUnavailable('carte_discovery_inconnue')
-                probe.map_cache[handles] = metadata
-                return {'address': probe.candidate_addresses[key][0], 'size': 65536,
-                        'native_match_id': digest, 'bytes_scanned': total,
-                        'map_metadata': metadata, 'permission': 'NONE_redecode_and_check_each_sample'}
-        if probe.attempts >= 128:
-            break
-    raise NativeUnavailable('initdata_actif_non_trouve_budget_borne')
+    probe.begin(); total = anchors = 0
+    scan = {}
+    iterator = iter(bounded_regions(backend, diagnostics=scan) if regions is None else regions)
+    reason = 'no_matching_context'
+    try:
+        for base, data in iterator:
+            total += len(data)
+            anchors += data.count(probe.anchor)
+            probe.feed(base, data)
+            if probe.reason == 'contexte_ambigu' or probe.attempts >= 128:
+                reason = 'decoder_limit_or_ambiguous_context'
+                raise NativeUnavailable('contexte_discovery_ambigu')
+            for key, context in probe.contexts.items():
+                digest = hashlib.sha256(key[0].to_bytes(4, 'little') + b''.join(key[1])).hexdigest()
+                if digest == active['match_id']:
+                    handles = tuple(context['_cache_handles'])
+                    metadata = probe.map_resolver(handles)
+                    if metadata.get('map_id') != 'Volskaya':
+                        reason = 'unknown_map'
+                        raise NativeUnavailable('carte_discovery_inconnue')
+                    probe.map_cache[handles] = metadata
+                    reason = 'selected'
+                    return {'address': probe.candidate_addresses[key][0], 'size': 65536,
+                            'native_match_id': digest, 'bytes_scanned': total,
+                            'map_metadata': metadata, 'permission': 'NONE_redecode_and_check_each_sample'}
+        raise NativeUnavailable('initdata_actif_non_trouve_budget_borne')
+    finally:
+        if hasattr(iterator, 'close'):
+            iterator.close()
+        if diagnostics is not None:
+            hashes = sorted(hashlib.sha256(key[0].to_bytes(4, 'little') + b''.join(key[1])).hexdigest()
+                            for key in probe.contexts)
+            diagnostics.update(active_match_id=active['match_id'], context_match_hashes=hashes,
+                matching_contexts=sum(h == active['match_id'] for h in hashes),
+                decoded_contexts=len(hashes), decoder_attempts=probe.attempts,
+                decoder_rejections=probe.rejected, probe_reason=probe.reason,
+                anchor_occurrences=anchors, bytes_fed=total, scan=scan,
+                stop_reason=reason, elapsed_s=max(0, REAL_CLOCK() - acquired),
+                mode='private_discovery_diagnostics_NO_raw_seed_cache_label_or_payload')
 
 
 def main(argv=None):
@@ -301,10 +342,31 @@ def main(argv=None):
         grab = ImageGrab.grab
     out.parent.mkdir(parents=True, exist_ok=True)
     # Exclusive output is acquired BEFORE opening a process; no evidence overwrite.
-    with out.open('x', encoding='utf-8') as stream:
+    with out.open('x', encoding='utf-8') as stream, contextlib.ExitStack() as files:
+        # Reserve a separate private report before OpenProcess. Even a bounded
+        # discovery refusal must leave diagnostics, not just an empty JSONL.
+        report_stream = (files.enter_context(out.with_suffix('.discovery.json').open('x', encoding='utf-8'))
+                         if args.discover_context else None)
         backend = ProcessBackend(args.pid)
         try:
-            discovery = discover_context(backend, probe) if args.discover_context else None
+            diagnostics = {}
+            report = {'kind': 'private_bounded_discovery_diagnostics', 'commit': commit,
+                      'status': 'rejected', 'wall_before': utc(), 'diagnostics': diagnostics,
+                      'sources_sha256': manifest, 'publication': 'NONE'}
+            try:
+                discovery = (discover_context(backend, probe, diagnostics=diagnostics)
+                             if args.discover_context else None)
+                report['status'] = 'selected'
+            except Exception as exc:
+                # Never serialize arbitrary decoder/IO exceptions containing
+                # private bytes. Known native refusal strings contain no data.
+                report['rejected'] = str(exc) if isinstance(exc, NativeUnavailable) else type(exc).__name__
+                raise
+            finally:
+                if report_stream is not None:
+                    report['wall_after'] = utc()
+                    json.dump(report, report_stream, indent=2, allow_nan=False)
+                    report_stream.flush()
             address = discovery['address'] if discovery else args.context_address
             window = GameWindowState(backend.pid) if grab else None
             stream.write(json.dumps({'kind':'unreleased_full_native_visibility_pipeline',
