@@ -222,11 +222,16 @@ et est explicitement refusé. Création exclusive du JSONL ET de chaque PNG, auc
 preuve préexistante écrasée. `PIL.ImageGrab` est importé seulement avec `--png`.
 Interpréteur de recette préparé par l'opérateur sous son `out/`, pas une nouvelle
 dépendance produit ; aucune modification des venv du coach/lecteur.
+Garde PNG ajoutée après préflight opérateur : seule la fenêtre du PID HotS est
+éligible, et uniquement au premier plan avant ET après capture, cadrée par son
+GetWindowRect physique avec all_screens=True. HWND et rectangle sont tracés.
+Focus/fenêtre absent ou modifié => image ignorée sans fichier, mais lectures
+avant/après conservées. Aucun grab de l'ensemble du bureau primaire.
 
 Tests préparatoires : identité native changée avec dictionnaire Python inchangé,
 mode observateur, local IA, racine locale changée durant lecture, mission figée et
 paquet âgé, falsifications, aller-retour des traces exactes (y compris refus 125 ms),
-collision PNG et source non suivie. 133 tests passent réellement sur Python
+collision PNG et source non suivie. 135 tests passent réellement sur Python
 système 3.14, coach 3.12 et interpréteur privé opérateur 3.13. Revue indépendante
 préparatoire `deleg_023652f3` : trois findings collecteur corrigés (sources gelées,
 PNG exclusifs, rejeu temporel), pas une revue de livraison finale.

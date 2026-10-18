@@ -138,6 +138,59 @@ def save_png_exclusive(image, path):
             'size': list(image.size)}
 
 
+class GameWindowState:
+    """Query only: never focus or move a window. Physical multi-screen pixels."""
+    def __init__(self, pid):
+        import ctypes
+        import ctypes.wintypes as wt
+        self.pid, self.ctypes, self.wt = pid, ctypes, wt
+        self.user32 = u = ctypes.WinDLL('user32', use_last_error=True)
+        self.callback_type = ctypes.WINFUNCTYPE(wt.BOOL, wt.HWND, wt.LPARAM)
+        u.EnumWindows.argtypes = [self.callback_type, wt.LPARAM]
+        u.EnumWindows.restype = wt.BOOL
+        u.GetWindowThreadProcessId.argtypes = [wt.HWND, ctypes.POINTER(wt.DWORD)]
+        u.GetWindowThreadProcessId.restype = wt.DWORD
+        u.IsWindowVisible.argtypes = [wt.HWND]
+        u.IsWindowVisible.restype = wt.BOOL
+        u.GetForegroundWindow.restype = wt.HWND
+        u.GetWindowRect.argtypes = [wt.HWND, ctypes.POINTER(wt.RECT)]
+        u.GetWindowRect.restype = wt.BOOL
+        u.SetProcessDpiAwarenessContext.argtypes = [ctypes.c_void_p]
+        u.SetProcessDpiAwarenessContext.restype = wt.BOOL
+        # This process only; no display/user settings are changed.
+        u.SetProcessDpiAwarenessContext(ctypes.c_void_p(-4))
+
+    def __call__(self):
+        found = []
+        def visit(hwnd, unused):
+            owner, rect = self.wt.DWORD(), self.wt.RECT()
+            self.user32.GetWindowThreadProcessId(hwnd, self.ctypes.byref(owner))
+            if (owner.value == self.pid and self.user32.IsWindowVisible(hwnd)
+                    and self.user32.GetWindowRect(hwnd, self.ctypes.byref(rect))
+                    and rect.right - rect.left >= 640 and rect.bottom - rect.top >= 480):
+                found.append((hwnd, [rect.left, rect.top, rect.right, rect.bottom]))
+            return True
+        callback = self.callback_type(visit)
+        self.user32.EnumWindows(callback, 0)
+        if not found:
+            return {'hwnd': None, 'foreground': self.user32.GetForegroundWindow(), 'rect': None}
+        hwnd, rect = max(found, key=lambda item: (item[1][2] - item[1][0]) * (item[1][3] - item[1][1]))
+        return {'hwnd': hwnd, 'foreground': self.user32.GetForegroundWindow(), 'rect': rect}
+
+
+def capture_game_image(path, window_state, grab):
+    state = window_state()
+    if state['hwnd'] is None or state['hwnd'] != state['foreground']:
+        return dict(state, skipped='game_not_foreground')
+    image = grab(bbox=tuple(state['rect']), all_screens=True)
+    after = window_state()
+    if state != after:
+        # Discard pixels if focus/geometry changed during capture. Never save
+        # a desktop/other application's image in the recipe evidence.
+        return dict(state, skipped='game_window_changed', after=after)
+    return dict(state, **save_png_exclusive(image, path))
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--live', action='store_true', required=True)
@@ -166,6 +219,7 @@ def main(argv=None):
     with out.open('x', encoding='utf-8') as stream:
         backend = ProcessBackend(args.pid)
         try:
+            window_state = GameWindowState(backend.pid) if grab else None
             header = {'kind': 'targeted_allied_positions', 'status': 'diagnostic_unreleased',
                       'commit': commit, 'sources_sha256': manifest, 'worktree': str(ROOT), 'pid': backend.pid,
                       'module_base': backend.module_base, 'map_id_requested': args.map_id,
@@ -184,8 +238,7 @@ def main(argv=None):
             while time.monotonic() < deadline:
                 png_path = out.with_name(f'{out.stem}-{sequence:05d}.png')
                 def screenshot():
-                    image = grab()
-                    return save_png_exclusive(image, png_path)
+                    return capture_game_image(png_path, window_state, grab)
                 row = capture_frame(backend, args.map_id, screenshot=screenshot if grab else None)
                 row['sequence'] = sequence
                 stream.write(json.dumps(row, allow_nan=False) + '\n'); stream.flush()

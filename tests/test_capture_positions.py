@@ -79,3 +79,37 @@ class CollectorTests(unittest.TestCase):
                 'a' * 40, subprocess.CalledProcessError(128, ['git', 'show'])]), \
                 patch.object(capture.subprocess, 'call', return_value=0):
             with self.assertRaises(subprocess.CalledProcessError): capture.frozen_sources('a' * 40)
+
+    def test_no_foreground_game_skips_pixels_but_preserves_both_read_sides(self):
+        m = PositionMemory()
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'must-not-exist.png'
+            def forbidden_grab(**kwargs): raise AssertionError('desktop capture forbidden')
+            def screenshot():
+                return capture.capture_game_image(path, lambda: {
+                    'hwnd': 123, 'foreground': 456, 'rect': [1920, 0, 3200, 720]}, forbidden_grab)
+            row = capture.capture_frame(m, 'Volskaya', screenshot=screenshot,
+                    native_profile=m.profile, position_profile=m.position_profile, hero_ids=m.hero_ids)
+            self.assertEqual(row['image']['skipped'], 'game_not_foreground')
+            self.assertIn('positions', row['before'])
+            self.assertIn('positions', row['after'])
+            self.assertFalse(path.exists())
+
+    def test_game_crop_multiscreen_and_focus_change_discards_pixels(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'game.png'
+            state = {'hwnd': 123, 'foreground': 123, 'rect': [-1280, 0, 0, 720]}
+            calls = []
+            class Image:
+                size = (1280, 720)
+                def save(self, stream, format): stream.write(b'SYNTHETIC_PNG')
+            def grab(**kwargs): calls.append(kwargs); return Image()
+            result = capture.capture_game_image(path, lambda: dict(state), grab)
+            self.assertEqual(result['hwnd'], 123)
+            self.assertEqual(calls, [{'bbox': (-1280, 0, 0, 720), 'all_screens': True}])
+            self.assertTrue(path.exists())
+            path.unlink()
+            states = iter([state, dict(state, foreground=456)])
+            result = capture.capture_game_image(path, lambda: next(states), grab)
+            self.assertEqual(result['skipped'], 'game_window_changed')
+            self.assertFalse(path.exists())
