@@ -1,0 +1,24 @@
+{
+  "build": 98348,
+  "pe_timestamp": 1791173268,
+  "image_size": 73064448,
+  "signatures": [
+    {"name": "active_table_publication", "rva": 33473247, "size": 120, "sha256": "442dc06ead438133fe0b88f327413aed8142c9dc92e47ee346f2d35b934d0643"},
+    {"name": "function_count", "rva": 33477488, "size": 7, "sha256": "f75c534e24995b940a934ed3f3884719fd69c6453d6c8e9c45a4309749fcc9ca"},
+    {"name": "active_call", "rva": 33525936, "size": 256, "sha256": "01b4fba6ca7eeab6ead9ae1e45d38d0dab67a552193ebcc502208e35b67a58a9"},
+    {"name": "vm_global_loads", "rva": 33526944, "size": 1024, "sha256": "e5e10662a1f66445b7cbad2d3fae88dde87f2d5efc73c8a7ba2e817180fe819c"},
+    {"name": "vm_dispatch", "rva": 33604116, "size": 32, "sha256": "ad8746195c2e9e234ff97afd985fef9393782c3954b7e7ff9ca9ccb10337849d"},
+    {"name": "timer_elapsed", "rva": 12754352, "size": 64, "sha256": "b9b4cee553da37d49c20c35a9c9b6799531de1a54b9db962aa0a5996c61b4ca5"},
+    {"name": "timer_pause", "rva": 12754848, "size": 64, "sha256": "8677485a3b89ab6b5484554dad05dbedad757a378494675c3db1f97d25bdecd8"},
+    {"name": "timer_start", "rva": 11462960, "size": 160, "sha256": "a8fd20127ed1f7f8e4b6bd37c18a662bca66081f45a7c78551bdbb11d32a4570"},
+    {"name": "timer_remaining", "rva": 11461920, "size": 32, "sha256": "48f446eb80b743032e5c3c66627d1fbab5564811968de6b802dc48d4d20c548b"},
+    {"name": "timer_update", "rva": 11462064, "size": 208, "sha256": "6cd560d5a17b2a49ea23b08d09d59c5e3e1b7754dea465cdf86a0ae93db27604"},
+    {"name": "timer_type", "rva": 11436368, "size": 6, "sha256": "4becd086c8729211c845a4bf1497d75a688c76b952462edfe7f7b5a56f63b399"}
+  ],
+  "functions": [
+    {"index": 1445, "name": "libGame_gt_OpenTheGatesOpenTheGatesTimerExpires_Func", "length": 646, "sha256": "dbc8ac8484fbf3981d8d0c35227f463de94d0f47f38e94704d48b1a60d275f73"},
+    {"index": 2137, "name": "libUIUI_gf_HeroesGameTime", "length": 47, "sha256": "2f5e5926e3c10f554987d8896bf4d6f0f9c556682a43dbc9f24963f95d1c7115"},
+    {"index": 4217, "name": "libSprt_gf_DebugGameTimeDelta", "length": 5, "sha256": "0e786727f76403557e9cd5956a58f66462752666856bf371fdf4d245998bf5f3"}
+  ],
+  "evidence": "Active VM function root, not compiler-name scans; interpreter bytecode globals and native timers. See etudes/rea/P2-CLOCK.md. Strict build and script fingerprints."
+}

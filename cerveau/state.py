@@ -8,7 +8,28 @@ VALIDATED_COUNTERS = ("deaths_total", "respawns_total", "globes_total")
 
 
 def _number(value) -> bool:
-    return type(value) in (int, float) and math.isfinite(value) and value >= 0
+    return ((type(value) is int and value >= 0)
+            or (type(value) is float and math.isfinite(value) and value >= 0))
+
+
+def validated_gameplay_clock(meta):
+    """Typed HUD allowlist; never reinterpret mission/replay time as HUD time."""
+    clock = meta.get("gameplay_clock")
+    if not isinstance(clock, dict) or meta.get("source") == "replay":
+        return None
+    seconds, phase = clock.get("t_s"), clock.get("phase")
+    mission, window = clock.get("mission_t_s"), clock.get("read_window_s")
+    if (clock.get("status") != "validated" or phase not in ("preparation", "playing")
+            or type(seconds) not in (int, float) or not -3600 <= seconds <= 21600
+            or (phase == "preparation" and not -600 <= seconds < 0)
+            or type(clock.get("timer_paused")) is not bool
+            or not _number(window) or window > 0.125
+            or not _number(mission) or mission > 21600
+            or not _number(meta.get("t_s")) or meta["t_s"] > 21600
+            or not 0 <= meta["t_s"] - mission <= 1):
+        return None
+    return {key: clock[key] for key in ("status", "t_s", "phase", "timer_paused",
+                                        "read_window_s", "mission_t_s")}
 
 
 def _native_heroes(raw, players, local, team):
@@ -99,6 +120,9 @@ def snapshot(raw: dict, *, at: float | None = None, team: int | None = None,
         if meta.get("native_status") == "valide":
             result["heroes"] = _native_heroes(raw, players, local, team)
             result["meta"]["native_status"] = "valide"
+            gameplay_clock = validated_gameplay_clock(meta)
+            if gameplay_clock is not None:
+                result["meta"]["gameplay_clock"] = gameplay_clock
             if type(meta.get("native_build")) is int:
                 result["meta"]["native_build"] = meta["native_build"]
         if not result["stats"] and "heroes" not in result:
