@@ -145,3 +145,13 @@ Anciennes captures observateur/roulantes : structure seulement, pas recette joue
 Dragon : signatures concordantes mais bornes différentes `[8,24,240,182]` et aucun
 PNG applicable => aucune ouverture. Braxis ne remplace pas Dragon. Objectifs,
 camps/structures, visibilité ennemie, talents/cooldowns restent hors lot.
+
+## Revue finale et vérification
+
+Revue indépendante `deleg_6f471647`, code `8a06b9addb8f7d9a3960a28de43768914eb349f7` :
+PASSED pour ce périmètre limité, aucun finding bloquant. Le reviewer a exécuté
+139 tests sur Python système ET Python du coach, les872 rejeux diagnostic/public
+et436 vérifications SHA256 PNG ; contrôlé les portraits sur les PNG originaux,
+recalculé les huit erreurs alliées sans refit et confirmé l'exclusion Dehaka.
+Les limites ci-dessus font partie du verdict, pas d'une validation universelle.
+L'implémenteur a également exécuté139 tests sur ces deux Python et `git diff --check`.
