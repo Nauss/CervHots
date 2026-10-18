@@ -1,0 +1,100 @@
+{
+  "build": 98348,
+  "image_size": 73064448,
+  "pe_timestamp": 1791173268,
+  "identity_signatures": [
+    {
+      "rva": 6650320,
+      "size": 141,
+      "sha256": "2667d17f2afe7e652b45ab3da27565412cb9aaed375172e0a30f45a50675506d"
+    },
+    {
+      "rva": 2528464,
+      "size": 98,
+      "sha256": "a4a7ce28cdede820e4dc447d7fc2396d47f3488e178c6ebed8ba1fc56cca918d"
+    },
+    {
+      "rva": 9144352,
+      "size": 39,
+      "sha256": "6ec37b29b92d8f98ea956b12e997b0fd392fdd0860a801aea92f91e7c6861dd5"
+    },
+    {
+      "rva": 9144391,
+      "size": 101,
+      "sha256": "71f1b1c86696574905f69a3b4e3175bd75f7619f555e95dadf1c45c223e6fa7c"
+    },
+    {
+      "rva": 9144492,
+      "size": 76,
+      "sha256": "ec4a1a86328de33909e789e79e7b44bad47847e10f9684b63ff3fbede4dd35f4"
+    },
+    {
+      "rva": 10309760,
+      "size": 492,
+      "sha256": "e0ffafbf982f03246b1ce43ad8e130eddd6c344ac7a2a5cade2350c5c21e4fe7"
+    }
+  ],
+  "signatures": [
+    {
+      "name": "unit_filter_match",
+      "rva": 33994000,
+      "size": 192,
+      "sha256": "f0f5dd6711f3526921d430b6405e924120f4daa3644d05460425d2d1a53f40ca"
+    },
+    {
+      "name": "visible_filter",
+      "rva": 6552608,
+      "size": 352,
+      "sha256": "ec981310458900badba7b1ac7a0cfb31bdda3867b123a8880556f692d8f52067"
+    },
+    {
+      "name": "unit_visibility",
+      "rva": 10084000,
+      "size": 544,
+      "sha256": "e1d2dfe9ce5090fe38057cdfdf5e1757eaf40034a6efa21adf40607e6173fa01"
+    },
+    {
+      "name": "unit_point_visibility",
+      "rva": 10085392,
+      "size": 584,
+      "sha256": "2fe7c04f4e4a7d7fbd3bbfd7f6db426ce495eefcd97f9053ec843c9627c1a2ed"
+    },
+    {
+      "name": "fog_current",
+      "rva": 10165744,
+      "size": 112,
+      "sha256": "83471d9735d5c248652077ad836a05c3af45f8c1e70c9466d46f31e4ec89fc0d"
+    },
+    {
+      "name": "fog_triangle",
+      "rva": 6553632,
+      "size": 696,
+      "sha256": "61ffd7ae0259d67372307fe67255fc35604cb0d617905e5ea078a6f873bcfe4e"
+    },
+    {
+      "name": "fog_static",
+      "rva": 6557680,
+      "size": 80,
+      "sha256": "5768d10c7552cc2f69aa12260dc803cdba3d0e1c05b6048866c2477c365f9088"
+    },
+    {
+      "name": "reveal_mask",
+      "rva": 10088288,
+      "size": 96,
+      "sha256": "66f6f31dfe6f7f3ad8c57ff8308a46a8cf23d073daa808f26967f8a0699e8f51"
+    },
+    {
+      "name": "detection_mask",
+      "rva": 10084944,
+      "size": 96,
+      "sha256": "3f3267e514c707f05ed2ccf521def9f1a5efa592dcef5abc35d8fb4345ff9240"
+    },
+    {
+      "name": "filter_visible_constant",
+      "rva": 11516638,
+      "size": 16,
+      "sha256": "73042a47c62562b96047972cbc165796702cb79bd841f3faa4da9929678d32dc"
+    }
+  ],
+  "evidence": "DIAGNOSTIC ONLY. Galaxy libNtve visible filter -> UnitFilterMatch bit31 -> native status4, flags0xf. Instruction-checked build98348. Behavior callbacks and footprint fallbacks remain unknown; no player fog recipe, NO release maps."
+}

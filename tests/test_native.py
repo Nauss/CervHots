@@ -44,10 +44,19 @@ class NativeMemory:
 
     def add_roster(self):
         base = self.module_base
+        self.profile['identity_signatures'] = list(self.profile['signatures'])
+        self.pack(base + 0x339fec8, 'II', (~0x120000) & 0xffffffff, 0xffffffff)
+        self.pack(base + 0x32c51f8, 'I', 0)
+        self.pack(base + 0x32c403c, 'I', 0)
+        self.pack(base + 0x32c3850, 'I', 0)
+        self.pack(0x120000, 'I', 0)
+        self.pack(0x120000 + 0xc, 'B', 6)
         self.hero_ids = {"Monk": "kharazim", "Wizard": "liming", "Ragnaros": "ragnaros"}
         self.context = {"players": [{"id": i, "team": i // 5,
                                      "hero": "Ragnaros" if i == 5 else None} for i in range(10)],
-                        "local_player": {"id": 5, "team": 1, "hero": "Ragnaros"}}
+                        "local_player": {"id": 5, "team": 1, "hero": "Ragnaros"},
+                        "meta": {"map_id": "Volskaya", "match_id": "a" * 64,
+                                 "context_source": "initdata_memory"}}
         self.pack(base + 0x3366118, "I", 14)
         self.pack(base + 0x35C8CB0, "I", 0x500000)
         self.pack(base + 0x35C8CB4, "I", 0)
@@ -65,6 +74,7 @@ class NativeMemory:
         self.put(base + 0x800, b"\xB8\x0C\0\0\0\xC3")
         for slot in range(1, 11):
             player = 0x600000 + slot * 0x1000
+            self.pack(player + 0x1c, 'BB', (slot - 1) // 5, 1 if slot == 6 else 2)
             swapped = player & 0x55555555
             self.pack(0x510000 + slot * 8, "II", player ^ swapped, swapped ^ 0x12345678)
             self.pack(player + 0x22, "B", slot)

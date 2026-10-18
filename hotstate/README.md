@@ -20,6 +20,14 @@ Les positions nécessitent lecteur et normaliseur dans le même processus live ;
 un JSON `--state` interprocessus ou un dump historique ne les autorise pas.
 Le reste de cette note conserve l'historique initial du 10 octobre.
 
+Travail lot visibilité du18/10 (non livré, avant recette ciblée) :
+`visibility.py` est un lecteur diagnostic conservateur, publication ennemie
+fermée. `etudes/rea/P2-VISIBILITE.md` décrit les sources, limites et le collecteur
+borné. Le durcissement associé exige désormais une perspective native humaine
+courante et un reçu du même processus âgé au plus1s pour transmettre PV/ressources
+alliés au modèle ; un JSON externe ou dump historique ne les autorise plus.
+La lecture native est aussi soumise à une relecture intégrale et125ms murales.
+
 ---
 
 ## Ce que HotS nous donne déjà (validé sur pièces)

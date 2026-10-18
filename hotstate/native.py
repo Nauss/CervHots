@@ -8,6 +8,8 @@ from __future__ import annotations
 import hashlib
 import json
 import struct
+import copy
+import time
 from pathlib import Path
 
 MASK = 0xFFFFFFFF
@@ -162,6 +164,45 @@ class NativeReader:
         return remaining if deadline >= 0 and 0 <= remaining <= 600 else None
 
     def read_state(self, context, *, hero_ids=None):
+        """Bind vitals to the ACTIVE human perspective, not a cached lobby.
+
+        All successful core reads are repeated before issuance. This detects
+        torn reads, not an atomic snapshot or an ABA change between samples.
+        """
+        from .positions import AlliedPositions, _RecordedMemory
+        from .acquisition import issue
+
+        expected = copy.deepcopy(context)
+        _, match_id, local_id, team, _ = AlliedPositions._context(expected)
+        if hero_ids is None:
+            hero_ids = json.loads((Path(__file__).parent / 'hero_ids.json').read_text(encoding='utf-8'))
+        acquired = time.monotonic()
+        memory = _RecordedMemory(self.memory)
+        n = NativeReader(memory, profile=self.profile)
+        identity = AlliedPositions(n, profile=self.profile)._identity(n, hero_ids)
+        native_id, native_team, hero, members, stamp = identity
+        if (native_id != local_id or native_team != team
+                or hero != hero_ids.get(expected['local_player']['hero'], expected['local_player']['hero'])
+                or any(p['team'] != next(m['team'] for m in members if m['id'] == p['id'])
+                       for p in expected['players'])):
+            raise NativeUnavailable('perspective_native_incoherente')
+        result = n._read_state(expected, hero_ids=hero_ids)
+        for address, data in memory.read_set:
+            if self.read(address, len(data)) != data:
+                raise NativeUnavailable('lecture_native_dechiree')
+        window = time.monotonic() - acquired
+        if not 0 <= window <= 0.125 or context != expected:
+            raise NativeUnavailable('perspective_native_perimee_ou_modifiee')
+        if not getattr(self.memory, 'recorded_non_atomic', False):
+            result['perspective'] = issue({
+                'match_id': match_id, 'local_id': local_id, 'team': team,
+                'native_session': stamp, 'local_hero': hero,
+                'mission_t_s': result['meta']['t_s'], 'read_window_s': window,
+                'heroes': copy.deepcopy(result['heroes']),
+            }, acquired)
+        return result
+
+    def _read_state(self, context, *, hero_ids=None):
         if not isinstance(context, dict):
             raise NativeUnavailable("contexte_natif_absent")
         local = context.get("local_player")

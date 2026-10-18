@@ -29,6 +29,7 @@ class _RecordedMemory:
     def __init__(self, memory):
         self.memory = memory
         self.module_base = memory.module_base
+        self.recorded_non_atomic = getattr(memory, 'recorded_non_atomic', False)
         self.read_set = []
 
     def read_memory(self, address, size):

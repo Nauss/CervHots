@@ -113,12 +113,13 @@ class ReplayTrace:
             raise AssertionError('unconsumed clock trace')
 
 
-def frozen_sources(expected_commit):
+def frozen_sources(expected_commit, *, extra_paths=()):
     commit = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip()
     if commit != expected_commit or subprocess.call(['git', 'diff', '--quiet', 'HEAD'], cwd=ROOT):
         raise ValueError('commit différent ou fichiers suivis modifiés')
     paths = [Path(__file__).resolve(), *sorted((ROOT / 'hotstate').glob('*.py')),
-             *sorted((ROOT / 'hotstate/profiles').glob('*.json')), ROOT / 'hotstate/hero_ids.json']
+             *sorted((ROOT / 'hotstate/profiles').glob('*.json')), ROOT / 'hotstate/hero_ids.json',
+             *extra_paths]
     manifest = {}
     for path in paths:
         relative = path.relative_to(ROOT).as_posix()

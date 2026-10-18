@@ -99,6 +99,20 @@ def _native_heroes(raw, players, local, team):
     if (local["id"] not in roster
             or any(roster[local["id"]].get(k) != local[k] for k in ("hero", "team"))):
         raise ValueError("identité locale native incohérente")
+    from hotstate.acquisition import fresh
+    packet, meta = raw.get('perspective'), raw.get('meta', {})
+    vitals_permitted = (
+        isinstance(packet, dict) and fresh(packet)
+        and meta.get('source') == 'live' and meta.get('native_build') == 98348
+        and meta.get('context_source') == 'initdata_memory'
+        and isinstance(meta.get('match_id'), str)
+        and re.fullmatch('[0-9a-f]{64}', meta['match_id']) is not None
+        and packet.get('match_id') == meta['match_id']
+        and packet.get('local_id') == local['id'] and packet.get('team') == team == local['team']
+        and packet.get('local_hero') == local['hero'] and packet.get('heroes') == heroes
+        and _number(packet.get('mission_t_s')) and _number(meta.get('t_s'))
+        and 0 <= meta['t_s'] - packet['mission_t_s'] <= 1
+        and _number(packet.get('read_window_s')) and packet['read_window_s'] <= 0.125)
     observed, seen = [], set()
     for hero in heroes:
         if (not isinstance(hero, dict) or type(hero.get("id")) is not int
@@ -111,7 +125,7 @@ def _native_heroes(raw, players, local, team):
         clean = {k: hero[k] for k in ("id", "hero", "team", "alive", "level")}
         if not hero["alive"] and _number(hero.get("respawn_s")) and hero["respawn_s"] <= 600:
             clean["respawn_s"] = hero["respawn_s"]
-        if hero["team"] == team == local["team"]:
+        if vitals_permitted and hero["team"] == team == local["team"]:
             for value, maximum in (("health", "health_max"), ("resource", "resource_max")):
                 if (_number(hero.get(value)) and _number(hero.get(maximum))
                         and 0 < hero[maximum] and hero[value] <= hero[maximum]):

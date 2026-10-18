@@ -55,7 +55,8 @@ class StateTests(unittest.TestCase):
         result = snapshot(raw)
         self.assertEqual(len(result["heroes"]), 10)
         self.assertEqual(result["heroes"][5]["level"], 19)
-        self.assertEqual(result["heroes"][5]["health"], 2500)
+        # External/unsigned JSON cannot establish a current human perspective.
+        self.assertNotIn("health", result["heroes"][5])
         self.assertNotIn("health", result["heroes"][0])
         self.assertNotIn("PRIVATE_TEST", str(result))
         self.assertNotIn("DO_NOT_SEND", str(result))

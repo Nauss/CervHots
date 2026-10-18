@@ -2,7 +2,7 @@
 
 Not a credential or an interprocess authentication protocol: this random key is
 never persisted. JSON from a different run/process cannot establish provenance.
-The supported positions path is direct --live -> normalizer in the same process.
+The supported positions/vitals path is direct --live -> normalizer in the same process.
 """
 from __future__ import annotations
 

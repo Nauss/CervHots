@@ -70,5 +70,13 @@
       "sha256": "a7560199d486164695e25728456f8c189c6fd5a78061cef3d47930a7f1c1a82c"
     }
   ],
-  "evidence": "Native Galaxy dispatch cases, instruction-checked in Ghidra; identical code across two ASLR instances. Unknown builds are rejected."
+  "identity_signatures": [
+    {"rva": 6650320, "size": 141, "sha256": "2667d17f2afe7e652b45ab3da27565412cb9aaed375172e0a30f45a50675506d"},
+    {"rva": 2528464, "size": 98, "sha256": "a4a7ce28cdede820e4dc447d7fc2396d47f3488e178c6ebed8ba1fc56cca918d"},
+    {"rva": 9144352, "size": 39, "sha256": "6ec37b29b92d8f98ea956b12e997b0fd392fdd0860a801aea92f91e7c6861dd5"},
+    {"rva": 9144391, "size": 101, "sha256": "71f1b1c86696574905f69a3b4e3175bd75f7619f555e95dadf1c45c223e6fa7c"},
+    {"rva": 9144492, "size": 76, "sha256": "ec4a1a86328de33909e789e79e7b44bad47847e10f9684b63ff3fbede4dd35f4"},
+    {"rva": 10309760, "size": 492, "sha256": "e0ffafbf982f03246b1ce43ad8e130eddd6c344ac7a2a5cade2350c5c21e4fe7"}
+  ],
+  "evidence": "Native Galaxy dispatch cases, instruction-checked in Ghidra; identical code across two ASLR instances. Unknown builds are rejected. Active-human identity signatures shared with 98348-positions.json and its Volskaya player recipe."
 }
