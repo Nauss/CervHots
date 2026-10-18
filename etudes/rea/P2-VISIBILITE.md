@@ -142,6 +142,9 @@ signatures et métadonnées PE dans sa propre acquisition. Deux nouveaux tests
 RED/GREEN couvrent le refus standalone et l'omission du seul chrono optionnel
 avec cœur/PV alliés frais conservés. Les anciens accès chrono gelés correspondent
 à leur ancien commit, pas à ce nouvel ordre de relecture renforcé.
+Cette dernière correction (`100b71b`) est testée sur les deux Python ; sa
+nouvelle revue indépendante reste à effectuer avant intégration. Les deux
+revues précédentes ne sont pas une approbation finale de ce commit ni du live.
 
 ## Recette précise nécessaire, sans nouvelle demande d'autorisation de P2
 
