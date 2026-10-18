@@ -112,8 +112,8 @@ hors worktree avant blocage. Ne pas versionner dumps, traces privées ou PNG.
 
 ## Vérification automatisée
 
-160 tests passent sur Python système et sur Python du coach après correction
-du premier retour de revue indépendante.
+162 tests passent sur Python système et sur Python du coach après correction
+des deux premiers retours de revue indépendante.
 Les journaux RED de confidentialité et GREEN complets sont dans l'audit privé.
 
 Couverture ajoutée : visible → brouillard → révélé → brouillard → visible,
@@ -134,6 +134,14 @@ acquisition, le cœur conservant sa relecture obligatoire. Le test GREEN vérifi
 que XY déchiré => positions absentes, dix héros/niveaux et PV alliés frais
 conservés. La liaison native seed/cache au match déclaré reste une limite,
 pas un critère satisfait par cette correction.
+
+La seconde revue du commit `463b22c` a confirmé la correction XY mais identifié
+une vérification chrono à compléter : ses signatures natives étaient vérifiées
+avant `_sample`, hors read-set propre. Le chrono relit maintenant aussi ces
+signatures et métadonnées PE dans sa propre acquisition. Deux nouveaux tests
+RED/GREEN couvrent le refus standalone et l'omission du seul chrono optionnel
+avec cœur/PV alliés frais conservés. Les anciens accès chrono gelés correspondent
+à leur ancien commit, pas à ce nouvel ordre de relecture renforcé.
 
 ## Recette précise nécessaire, sans nouvelle demande d'autorisation de P2
 

@@ -65,6 +65,18 @@ class ClockMemory(NativeMemory):
 
 
 class GameplayClockTests(unittest.TestCase):
+    def test_native_clock_code_changed_after_verification_is_rejected(self):
+        m = ClockMemory(); reader = m.reader(); original = m.read_memory; fired = False
+        def changing(address, size):
+            nonlocal fired
+            data = original(address, size)
+            if not fired and address == m.module_base + 0x200:
+                fired = True; m.put(address, b'CORRUPT')
+            return data
+        m.read_memory = changing
+        with self.assertRaisesRegex(NativeUnavailable, 'lecture_chrono_dechiree'):
+            reader.read()
+
     def test_preparation_and_proven_zero_and_elapsed_debug_delta(self):
         for phase, seconds, delta, expected in (("preparation", 0, 9, -28),
                                                ("playing", 0, 0, 0),

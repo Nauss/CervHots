@@ -9,6 +9,38 @@ from cerveau.state import snapshot
 
 
 class PerspectivePrivacyTests(unittest.TestCase):
+    def test_optional_torn_clock_code_omits_clock_but_preserves_core(self):
+        import hashlib
+        from test_gameplay_clock import ClockMemory
+        from hotstate.gameplay import GameplayClock
+        m = ClockMemory()
+        # Relocate synthetic timers before adding synthetic CPlayers (same old
+        # fixture addresses); no live offsets or evidence are derived here.
+        for index in (5, 6):
+            new = 0x1600000 + index * 0x1000
+            m.put(new, m.read_memory(0x600000 + index * 0x1000, 40))
+            m.pack(m.slots + index * 16 + 8, 'Q', new)
+        m.add_roster(); m.pack(m.module_base + 0x4020970, 'Q', m.slots)
+        marker = b'SYNTHETIC_CLOCK_ONLY_SIGNATURE'
+        m.put(m.module_base + 0x900, marker)
+        m.clock_profile['signatures'] = [dict(rva=0x900, size=len(marker),
+                                             sha256=hashlib.sha256(marker).hexdigest())]
+        original = m.read_memory; fired = False
+        def changing(address, size):
+            nonlocal fired
+            data = original(address, size)
+            if not fired and address == m.module_base + 0x900:
+                fired = True; m.put(address, b'CORRUPT')
+            return data
+        m.read_memory = changing
+        with patch('hotstate.gameplay.GameplayClock', side_effect=lambda n: GameplayClock(n, profile=m.clock_profile)):
+            raw = NativeReader(m, profile=m.profile).read_state(m.context, hero_ids=m.hero_ids)
+        raw['meta'].update(m.context['meta'], source='live')
+        self.assertTrue(fired)
+        self.assertNotIn('gameplay_clock', raw['meta'])
+        self.assertEqual(len(raw['heroes']), 10)
+        self.assertIn('health', snapshot(raw)['heroes'][5])
+
     def test_optional_torn_xy_omits_only_positions_not_public_core_or_vitals(self):
         m = PositionMemory(); original = m.read_memory; fired = False
         def changing(address, size):

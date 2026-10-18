@@ -31,16 +31,27 @@ class GameplayClock:
 
     def _verify_code(self):
         n, p = self.native, self.profile
-        pe = n.base + n.global_u32(0x3C)
+        read_set = []
+
+        def read(address, size):
+            data = n.read(address, size)
+            read_set.append((address, data))
+            return data
+
+        def value(address):
+            return struct.unpack('<I', read(address, 4))[0]
+
+        pe = n.base + value(n.base + 0x3C)
         if (p.get("build") != 98348 or n.profile.get("build") != 98348
-                or n.value(pe + 8) != p["pe_timestamp"]
-                or n.value(pe + 24 + 56) != p["image_size"]
+                or value(pe + 8) != p["pe_timestamp"]
+                or value(pe + 24 + 56) != p["image_size"]
                 or not p.get("signatures") or len(p.get("functions", [])) != 3):
             raise NativeUnavailable("profil_chrono_non_pris_en_charge")
         for signature in p["signatures"]:
-            code = n.read(n.base + signature["rva"], signature["size"])
+            code = read(n.base + signature["rva"], signature["size"])
             if hashlib.sha256(code).hexdigest() != signature["sha256"]:
                 raise NativeUnavailable("signature_chrono_invalide")
+        return read_set
 
     @staticmethod
     def _pointer(pointer):
@@ -157,12 +168,12 @@ class GameplayClock:
             raise NativeUnavailable("capture_chrono_non_atomique")
         started_wall = time.monotonic()
         started_mission = n.read_clock()
-        self._verify_code()
+        code_reads = self._verify_code()
         sample, read_set = self._sample()
         # Exact second pass: changes in roots, code, generations, globals or
         # timer bytes reject the whole clock, even if the displayed integer is
         # unchanged. No retries hide an intervening match/phase transition.
-        for address, data in read_set:
+        for address, data in code_reads + read_set:
             if n.read(address, len(data)) != data:
                 raise NativeUnavailable("lecture_chrono_dechiree")
         finished_mission = n.read_clock()
