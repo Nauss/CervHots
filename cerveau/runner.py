@@ -6,6 +6,7 @@ import time
 from pathlib import Path
 
 from .brain import Coach, Decision
+from .state import validated_gameplay_clock
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -19,9 +20,9 @@ def knowledge_for(state: dict) -> str:
     if not Path(DB).is_file():
         raise ValueError("KB absente : exécuter python kb/refresh.py")
     composition = state["composition"]
-    clock = meta.get("t_s")
-    if meta.get("clock_kind") == "mission":
-        clock = None  # La préparation compte dans le replay, pas dans les timings HUD de la KB.
+    gameplay = validated_gameplay_clock(meta)
+    clock = (gameplay["t_s"] if gameplay is not None and gameplay["phase"] == "playing"
+             and gameplay["t_s"] >= 0 else None)
     try:
         return build(meta["map"], composition["allies"], composition["enemies"],
                      None if clock is None else int(clock))
@@ -43,11 +44,14 @@ def _hero_key(hero):
 
 def tactical_key(state: dict) -> str:
     # Les globes et l'horloge murale changent sans invalider une consigne tactique.
+    gameplay = validated_gameplay_clock(state["meta"])
     return json.dumps({
         "map": state["meta"].get("map"), "composition": state.get("composition"),
         "match_id": state["meta"].get("match_id"), "local_player": state.get("local_player"),
         "heroes": [_hero_key(h) for h in state["heroes"]] if "heroes" in state else None,
         "ally_team": state.get("ally_team"),
+        "gameplay": ((gameplay["phase"], gameplay["timer_paused"], int(gameplay["t_s"] // 30))
+                     if gameplay is not None else None),
         "stats": {k: v for k, v in state.get("stats", {}).items() if k != "globes_total"},
         "events": state.get("events"), "positions": state.get("positions"),
     }, sort_keys=True, ensure_ascii=False)

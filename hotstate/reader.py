@@ -43,6 +43,8 @@ VALIDATED_FIELDS = {"deaths_total", "respawns_total", "globes_total"}
 class DumpBackend:
     """Lit un dump de tas (hots_gameN.heap.bin/.heap.json)."""
 
+    recorded_non_atomic = True
+
     def __init__(self, heap_bin: Path, heap_json: Path, *, image: Path | None = None,
                  module_base: int | None = None):
         self.regions = sorted(json.loads(heap_json.read_text(encoding="utf-8"))["regions"],

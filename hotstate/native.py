@@ -206,10 +206,19 @@ class NativeReader:
         expected = hero_ids.get(local["hero"], local["hero"])
         if local_player["hero"] != expected:
             raise NativeUnavailable("identite_locale_native_incoherente")
+        from .gameplay import GameplayClock
+        gameplay_clock = None
+        try:
+            gameplay_clock = GameplayClock(self).read()
+        except NativeUnavailable:
+            pass  # HUD unknown does not invalidate the independent P0/P1 fields.
         finished = self.read_clock()
         if not 0 <= finished - started <= 1:
             raise NativeUnavailable("observation_native_non_synchrone")
-        return {"meta": {"t_s": finished, "clock_kind": "mission", "native_status": "valide",
-                         "native_build": self.profile["build"]},
+        meta = {"t_s": finished, "clock_kind": "mission", "native_status": "valide",
+                "native_build": self.profile["build"]}
+        if gameplay_clock is not None:
+            meta["gameplay_clock"] = gameplay_clock
+        return {"meta": meta,
                 "players": players, "heroes": heroes, "local_player": local_player,
                 "composition_complete": len(players) == 10}
