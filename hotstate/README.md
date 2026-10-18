@@ -11,8 +11,13 @@ le chronomètre, les dix héros (IA comprises), leurs niveaux et états de vie,
 ainsi que les PV/ressources alliés. Les dix choix, équipes, niveaux et états
 de vie concordent avec le replay de la capture à **1163,5625 secondes**.
 Deux timers non nuls ont aussi été validés dans une nouvelle partie IA sur
-Volskaya puis exactement contre son tracker. Objectifs, camps, structures, visibilité/positions
-et capacités ne sont pas encore collectés en live.
+Volskaya puis exactement contre son tracker. Ajout du18/10 : positions des héros
+principaux alliés vivants sur Volskaya, avec perspective native locale prouvée,
+relecture exacte et reçu d'acquisition âgé au plus1s. Dragon/Braxis, positions
+ennemies, visibilité, objectifs/camps/structures et capacités restent exclus.
+Recette et limites pixels : `etudes/rea/P2-POSITIONS-RECETTE.md` depuis la racine.
+Les positions nécessitent lecteur et normaliseur dans le même processus live ;
+un JSON `--state` interprocessus ou un dump historique ne les autorise pas.
 Le reste de cette note conserve l'historique initial du 10 octobre.
 
 ---

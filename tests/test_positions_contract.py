@@ -1,4 +1,4 @@
-"""Synthetic allowlist/privacy tests; no live position release is claimed."""
+"""Hermetic publication/privacy tests; not a replacement for the real recipe."""
 import copy
 import unittest
 from unittest.mock import patch
@@ -22,7 +22,13 @@ def raw_packet():
 
 class PositionContractTests(unittest.TestCase):
     def test_release_gate_rejects_even_a_forged_validated_packet(self):
-        self.assertNotIn('positions', snapshot(raw_packet()))
+        raw = raw_packet()
+        raw['positions'].pop('acquisition')
+        self.assertNotIn('positions', snapshot(raw))
+
+    def test_released_normalizer_accepts_without_allowlist_patch(self):
+        state = snapshot(raw_packet())
+        self.assertEqual([h['id'] for h in state['positions']['heroes']], list(range(5, 10)))
 
     def test_normalizer_keeps_typed_allies_and_discards_every_extra_identifier(self):
         raw = raw_packet()
@@ -83,7 +89,7 @@ class PositionContractTests(unittest.TestCase):
         next_state = copy.deepcopy(state); next_state.pop('positions')
         self.assertNotEqual(key, tactical_key(next_state))
 
-    def test_native_default_never_publishes_before_real_recipe(self):
+    def test_native_unrecognized_profile_still_omits_positions(self):
         m = PositionMemory()
         result = NativeReader(m, profile=m.profile).read_state(m.context, hero_ids=m.hero_ids)
         self.assertNotIn('positions', result)

@@ -1,4 +1,4 @@
-"""Synthetic positions only; release remains closed pending a real player recipe."""
+"""Hermetic reader regressions; real recipe evidence is documented separately."""
 import copy
 import json
 import struct
@@ -53,12 +53,19 @@ class PositionsTests(unittest.TestCase):
     def opened(self):
         return patch('hotstate.positions.VALIDATED_MAPS', ('Volskaya',))
 
-    def test_release_gate_closed_for_all_real_maps(self):
+    def test_release_gate_is_limited_to_measured_volskaya(self):
         from hotstate.positions import VALIDATED_MAPS
-        self.assertEqual(VALIDATED_MAPS, ())
+        self.assertEqual(VALIDATED_MAPS, ('Volskaya',))
         m = PositionMemory()
+        m.context['meta']['map_id'] = 'DragonShire'
         with self.assertRaisesRegex(NativeUnavailable, 'recette_positions_absente'):
             m.reader().read(m.context, hero_ids=m.hero_ids)
+
+    def test_released_read_needs_no_release_mock_and_still_omits_enemies(self):
+        m = PositionMemory()
+        result = m.reader().read(m.context, hero_ids=m.hero_ids)
+        self.assertEqual(result['status'], 'validated')
+        self.assertEqual([h['id'] for h in result['heroes']], list(range(5, 10)))
 
     def test_local_identity_missing_or_ambiguous_never_picks_a_bot(self):
         for change in ('observer', 'bool_id', 'bool_team', 'wrong_team', 'duplicate', 'hero'):

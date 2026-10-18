@@ -18,5 +18,5 @@
     {"rva": 10309760, "size": 492, "sha256": "e0ffafbf982f03246b1ce43ad8e130eddd6c344ac7a2a5cade2350c5c21e4fe7"}
   ],
   "maps": {"Volskaya": {"bounds": [4, 4, 244, 196]}},
-  "evidence": "Instruction-checked Galaxy UnitGetPosition dispatch 1477; unit+0x60 vector via decode14, fixed4096. RegionPlayableMap dispatch 1216 -> simulation region16. Bounds observed on three rolling Volskaya dumps only; not a synchronized minimap/player-perspective recipe. Publication remains closed in positions.VALIDATED_MAPS."
+  "evidence": "Instruction-checked Galaxy UnitGetPosition dispatch 1477; unit+0x60 vector via decode14, fixed4096. RegionPlayableMap dispatch 1216 -> simulation region16. Volskaya player recipe: 436 PNG, 872 exact ordered attempts, 827 accepted/45 torn refusals; local Diablo plus four native allies, real death/respawn with unchanged handles. Sparse local and allied pixel checks, not a full-map error guarantee. See etudes/rea/P2-POSITIONS.md. No Dragon/Braxis release."
 }

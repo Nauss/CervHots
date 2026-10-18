@@ -33,8 +33,10 @@ Chaque brique a son propre projet, ses propres dépendances.
   contexte initData et lecteur natif (`native.py`, profil build 98348) :
   horloge, dix héros, niveaux, état de vie, PV/ressources alliés. Les dix héros,
   équipes, niveaux et états de vie sont recoupés avec le replay de la capture.
-  Timers de mort validés en partie puis contre le tracker ; objectifs,
-  camps, structures et positions/visibilité restent hors collecte live.
+  Timers de mort validés en partie puis contre le tracker ; positions natives
+  alliées vivantes sur Volskaya (build98348, joueur local prouvé, fraîcheur1s).
+  Recette/limites : `etudes/rea/P2-POSITIONS-RECETTE.md`. Objectifs, camps,
+  structures, visibilité/positions ennemies restent hors collecte live.
 - `kb/` — **la couche savoir** : ce qui interprète l'état de jeu (cartes,
   timings, talents, synergies, counters). Base SQLite de faits (gamedata
   gratuite, commit épinglé) + 106 fiches curatées (16 cartes + 90 héros,
@@ -68,5 +70,7 @@ confirmée. Le lecteur natif fournit maintenant composition, niveaux, états de
 vie, timers de mort et PV/ressources alliés. Une partie IA sur Volskaya a vérifié
 dix héros/équipes/niveaux/états et deux timers non nuls, exacts au tracker.
 L'horloge suit le temps de mission du replay, préparation incluse ; elle n'est
-pas confondue avec le chrono HUD. Objectifs/camps/structures/positions/visibilité
-et capacités restent hors collecte live ; les statistiques empiriques (v3) aussi.
+pas confondue avec le chrono HUD. Ajout du18/10 : positions alliées Volskaya
+seulement ; Dragon/Braxis non ouvertes, aucune position ennemie. Objectifs,
+camps/structures, visibilité et capacités restent hors collecte live ; les
+statistiques empiriques (v3) aussi.

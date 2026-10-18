@@ -1,8 +1,8 @@
-"""Main-hero positions, read-only build98348 implementation awaiting live recipe.
+"""Read-only build98348 allied main-hero positions, measured on Volskaya.
 
-The empty release allowlist is deliberate: observer/rolling dumps establish
-structure, not player-perspective publication or minimap calibration. The offline
-API never produces a validated packet and is not consumed by the coach.
+Release evidence and its sparse pixel-calibration limits: P2-POSITIONS.md.
+Observer/rolling dumps grant no permissions. Diagnostics never produce a
+validated packet and are not consumed by the coach.
 """
 from __future__ import annotations
 
@@ -16,7 +16,7 @@ from pathlib import Path
 from .native import MASK, NativeReader, NativeUnavailable
 
 MAX_WINDOW_S = 0.125
-VALIDATED_MAPS = ()  # Open only after synchronized player/minimap recipe + review.
+VALIDATED_MAPS = ('Volskaya',)  # Player recipe only; no Dragon/Braxis extrapolation.
 PROFILE = json.loads((Path(__file__).parent / 'profiles/98348-positions.json').read_text(encoding='utf-8'))
 
 

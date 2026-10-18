@@ -1,4 +1,10 @@
-# P2 — positions des héros principaux : implémentation partielle, recette manquante
+# P2 — sources et historique préparatoire des positions natives
+
+> Statut courant : voir [recette et livraison Volskaya](P2-POSITIONS-RECETTE.md).
+> La recette joueur a été reçue et rejouée ; Volskaya seule est ouverte dans le
+> code de livraison. Les mentions « NON LIVRÉ », liste vide et recette manquante
+> ci-dessous décrivent l'état historique préparatoire, pas le statut courant.
+> Les sources natives et les limites des anciennes preuves restent applicables.
 
 Statut : NON LIVRÉ. Aucun ajout à la liste `VALIDATED_MAPS` ; aucune position live
 n'est actuellement publiée, même si un JSON entrant prétend être validé.
