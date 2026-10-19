@@ -1,0 +1,336 @@
+{
+  "build": 98348,
+  "pe_timestamp": 1791173268,
+  "image_size": 73064448,
+  "signatures": [
+    {
+      "name": "active_table_publication",
+      "rva": 33473247,
+      "size": 120,
+      "sha256": "442dc06ead438133fe0b88f327413aed8142c9dc92e47ee346f2d35b934d0643"
+    },
+    {
+      "name": "function_count",
+      "rva": 33477488,
+      "size": 7,
+      "sha256": "f75c534e24995b940a934ed3f3884719fd69c6453d6c8e9c45a4309749fcc9ca"
+    },
+    {
+      "name": "active_call",
+      "rva": 33525936,
+      "size": 256,
+      "sha256": "01b4fba6ca7eeab6ead9ae1e45d38d0dab67a552193ebcc502208e35b67a58a9"
+    },
+    {
+      "name": "vm_global_loads",
+      "rva": 33526944,
+      "size": 1024,
+      "sha256": "e5e10662a1f66445b7cbad2d3fae88dde87f2d5efc73c8a7ba2e817180fe819c"
+    },
+    {
+      "name": "vm_dispatch",
+      "rva": 33604116,
+      "size": 32,
+      "sha256": "ad8746195c2e9e234ff97afd985fef9393782c3954b7e7ff9ca9ccb10337849d"
+    },
+    {
+      "name": "timer_elapsed",
+      "rva": 12754352,
+      "size": 64,
+      "sha256": "b9b4cee553da37d49c20c35a9c9b6799531de1a54b9db962aa0a5996c61b4ca5"
+    },
+    {
+      "name": "timer_pause",
+      "rva": 12754848,
+      "size": 64,
+      "sha256": "8677485a3b89ab6b5484554dad05dbedad757a378494675c3db1f97d25bdecd8"
+    },
+    {
+      "name": "timer_start",
+      "rva": 11462960,
+      "size": 160,
+      "sha256": "a8fd20127ed1f7f8e4b6bd37c18a662bca66081f45a7c78551bdbb11d32a4570"
+    },
+    {
+      "name": "timer_remaining",
+      "rva": 11461920,
+      "size": 32,
+      "sha256": "48f446eb80b743032e5c3c66627d1fbab5564811968de6b802dc48d4d20c548b"
+    },
+    {
+      "name": "timer_update",
+      "rva": 11462064,
+      "size": 208,
+      "sha256": "6cd560d5a17b2a49ea23b08d09d59c5e3e1b7754dea465cdf86a0ae93db27604"
+    },
+    {
+      "name": "timer_type",
+      "rva": 11436368,
+      "size": 6,
+      "sha256": "4becd086c8729211c845a4bf1497d75a688c76b952462edfe7f7b5a56f63b399"
+    },
+    {
+      "name": "component_skip_inactive",
+      "rva": 12174720,
+      "size": 128,
+      "sha256": "851a890f2696f5b6a269cc755f4d46ffe42cf16f490ec3797ac6b45eb668e480"
+    },
+    {
+      "name": "component_next",
+      "rva": 12174960,
+      "size": 128,
+      "sha256": "1e3c34dae773f51fee989a15507ebbbe03adff152a4a12ddabf2ece8884b6c66"
+    },
+    {
+      "name": "behavior_catalog_link",
+      "rva": 33675200,
+      "size": 64,
+      "sha256": "cab3cfbbc3c5160b8ef968df2ef36059aa7ecb1c88f0a23b2dc7201e43e090eb"
+    },
+    {
+      "name": "behavior_catalog_index",
+      "rva": 6170416,
+      "size": 96,
+      "sha256": "ec2ec58d24a8bf8dc0ba94ecb4ef7f3893d38a724ea44a75ca8fc7661c81c61c"
+    },
+    {
+      "name": "vm_indexed_globals",
+      "rva": 33596928,
+      "size": 928,
+      "sha256": "8668d715c22e0c7705fc6dbf3368abaef7eab60e58d7aae4f0626cc28fb4c692"
+    },
+    {
+      "name": "unit_resolver",
+      "rva": 6601424,
+      "size": 160,
+      "sha256": "9511596e89dfeabe32d3e0f8b0c28a327df7b925b50162d80622eaf44f9e09dd"
+    },
+    {
+      "name": "unit_alive",
+      "rva": 33896144,
+      "size": 48,
+      "sha256": "78309b92ae1bd575298616461a250d14c75761d6aaab12a671a406b12c80a28b"
+    },
+    {
+      "name": "unit_owner",
+      "rva": 33882944,
+      "size": 48,
+      "sha256": "093c4e85e847e6f1bf9ee8db387db8067bdc42c6f5c93ccb5c68c91943496464"
+    },
+    {
+      "name": "behavior_duration",
+      "rva": 33858576,
+      "size": 240,
+      "sha256": "efc354b2018d1a51abf7d5ffeb70ff0033cf2cbdc3ecf3b2045e3f752ac83a50"
+    },
+    {
+      "name": "component_lookup",
+      "rva": 10847168,
+      "size": 256,
+      "sha256": "f6c044f0c2080e61c716716dd63960af8444853c73d47dcba9b8e1169dfef6d5"
+    },
+    {
+      "name": "behavior_remaining",
+      "rva": 12670752,
+      "size": 384,
+      "sha256": "ad6c325868bb04e07023af00cd50c812e56ca50840f0a45063b0ec422f9f9b98"
+    }
+  ],
+  "functions": [
+    {
+      "index": 6059,
+      "name": "libVLSK_InitVariables",
+      "length": 408,
+      "sha256": "304b222af6fdd4d0db3a711d9b30e9539c92402eb6f1cd0215d4390f2d9c8e4a"
+    },
+    {
+      "index": 6060,
+      "name": "libVLSK_gf_InitializeOverwatchCapturePoint",
+      "length": 125,
+      "sha256": "14e356a08803cb28c21fa5839eba14891667c3e7a43b684f26c0528360c0887a"
+    },
+    {
+      "index": 6061,
+      "name": "libVLSK_gf_EnableDisableCapturePoint",
+      "length": 259,
+      "sha256": "f4172fda29f2e020a31096524c1522244b2ee803d2810295806262257b448f02"
+    },
+    {
+      "index": 6062,
+      "name": "libVLSK_gf_CreateCapturePointPreview",
+      "length": 85,
+      "sha256": "cb0bd1f27db53c0e685332a01813c4211c364ae22383ee8b7d33748594f1f20f"
+    },
+    {
+      "index": 6063,
+      "name": "libVLSK_gf_MonitorCapturePointProgressUntilComplete",
+      "length": 1028,
+      "sha256": "6f5fcc133f786de9a1539081ec2ed2fc8fd59be8f83587d8f0954b5f08310b28"
+    },
+    {
+      "index": 6064,
+      "name": "libVLSK_gf_AdvanceCapturePointContestProgress",
+      "length": 190,
+      "sha256": "3b5f6af82d0f880ed2cfba78e5d9f47d5c7b223b5039ab908de2049d75594fa3"
+    },
+    {
+      "index": 6065,
+      "name": "libVLSK_gf_AdvanceCapturePointVictoryProgress",
+      "length": 220,
+      "sha256": "343ec03a0d83db97f3e56f58a154f01326e01152a8de0dbe17a459305d2402d4"
+    },
+    {
+      "index": 6066,
+      "name": "libVLSK_gf_AdvanceOvertimeTimer",
+      "length": 45,
+      "sha256": "1d62bd2cdc15d56396520c38bbe07acf0422a08909b148a6cfe3ba51b52b3357"
+    },
+    {
+      "index": 6067,
+      "name": "libVLSK_gf_AwardCapturePointVictorytoTeam",
+      "length": 112,
+      "sha256": "b90d031a0baf2aa686b9345fd07d90c4daebd21de2a2229897e3dec0ae84d589"
+    },
+    {
+      "index": 6068,
+      "name": "libVLSK_gf_DecayCapturePointContest",
+      "length": 167,
+      "sha256": "e36965db9d5b31040f0ee31ec5186756cc61fa2ef9ab25dcdc5248f6c9f2ec8d"
+    },
+    {
+      "index": 6069,
+      "name": "libVLSK_gf_ChangeOwnershipofCapturePoint",
+      "length": 112,
+      "sha256": "2b70b2c624b5651747c8eefc0cfbeda5ea4a5b47f3dfbfac09c4f4d16e457b37"
+    },
+    {
+      "index": 6070,
+      "name": "libVLSK_gf_ClampVictoryProgressto99",
+      "length": 65,
+      "sha256": "a20f4f869b1fbb7e231bd53f937955f8921db09e7f61e3853efe286eb12f4c85"
+    },
+    {
+      "index": 6071,
+      "name": "libVLSK_gf_GetCapturePointVictoryProgressasInt",
+      "length": 28,
+      "sha256": "f8d0cf4b28792cf8b2c65570798672779f29a3d3543e70636910ae870e6ea6db"
+    },
+    {
+      "index": 6072,
+      "name": "libVLSK_gf_GetNextCapturePointIndex",
+      "length": 27,
+      "sha256": "7b171f10345b6979da5494bbb7936a4b20daae0a1a7f0348c9c7ad9368526898"
+    },
+    {
+      "index": 6073,
+      "name": "libVLSK_gf_OwningTeamOfCapturePoint",
+      "length": 9,
+      "sha256": "303c66d1e9c47360edb725cc61a4dc0c24e57446178d7cf86d1ed1be6cd75bd3"
+    },
+    {
+      "index": 6074,
+      "name": "libVLSK_gf_TeamCapturingNeutralPoint",
+      "length": 23,
+      "sha256": "f87334cae60f9b4a7c3c55df98bc32404ead1a1aa31094d63b148e4146e51d9f"
+    },
+    {
+      "index": 6075,
+      "name": "libVLSK_gf_CapturingProgressOfTeam",
+      "length": 14,
+      "sha256": "dd93927c23c008b6ed0722f9bc1462b367d4d1d727649063601e6d99f67d0282"
+    },
+    {
+      "index": 6076,
+      "name": "libVLSK_gf_StateOfPoint",
+      "length": 9,
+      "sha256": "7dde30996c5d246b1e755d7d409c08dc94f7298c518d016481fdd526cca801ae"
+    },
+    {
+      "index": 6077,
+      "name": "libVLSK_gf_AwardGiantRobottoTeam",
+      "length": 43,
+      "sha256": "4c781f5bcbfb8fe3e0bff2034aeda031eeca079800ba819c9b274a69165d5d96"
+    },
+    {
+      "index": 6078,
+      "name": "auto_libVLSK_gf_AwardGiantRobottoTeam_TriggerFunc",
+      "length": 190,
+      "sha256": "1e068326059c6f46c90c6addc82e1090cdcd5eb084a029c27aa4da236a2c30da"
+    },
+    {
+      "index": 6117,
+      "name": "libVLSK_gf_UpdateUIContestBarProgress",
+      "length": 105,
+      "sha256": "89469ca1b7039f376e1bc639e8634bfeb33a39c631c8dc9ef84dacfb1ce362b8"
+    },
+    {
+      "index": 6118,
+      "name": "libVLSK_gf_UpdateUIVictoryPercentLabels",
+      "length": 127,
+      "sha256": "cc254e444983c5f837f3f2e3eea38880bc481677bfcc083fe46746fab54b432c"
+    },
+    {
+      "index": 6120,
+      "name": "libVLSK_gf_EnableDisableUIContestedCalloutDialog",
+      "length": 65,
+      "sha256": "df5c896dd8eb6b00ce189cecec5777ae607ec622f9a5add038561dec78fa0590"
+    },
+    {
+      "index": 6129,
+      "name": "auto_libVLSK_gf_ShowRobotSlideoutStatusFrameforUnit_TriggerFunc",
+      "length": 200,
+      "sha256": "ff0b881b6dcd6ea723864fdea812265382f1794662db0d073499bd43e9b58b32"
+    },
+    {
+      "index": 6153,
+      "name": "libVLSK_gt_CapturePointCooldownTimerExpires_Func",
+      "length": 75,
+      "sha256": "b7f77e93465ee8b161ab27719f31af50b39e461dc6fc54008b679c03c27cf89e"
+    },
+    {
+      "index": 6155,
+      "name": "libVLSK_gt_CapturePointWarningTimerExpires_Func",
+      "length": 24,
+      "sha256": "ce8eb423afaa5b8bce28aa4d0c440477cd8c203c6f5ca372e3d86c0cec94c242"
+    },
+    {
+      "index": 6157,
+      "name": "libVLSK_gt_GateOpenTimerExpires_Func",
+      "length": 71,
+      "sha256": "3fb647889d372fbdbd36353f255865eb5f131630d00a254f980526576815262c"
+    },
+    {
+      "index": 6161,
+      "name": "libVLSK_gt_GiantRobotDies_Func",
+      "length": 193,
+      "sha256": "8c8b7fc9d24801c63beb9ca429222a1bcfb98fe200b9b5f88a7c7191bb891428"
+    }
+  ],
+  "evidence": "Diagnostic Volskaya current state, active VM operands and installed CASC scripts. Publication closed pending recipe and final review. No gt_* counts or replay production.",
+  "source_scripts": [
+    {
+      "name": "mods\\heroesmapmods\\battlegroundmapmods\\overwatchdata.stormmod\\base.stormdata\\libover.galaxy",
+      "size": 51922,
+      "output": "mods__heroesmapmods__battlegroundmapmods__overwatchdata.stormmod__base.stormdata__libover.galaxy",
+      "sha256": "80493b76a2b8cccfd3431ab315debf6f15eab1cf70681c240fa159001082bc28"
+    },
+    {
+      "name": "mods\\heroesmapmods\\battlegroundmapmods\\overwatchdata.stormmod\\base.stormdata\\libover_h.galaxy",
+      "size": 1846,
+      "output": "mods__heroesmapmods__battlegroundmapmods__overwatchdata.stormmod__base.stormdata__libover_h.galaxy",
+      "sha256": "2f8046caa21041443a8ae919b2ea4917c2beed9052b0d1365268f4ac89800089"
+    },
+    {
+      "name": "mods\\heroesmapmods\\battlegroundmapmods\\volskayamechanics.stormmod\\base.stormdata\\libvlsk.galaxy",
+      "size": 124108,
+      "output": "mods__heroesmapmods__battlegroundmapmods__volskayamechanics.stormmod__base.stormdata__libvlsk.galaxy",
+      "sha256": "210ec2826f204912a6c3a4e108cc0382186392166d85e9db658b8e078d177da5"
+    },
+    {
+      "name": "mods\\heroesmapmods\\battlegroundmapmods\\volskayamechanics.stormmod\\base.stormdata\\libvlsk_h.galaxy",
+      "size": 13230,
+      "output": "mods__heroesmapmods__battlegroundmapmods__volskayamechanics.stormmod__base.stormdata__libvlsk_h.galaxy",
+      "sha256": "22cd6324224b151ec33e86af5a60ac9040d5625b5f6b0e553b9a02368ffb51d9"
+    }
+  ]
+}
