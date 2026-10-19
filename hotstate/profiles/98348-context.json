@@ -1,0 +1,153 @@
+{
+  "build": 98348,
+  "root": "Current GameMapPath native config+83f78 / schema775; no serialized blob or heap selection",
+  "user_stride": 3120,
+  "slot_stride": 3880,
+  "signatures": [
+    {
+      "name": "schema_775",
+      "rva": 41718367,
+      "size": 17,
+      "sha256": "6fea21af3a0db6b6beccea2cdaec5f50e14353e99505c9a85515b74f5a420e54"
+    },
+    {
+      "name": "field_offsets_775",
+      "rva": 41699984,
+      "size": 32,
+      "sha256": "a74fb8e84a19399cd22a0c833d980ff4b58a29d1d95740cf26741c8f8caf4265"
+    },
+    {
+      "name": "schema_107",
+      "rva": 41713411,
+      "size": 9,
+      "sha256": "37e73b1d7da6b8fe7285435f4ce661cb37ef7356e05f3d8b40a925bcd2621dd4"
+    },
+    {
+      "name": "array_stride_107",
+      "rva": 41687424,
+      "size": 8,
+      "sha256": "6be9af754dd14c313ee376aa576115aabe5661766bdf3c13a8cb0d9a9f9d602d"
+    },
+    {
+      "name": "schema_760",
+      "rva": 41718248,
+      "size": 9,
+      "sha256": "831d5771f521e1d91f233a0aea8a36adebf612d00b7df13fc90b5654e41295a1"
+    },
+    {
+      "name": "array_stride_760",
+      "rva": 41699712,
+      "size": 8,
+      "sha256": "515d413aa0600f4587870b891e57b8774b39db181b480a30da03601bceea81b0"
+    },
+    {
+      "name": "schema_82",
+      "rva": 41713222,
+      "size": 85,
+      "sha256": "cc6222ed4f3fbfc7ef67531505308c4a1b362607c2392faf67ea0f1bdac2cdcf"
+    },
+    {
+      "name": "field_offsets_82",
+      "rva": 41686920,
+      "size": 168,
+      "sha256": "d689f55ad5048f07fa921bad7ad812e453ee6592c911d33d2d104a459b6d9959"
+    },
+    {
+      "name": "schema_730",
+      "rva": 41718010,
+      "size": 109,
+      "sha256": "8a804cf7be8fbe18a3212b0be3c306c4808d2809ed7a5ff114bb01ece1ee7651"
+    },
+    {
+      "name": "field_offsets_730",
+      "rva": 41699144,
+      "size": 216,
+      "sha256": "2ed7a05e7188e90e96e761a90430f567163373efd4241a3bc76352dea93238f8"
+    },
+    {
+      "name": "schema_67",
+      "rva": 41713143,
+      "size": 5,
+      "sha256": "cc001b7173fa437cd82ae11663ef94e300217ba2754f5826f9a9373276f8136f"
+    },
+    {
+      "name": "native_string_binding_67_0",
+      "rva": 20286624,
+      "size": 16,
+      "sha256": "d76a8055ce6d765603563f2a2d257049fb78f09f327af8cd1ea5555e805e29f2"
+    },
+    {
+      "name": "native_string_binding_67_1",
+      "rva": 20286656,
+      "size": 16,
+      "sha256": "fb310480c009b7492c525560f7cda10a651881b727880abfc0c3eb4e956362c9"
+    },
+    {
+      "name": "native_string_binding_67_2",
+      "rva": 20286688,
+      "size": 16,
+      "sha256": "cc42c0bc351fedeea108f928801f827376f07b4839781d742e1666b043fdbed9"
+    },
+    {
+      "name": "schema_77",
+      "rva": 41713193,
+      "size": 5,
+      "sha256": "12570789b2837432bc01e52cac9fc12e4c12e81050fdd8cfe7ec507b3f140066"
+    },
+    {
+      "name": "schema_69",
+      "rva": 41713153,
+      "size": 5,
+      "sha256": "d4381002699d12d7b70a4443438b0048812117ef78898fb84a098b6a38b683fd"
+    },
+    {
+      "name": "native_string_binding_69_0",
+      "rva": 20286832,
+      "size": 16,
+      "sha256": "8db6f10c03aa2c96aaa6f2e037babbba6d1bf77d62ebc85724c4137ad514dc3e"
+    },
+    {
+      "name": "native_string_binding_69_1",
+      "rva": 20286864,
+      "size": 16,
+      "sha256": "1b736d64cb9f69a8729bbd2bd665c21b114dc8406f0315c58091bbf4b5328fe4"
+    },
+    {
+      "name": "native_string_binding_69_2",
+      "rva": 20286960,
+      "size": 16,
+      "sha256": "cc42c0bc351fedeea108f928801f827376f07b4839781d742e1666b043fdbed9"
+    },
+    {
+      "name": "schema_196",
+      "rva": 41714144,
+      "size": 5,
+      "sha256": "9ba0f181e52301349d319170699d8a092b0681f18d9352abd038c31be36b7f1f"
+    },
+    {
+      "name": "schema_732",
+      "rva": 41718124,
+      "size": 5,
+      "sha256": "6badf547d5026e6c37d0fea5fa87536005feb0017526f3c717bb4020b29fd7df"
+    },
+    {
+      "name": "schema_128",
+      "rva": 41713558,
+      "size": 9,
+      "sha256": "2b47e01d390ea410790371ac34a789368cc0c12604a584fed519cba37f1e20b4"
+    },
+    {
+      "name": "field_offsets_128",
+      "rva": 41687824,
+      "size": 16,
+      "sha256": "b1535c7783ea8829b6b0cf67704539798b4d16c39bf0bfe09494c5d9f12eee30"
+    },
+    {
+      "name": "schema_744",
+      "rva": 41718184,
+      "size": 5,
+      "sha256": "88b1589d0e239cae2a1f4baf6d04f03e146c2979aafc3fc60ae8b9f2a89827ec"
+    }
+  ],
+  "publication": "Schema/ABI fingerprints only; does not authorize a tactical packet or establish live recipe."
+}

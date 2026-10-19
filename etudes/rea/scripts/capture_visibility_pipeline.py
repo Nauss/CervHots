@@ -57,10 +57,10 @@ class PipelineMemory(ProcessBackend):
     No OpenProcess here: CLI owns the already verified ProcessBackend. Tests and
     historical replays use explicitly labelled fixtures, never live claims.
     """
-    def __init__(self, backend, address, size):
+    def __init__(self, backend, address, size, *, native_context=False):
         if type(size) is not int or not 16 <= size <= 65536:
             raise NativeUnavailable('taille_initdata_pipeline_invalide')
-        if type(address) is not int or not 0x10000 <= address < 0x800000000000 - size:
+        if not (native_context and address is None) and (type(address) is not int or not 0x10000 <= address < 0x800000000000 - size):
             raise NativeUnavailable('adresse_initdata_pipeline_invalide')
         self.trace = TraceMemory(backend)
         self.module_base = backend.module_base
@@ -87,7 +87,9 @@ def take_sample(backend, probe, address, size=65536, *, native_profile=None, clo
     No fabricated roster/envelope and no replay input in the live CLI. Raw reads
     may include private user bytes: they stay ONLY in ignored private traces.
     """
-    memory = PipelineMemory(backend, address, size)
+    from hotstate.native_context import NativeContextProbe
+    native_context = isinstance(probe, NativeContextProbe)
+    memory = PipelineMemory(backend, address, size, native_context=native_context)
     recorded = RecordedClock(REAL_CLOCK if clock is None else clock)
     row = {'wall_before': utc(), 'monotonic_before': REAL_CLOCK(),
            'status': 'rejected', 'mode': 'unreleased_pipeline_diagnostic',
@@ -121,7 +123,10 @@ def take_sample(backend, probe, address, size=65536, *, native_profile=None, clo
             row['map_metadata_observed'] = {k: raw['meta'][k] for k in ('map_id', 'map') if k in raw['meta']}
             if raw['meta'].get('native_status') != 'valide':
                 raise NativeUnavailable(raw['meta'].get('native_status', 'coeur_pipeline_absent'))
-            memory.recheck_context()
+            if native_context:
+                probe.recheck(memory)
+            else:
+                memory.recheck_context()
             row['native_match_equals_context'] = raw['meta'].get('match_id') == initial['match_id']
             if not row['native_match_equals_context']:
                 raise NativeUnavailable('contexte_pipeline_partie_native_incoherente')
@@ -301,6 +306,7 @@ def main(argv=None):
     context = parser.add_mutually_exclusive_group()
     context.add_argument('--context-address', type=lambda s: int(s, 0))
     context.add_argument('--discover-context', action='store_true')
+    context.add_argument('--native-context', action='store_true', help='read proven CURRENT native InitData fields; no heap scan')
     parser.add_argument('--context-bytes', type=int, default=65536)
     parser.add_argument('--candidate-visibility', action='store_true')
     parser.add_argument('--pid', type=int)
@@ -318,7 +324,7 @@ def main(argv=None):
         print(f'OFFLINE_PIPELINE_PREFLIGHT_OK {commit} {len(manifest)} files; {protocol.__name__}; no process opened')
         return 0
     if (not args.candidate_visibility or args.player_file is None or args.out is None
-            or not (args.discover_context or args.context_address is not None)
+            or not (args.native_context or args.discover_context or args.context_address is not None)
             or not 0 < args.duration <= 300 or not 0.5 <= args.interval <= 10
             or not 16 <= args.context_bytes <= 65536
             or (args.context_address is not None and not 0x10000 <= args.context_address < 0x800000000000 - args.context_bytes)):
@@ -335,6 +341,9 @@ def main(argv=None):
     if '\n' in player or '\r' in player or not 2 <= len(player) <= 64:
         parser.error('invalid private game label')
     probe = ContextProbe(player)
+    if args.native_context:
+        from hotstate.native_context import NativeContextProbe
+        probe = NativeContextProbe(player)
     from hotstate.protocols import load_protocol
     protocol = load_protocol()
     grab = None
@@ -373,6 +382,8 @@ def main(argv=None):
             stream.write(json.dumps({'kind':PIPELINE_KIND,
                 'commit':commit,'sources_sha256':manifest,'module_base':backend.module_base,
                 'context_address':address,'context_size':args.context_bytes,'discovery':discovery,
+                'context_mode':'initdata_native_fields' if args.native_context else 'serialized_initdata_memory',
+                'wire_decoder_used_for_context':not args.native_context,
                 'protocol':protocol.__name__,'png':args.png,'coach_or_audio':False,
                 'clock':'record_only_REAL_monotonic_live; historical replay separately labelled',
                 'publication':'candidate gate in THIS private diagnostic process only; product gate unchanged',

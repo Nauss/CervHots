@@ -17,7 +17,7 @@ def project_objective(raw, local, team):
     p, meta = raw.get('objective'), raw['meta']
     if (not isinstance(p, dict) or not isinstance(local, dict) or team != local.get('team')
             or meta.get('source') != 'live' or meta.get('native_build') != 98348
-            or meta.get('context_source') != 'initdata_memory'
+            or meta.get('context_source') not in ('initdata_memory', 'initdata_native_fields')
             or p.get('status') != 'validated' or not fresh(p)
             or p.get('map_id') not in VALIDATED_MAPS or p.get('map_id') != meta.get('map_id')
             or not isinstance(meta.get('match_id'), str)

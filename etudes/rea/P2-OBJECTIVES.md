@@ -65,6 +65,25 @@ pour nos valeurs positives. L'ancien HUD1:15 face au natif73.95 dans la courte
 550f ne constitue PAS une égalité exacte de durée affichée ; la nouvelle recette
 doit comparer les brackets et la cadence/animation réelle. On ne rajoute pas
 une seconde au champ natif pour fabriquer cet accord.
+
+La première découverte de11 a épuisé son plafond256MiB sans aucun décodeur,
+puis le scout du seul segment raciné a échoué sans prétendre à une frame.
+Le correctif lit maintenant les champs C++ InitData de la config COURANTE
+GameMapPath, schéma775 : users107/82 stride3120, slots760/730 stride3880,
+options userId/workingSet, contrôle/équipe/observe/héros, seed/cache versionnés.
+Leurs descripteurs ET offsets natifs sont fingerprintés98348. Les trois chaînes
+réelles (libellé humain privé, Muradin, Anduin) ont été comparées par l'opérateur :
+inline UTF8+16, deux extents égaux ; les hypothèses pointeur/UTF16/UTF32 ont
+échoué. Les représentations inégales/inconnues sont REFUSÉES, pas devinées.
+Les16 slots incluent6 inactifs qui ne deviennent pas des observateurs actifs ;
+les héros IA vides restent inconnus à ce stade et sont ensuite effectivement lus
+dans les CPlayer/Unit/catalog du cœur existant. Aucun roster/composition injecté.
+Le nouveau label distinct est `initdata_native_fields`, explicitement admis
+avec les mêmes gardes natives/HMAC que `initdata_memory`, sans assouplissement
+pour une autre source. `--native-context` relit/recontrôle la racine à CHAQUE
+échantillon et traverse le VRAI snapshot/NativeReader/normaliseur/clé. Aucun
+blob bitpacké artificiel, scan de tas, ancienne adresse, API ou capture en pause
+n'est utilisé comme validation live. Gate produit toujours fermé avant recette.
 La fonction active1239 ComputerPlayerInTeam (1→11,2→12) et le getter natif de vie
 courante sont désormais eux aussi empreintés. Les tests de non-lecture du
 remplaçant sont distincts des observations live.

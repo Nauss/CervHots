@@ -243,8 +243,14 @@ def snapshot(backend, mapping: dict, debug: bool = False, *, context=None,
     triggers = mapping["triggers"]
     if context is not None:
         context.begin()
-    found = scan_triggers(backend, triggers,
-                          observe_region=context.feed if context is not None else None)
+    from .native_context import NativeContextProbe
+    native_context = isinstance(context, NativeContextProbe)
+    if native_context:
+        context.observe_native(backend, native_profile=native_profile)
+    # Typed native context never starts a legacy whole-heap trigger scan. Such
+    # counters remain absent, not zero or an invented objective observation.
+    found = ({} if native_context else scan_triggers(backend, triggers,
+                          observe_region=context.feed if context is not None and not native_context else None))
     state = {
         "meta": {
             "source": "live" if isinstance(backend, ProcessBackend) else "dump",

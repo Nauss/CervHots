@@ -44,7 +44,7 @@ def _native_positions(raw, heroes, local, team):
             or not fresh(packet)
             or packet.get("map_id") not in positions.VALIDATED_MAPS
             or packet.get("map_id") != meta.get("map_id")
-            or meta.get("context_source") != "initdata_memory"
+            or meta.get("context_source") not in ("initdata_memory", "initdata_native_fields")
             or not isinstance(meta.get("match_id"), str)
             or not re.fullmatch("[0-9a-f]{64}", meta["match_id"])
             or packet.get("match_id") != meta["match_id"]
@@ -95,7 +95,7 @@ def _native_visibility(raw, heroes, local, team):
     p, meta = raw.get('visibility'), raw['meta']
     if (not isinstance(p, dict) or local is None or team != local['team']
             or meta.get('source') != 'live' or meta.get('native_build') != 98348
-            or meta.get('context_source') != 'initdata_memory'
+            or meta.get('context_source') not in ('initdata_memory', 'initdata_native_fields')
             or p.get('status') != 'validated' or not fresh(p)
             or p.get('map_id') not in visibility.VALIDATED_MAPS
             or p.get('map_id') != meta.get('map_id')
@@ -146,7 +146,7 @@ def _native_heroes(raw, players, local, team):
     vitals_permitted = (
         isinstance(packet, dict) and fresh(packet)
         and meta.get('source') == 'live' and meta.get('native_build') == 98348
-        and meta.get('context_source') == 'initdata_memory'
+        and meta.get('context_source') in ('initdata_memory', 'initdata_native_fields')
         and isinstance(meta.get('match_id'), str)
         and re.fullmatch('[0-9a-f]{64}', meta['match_id']) is not None
         and packet.get('match_id') == meta['match_id']
@@ -255,8 +255,8 @@ def snapshot(raw: dict, *, at: float | None = None, team: int | None = None,
                 raw["composition_complete"] is True and len(players) == 10
                 and all(isinstance(p.get("hero"), str) and p["hero"] for p in players)
                 and all(sum(p.get("team") == t for p in players) == 5 for t in (0, 1)))
-        if meta.get("context_source") == "initdata_memory":
-            result["meta"]["context_source"] = "initdata_memory"
+        if meta.get("context_source") in ("initdata_memory", "initdata_native_fields"):
+            result["meta"]["context_source"] = meta["context_source"]
             match_id = meta.get("match_id")
             if isinstance(match_id, str) and re.fullmatch(r"[0-9a-f]{64}", match_id):
                 result["meta"]["match_id"] = match_id

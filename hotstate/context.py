@@ -10,6 +10,7 @@ import re
 from pathlib import Path
 
 
+
 def _text(value):
     return value.decode("utf-8") if isinstance(value, bytes) else value
 
@@ -183,10 +184,7 @@ def make_probe(player_name, *, live=False):
     """Activation explicite ; pas d'import du décodeur quand aucun joueur n'est donné."""
     if player_name is None:
         return None
-    active = None
     if live:
-        import os
-
-        root = Path(os.environ["LOCALAPPDATA"]) / "Temp/Heroes of the Storm"
-        active = lambda: any(root.glob("TempWriteReplay*/replay.server.battlelobby"))
-    return ContextProbe(player_name, active_lobby=active)
+        from .native_context import NativeContextProbe
+        return NativeContextProbe(player_name)
+    return ContextProbe(player_name)

@@ -170,7 +170,7 @@ class AlliedPositions:
                 or type(local.get('team')) is not int or local['team'] not in (0, 1)
                 or local['id'] not in range(10) or not isinstance(local.get('hero'), str)
                 or next(p for p in roster if p['id'] == local['id'])['team'] != local['team']
-                or not isinstance(meta, dict) or meta.get('context_source') != 'initdata_memory'
+                or not isinstance(meta, dict) or meta.get('context_source') not in ('initdata_memory', 'initdata_native_fields')
                 or not isinstance(meta.get('match_id'), str)
                 or not re.fullmatch('[0-9a-f]{64}', meta['match_id'])
                 or not isinstance(meta.get('map_id'), str)):
