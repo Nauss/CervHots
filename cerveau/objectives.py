@@ -15,6 +15,9 @@ def project_objective(raw, local, team):
     from hotstate.objectives import VALIDATED_MAPS
 
     p, meta = raw.get('objective'), raw['meta']
+    if isinstance(p, dict) and p.get('map_id') == 'DragonShire':
+        from .dragon import project_dragon
+        return project_dragon(raw, local, team)
     if (not isinstance(p, dict) or not isinstance(local, dict) or team != local.get('team')
             or meta.get('source') != 'live' or meta.get('native_build') != 98348
             or meta.get('context_source') not in ('initdata_memory', 'initdata_native_fields')
@@ -101,6 +104,9 @@ def objective_key(packet):
     """Cancel on tactical changes, not every tick of a public countdown."""
     if not isinstance(packet, dict):
         return None
+    if packet.get('map_id') == 'DragonShire':
+        from .dragon import dragon_key
+        return dragon_key(packet)
     point, protector = packet.get('point'), packet['protector']
 
     def band(value, cutoffs):

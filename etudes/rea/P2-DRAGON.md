@@ -1,7 +1,7 @@
 # P2 — sanctuaires et Chevalier Dragon, build98348
 
-**Date :** 19 octobre 2026 · **Statut :** diagnostic natif implémenté,
-publication fermée ; transitions Dragon et intégration consommateur non qualifiées.
+**Date :** 19 octobre 2026 · **Statut :** diagnostic Dragon20 réellement recoupé,
+pipeline consommateur candidat implémenté ; publication fermée avant recette finale.
 
 ## 1. Résultat exercé et limites
 
@@ -14,15 +14,30 @@ respawn15.875s. Ce résultat n'est NI une acquisition atomique NI un nouvel
 instant live. Les références statue/dragon de cette ancienne capture sont
 recyclées ; aucune lecture des propriétaires/vitales du remplaçant n'est permise.
 
+Recette20 native, sansPNG :405acquisitions dont347diagnostics acceptés,
+56déchirures refusées et2refus de cohérence, aucun dépassement de budget.
+Sun et Moon ont captures/pertes/contestations/reversions effectivement observées,
+694observations de propriétaire recoupées au tracker indépendant du même match,
+identité seed/cache et un humainStitches local+9IA sans observateur confirmés.
+Premier marqueur canalisation vrai observé168.625–171.375s ; activation tracker
+171.625s, chevalier natif actif ensuite, contrôle joueurIA5 ; décès tracker202.75s
+dans la borne native conservatrice(175.6875,206.625]. Le pilote IA n'émet pas
+une commande locale : cette limitation ne devient pas une preuve de clic humain.
+Les405traces/horloges originales ont été rejouées strictement sans écart ;
+les nouveaux reçus de rejeu ne rendent pas ces observations actuelles.
+
 Les fixtures couvrent capture, neutralisation, perte, contestation, état
 inconnu/désactivé, canalisation, véhicule actif et fin. Elles ne prouvent PAS
 ces transitions en partie. L'ancienne capture isolée ne peut pas compléter
 la recette. Aucun transfert de qualification Volskaya/Braxis.
 
-`DragonObjective.read()` refuse systématiquement `recette_dragon_absente`.
-Aucun reçu tactique n'est émis, aucune intégration au reader/normaliseur n'est
-activée ; les allowlists produit restent inchangées. Une acceptation du
+Tant que son allowlist est vide, `DragonObjective.read()` refuse
+`recette_dragon_absente`. Le nouveau chemin candidat est branché dans le vrai
+NativeReader, puis dans le normaliseur et la clé tactique, mais aucune donnée
+Dragon ne franchit le gate produit fermé. Une acceptation du
 collecteur est explicitement `accepted_diagnostic_NOT_PRODUCT`, pas Full.
+Le nouveau `capture_dragon_pipeline.py` devra, séparément, obtenir des Full
+sur le vrai `hotstate.live.read_current`, pas sur ce premier diagnostic.
 
 ## 2. Source, identité et sémantique
 
@@ -57,9 +72,14 @@ deux sanctuaires courants de la même équipe. Le marqueur fini
 TransformHeroVehicleBeingCapturedBehavior est ajouté par InitialEffect de
 UseVehiclePersistent et retiré par FinalEffect, succès ou interruption.
 Sa durée catalogue5s n'est PAS le temps de canalisation3s configuré par
-InitTowers ; seul un booléen diagnostique en est tiré. Il reste privé :
-une future projection ne devra pas exposer une canalisation ennemie cachée
-sans preuve de publicité ou visibilité courante qualifiée sur Dragon.
+InitTowers ; seul un booléen en est tiré. Le nouveau chemin consommateur
+ne lit ce marqueur que si le prédicat natif CURRENT est vrai pour la statue,
+avec signatures de visibilité et identité locales revérifiées. False/unknown
+reste channeling=null, sans lecture du marqueur. Le catalogue effectif
+VehicleDragon déclare FogVisibility=Visible (unitdata3106–3107) ; cela ne
+débloque aucune visibilité héroïque ni une carte entière. La projection
+exige également l'assertion CURRENT dans son reçu signé, jamais un flag connu
+ou un simple propriétaire allié. La recette finale doit exercer ce chemin.
 
 En phase DragonRampaging, le véhicule vient du global unité courant ; le
 pilote doit être le propriétaire actuel1..10 et le global DragonPlayer,
@@ -94,6 +114,14 @@ ne doivent jamais être joints au prompt/Git. Rejeu adresse/taille/octets
 ET horloges en ordre strict ; les fixtures d'identité mockée sont nommées
 comme telles et ne valent ni coût physique live ni perspective qualifiée.
 
+`capture_dragon_pipeline.py` emploie réellement `hotstate.live.read_current`
+avec les callbacks consommateur `cerveau.state.snapshot` et `tactical_key`.
+Contexte, cœur natif, familles optionnelles, rechecks, normalisation et clé
+partagent le budget WHOLE. Sa seule ouverture de gate est locale au processus
+diagnostique, via l'opt-in explicite `--candidate-dragon`. Un cœur seul ou une
+famille omise n'est jamais Full. Le manifeste inclut aussi le normaliseur,
+la clé et kb/data/map_timings.json, dépendance du nommage de carte.
+
 ## 4. Critères encore ouverts pour livraison
 
 1. Recette Dragon native ciblée, joueur local+9IA, captures/pertes des deux
@@ -104,15 +132,16 @@ comme telles et ne valent ni coût physique live ni perspective qualifiée.
    tracker seule ne prouve pas ces états live.
 3. Décider/qualifier les seules données publiques ; notamment canalisation
    cachée, pas de nouveau champ ennemi implicite.
-4. Brancher ensuite le vrai consommateur, normalisation typée et clé tactique,
-   reçus/fraîcheur/confidentialité, coût WHOLE non mocké et recette exacte.
+4. Le vrai consommateur, normalisation typée, reçus et clé sont maintenant
+   implémentés en candidat et exercés sur fixtures ; restent coût WHOLE réel
+   non mocké et recette exacte. Les fixtures ne ferment pas ce critère.
 5. Revue indépendante finale, intégration/main/push et SHA distant relu.
 
-L'opérateur désigné par la directive, t_d6e15259/default, a clos sa recette
-Volskaya après19/24parties. Cette préparation n'autorise pas Cody à prendre
-la GUI, ni à ressusciter ses anciennes cartes. Handoff ciblé et coordination
-opérateur sont nécessaires sans demander au propriétaire de jouer et sans
-fabriquer une livraison pour libérer la chaîne.
+L'ancien opérateur t_d6e15259/default a clos Volskaya après19/24parties.
+Le soutien ciblé Dragon t_7d4211b0/default a effectué la recette20 et reste
+disponible pour le vrai pipeline après handoff revu/committé/préflighté ;
+il a rendu le menu et l'audio avant l'attente hors ligne. Les sept cartes
+produit ne sont ni décomposées ni dupliquées. Cody ne prend pas la GUI.
 
 ## Sources clés
 

@@ -276,7 +276,11 @@ class NativeReader:
         from .objectives import VolskayaObjective
         objective = None
         try:
-            objective = VolskayaObjective(optional_native).read(context, hero_ids=hero_ids)
+            if context.get('meta', {}).get('map_id') == 'DragonShire':
+                from .dragon import DragonObjective
+                objective = DragonObjective(optional_native).read(context, hero_ids=hero_ids)
+            else:
+                objective = VolskayaObjective(optional_native).read(context, hero_ids=hero_ids)
         except NativeUnavailable:
             pass  # Unknown objective is not a cached event or a default zero.
         finished = self.read_clock()

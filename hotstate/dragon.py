@@ -7,6 +7,7 @@ an independent Dragon recipe qualifies this path, read() always refuses.
 from __future__ import annotations
 
 import hashlib
+import copy
 import json
 import struct
 import time
@@ -136,7 +137,7 @@ class DragonObjective:
             result.append(row)
         return result
 
-    def _statue(self, n, phase, shrines):
+    def _statue(self, n, phase, shrines, local_id=None):
         result = {'state': 'unknown', 'team': None, 'channeling': None}
         if phase != 'shrines':
             return result
@@ -148,13 +149,31 @@ class DragonObjective:
             return dict(result, state='inactive')
         if any(s['owner'] != owner or s['state'] in ('unknown', 'disabled') for s in shrines):
             raise NativeUnavailable('statue_sanctuaires_dragon_incoherents')
+        if local_id is not None:
+            from .visibility import CurrentVisibility, _UnknownVisibility
+            helper = AlliedPositions(n, profile=self.position_profile)
+            helper._verify(n)
+            visibility = CurrentVisibility(n)
+            visibility._verify(n)
+            try:
+                visible = visibility._current(n, unit, local_id+1, helper)
+            except _UnknownVisibility:
+                visible = None
+            # Team ownership is not permission to disclose an unseen channel.
+            # Do not even read the marker when CURRENT sight is unestablished.
+            if visible is not True:
+                return {'state': 'capturable', 'team': owner,
+                        'channeling': None, 'current_visible': visible}
         # The 5s marker is applied by the channeled persistent's InitialEffect
         # and removed in FinalEffect. It is NOT the 3s channel's countdown.
         # Private diagnostic only: no permission to reveal an unseen channel.
         marker = self.mechanics._duration(n, unit, 'TransformHeroVehicleBeingCapturedBehavior')
         if not 0 <= marker <= 5:
             raise NativeUnavailable('marqueur_canalisation_dragon_invalide')
-        return {'state': 'capturable', 'team': owner, 'channeling': marker > 0}
+        result = {'state': 'capturable', 'team': owner, 'channeling': marker > 0}
+        if local_id is not None:
+            result['current_visible'] = True
+        return result
 
     def _dragon(self, n, phase):
         result = {'state': 'inactive', 'team': None, 'remaining_s': None}
@@ -179,7 +198,7 @@ class DragonObjective:
             return result  # Zero/missing behavior is NOT an active ready unit.
         return {'state': 'active', 'team': team, 'remaining_s': remaining}
 
-    def _sample(self, n):
+    def _sample(self, n, *, local_id=None):
         self._verify(n)
         code = n.value(n.base+GLOBAL_DATA+0xE2B31, 'i')
         if not 0 <= code < len(PHASES):
@@ -192,7 +211,7 @@ class DragonObjective:
         dragon = self._dragon(n, phase)
         return {'phase': 'unknown' if phase == 'dragon' and dragon['state'] == 'unknown' else phase,
                 'script_phase': phase, 'shrines': shrines, 'dragon': dragon,
-                'statue': self._statue(n, phase, shrines), **timers}
+                'statue': self._statue(n, phase, shrines, local_id), **timers}
 
     def inspect_saved(self):
         return dict(self._sample(self.native), status='offline_non_atomic')
@@ -242,5 +261,48 @@ class DragonObjective:
                     mission_interval_s=[before, after], read_count=budget.reads,
                     bytes_requested=budget.bytes_requested)
 
-    def read(self, context):
-        raise NativeUnavailable('recette_dragon_absente')
+    def _observe(self, context, *, hero_ids=None):
+        expected = copy.deepcopy(context)
+        map_id, match_id, local, team, _ = AlliedPositions._context(expected)
+        if map_id != 'DragonShire' or getattr(self.native.memory, 'recorded_non_atomic', False):
+            raise NativeUnavailable('carte_ou_capture_dragon_non_prise_en_charge')
+        clock = getattr(self.native.memory, 'positions_clock', time.monotonic)
+        budget = LiveBudget(self.native.memory, clock=clock)
+        memory = _RecordedMemory(budget, cache=True)
+        n = NativeReader(memory, profile=self.native.profile)
+        before = n.read_clock()
+        identity = ActiveMatch(profile=self.match_profile).observe(n)
+        if hero_ids is None:
+            hero_ids = json.loads((Path(__file__).parent/'hero_ids.json').read_text(encoding='utf-8'))
+        actual = AlliedPositions(n, profile=self.position_profile)._identity(n, hero_ids)
+        members = [(p['id'], p['team']) for p in sorted(expected['players'], key=lambda p: p['id'])]
+        expected_hero = hero_ids.get(expected['local_player']['hero'], expected['local_player']['hero'])
+        if (identity['match_id'] != match_id or actual[:2] != (local, team)
+                or actual[2] != expected_hero
+                or [(p['id'], p['team']) for p in actual[3]] != members):
+            raise NativeUnavailable('perspective_dragon_incoherente')
+        sample = self._sample(n, local_id=local)
+        for address, data in memory.coherence_reads('lecture_dragon_dechiree'):
+            if budget.read_memory(address, len(data)) != data:
+                raise NativeUnavailable('lecture_dragon_dechiree')
+        start = len(memory.read_set)
+        after = n.read_clock()
+        memory.validate_clock_end(start, 'lecture_dragon_dechiree')
+        budget.check()
+        window = clock()-budget.started
+        if not 0 <= after-before <= 0.125 or not 0 <= window <= 0.125 or context != expected:
+            raise NativeUnavailable('fenetre_dragon_invalide')
+        return dict(sample, map_id=map_id, match_id=match_id, local_id=local, team=team,
+                    local_hero=actual[2], native_session=actual[4], mission_t_s=after,
+                    read_window_s=window, _acquired=budget.started)
+
+    def read(self, context, *, hero_ids=None):
+        if not VALIDATED_MAPS:
+            raise NativeUnavailable('recette_dragon_absente')
+        map_id, _, _, _, _ = AlliedPositions._context(context)
+        if map_id not in VALIDATED_MAPS:
+            raise NativeUnavailable('recette_dragon_absente')
+        from .acquisition import issue
+        sample = self._observe(context, hero_ids=hero_ids)
+        acquired = sample.pop('_acquired')
+        return issue(dict(sample, status='validated'), acquired)
