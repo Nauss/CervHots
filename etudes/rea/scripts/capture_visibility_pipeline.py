@@ -39,6 +39,7 @@ from etudes.rea.scripts.capture_positions import (
 )
 
 REAL_CLOCK = time.monotonic
+PIPELINE_KIND = 'unreleased_full_native_visibility_pipeline'
 
 
 class RecordedClock:
@@ -369,7 +370,7 @@ def main(argv=None):
                     report_stream.flush()
             address = discovery['address'] if discovery else args.context_address
             window = GameWindowState(backend.pid) if grab else None
-            stream.write(json.dumps({'kind':'unreleased_full_native_visibility_pipeline',
+            stream.write(json.dumps({'kind':PIPELINE_KIND,
                 'commit':commit,'sources_sha256':manifest,'module_base':backend.module_base,
                 'context_address':address,'context_size':args.context_bytes,'discovery':discovery,
                 'protocol':protocol.__name__,'png':args.png,'coach_or_audio':False,

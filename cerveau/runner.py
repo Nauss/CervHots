@@ -7,6 +7,7 @@ from pathlib import Path
 
 from .brain import Coach, Decision
 from .state import validated_gameplay_clock
+from .objectives import objective_key
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -62,6 +63,7 @@ def tactical_key(state: dict) -> str:
                      if gameplay is not None else None),
         "stats": {k: v for k, v in state.get("stats", {}).items() if k != "globes_total"},
         "events": state.get("events"), "positions": positions, 'visibility': visibility,
+        'objective': objective_key(state.get('objective')),
     }, sort_keys=True, ensure_ascii=False)
 
 

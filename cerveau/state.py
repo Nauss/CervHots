@@ -236,6 +236,10 @@ def snapshot(raw: dict, *, at: float | None = None, team: int | None = None,
             visibility = _native_visibility(raw, result['heroes'], local, team)
             if visibility is not None and (map_name is None or map_name == meta.get('map')):
                 result['visibility'] = visibility
+            from .objectives import project_objective
+            objective = project_objective(raw, local, team)
+            if objective is not None and (map_name is None or map_name == meta.get('map')):
+                result['objective'] = objective
             result["meta"]["native_status"] = "valide"
             gameplay_clock = validated_gameplay_clock(meta)
             if gameplay_clock is not None:

@@ -5,6 +5,7 @@ and independent review. No trigger counters, event cache or replay producer.
 """
 from __future__ import annotations
 
+import copy
 import hashlib
 import json
 import struct
@@ -39,7 +40,7 @@ class VolskayaObjective:
         if (p.get('build') != 98348 or n.profile.get('build') != 98348
                 or n.value(pe + 8) != p['pe_timestamp']
                 or n.value(pe + 24 + 56) != p['image_size']
-                or not p.get('signatures') or len(p.get('functions', ())) != 28
+                or not p.get('signatures') or len(p.get('functions', ())) != 29
                 or n.value(n.base + 0x35C8CD9, 'B') != 1):
             raise NativeUnavailable('profil_objectif_non_pris_en_charge')
         for s in p['signatures']:
@@ -222,6 +223,11 @@ class VolskayaObjective:
         low = n.global_u32(0x34F02C8+page)^n.global_u32(0x32C38B4)
         high = (n.global_u32(0x34F02CC+page)+n.global_u32(0x32C55D0)) & 0xFFFFFFFF
         unit = self._pointer(((high<<32)|low)+(index&15)*0x2F0)
+        # Galaxy variables may retain a tag after slot recycling. Do NOT read
+        # the replacement's owner, life or components and never call it dead.
+        if n.value(unit+0x10) != tag:
+            return {'state':'unknown','team':None,'health_percent':None,'remaining_s':None,
+                    'reason':'reference_protecteur_recyclee'}
         owner = n.value(unit+0x44,'B')
         if owner not in (11,12) or n.unit_pointer(tag,owner) != unit:
             raise NativeUnavailable('proprietaire_protecteur_objectif_invalide')
@@ -251,18 +257,28 @@ class VolskayaObjective:
         protector = self._protector(n)
         if active and protector['state']=='active':
             raise NativeUnavailable('point_et_protecteur_objectif_incoherents')
-        phase = 'active' if active else 'protector' if protector['state']=='active' else 'warning' if (warning['remaining_s'] or 0)>0 else 'waiting'
+        if active:
+            phase = 'active'
+        elif protector['state']=='active':
+            phase = 'protector'
+        elif (warning['remaining_s'] or 0)>0:
+            phase = 'warning'
+        elif protector['state']=='unknown' and not (cooldown['remaining_s'] or 0)>0:
+            phase = 'unknown'
+        else:
+            phase = 'waiting'
         return {'phase':phase,'current_point':current or None,'point':active[0] if active else None,
                 'points':points,'protector':protector,'cooldown':cooldown,'warning':warning,
                 'contest_goal_s':contest_goal/4096,'victory_goal_s':victory_goal/4096}
 
-    def _perspective(self,n,map_id):
+    def _perspective(self,n,map_id,hero_ids=None):
         from .match import ActiveMatch
         helper = AlliedPositions(n,profile=self.position_profile)
         helper._verify(n)
         helper._bounds(n,map_id)
         active = ActiveMatch(profile=self.match_profile).observe(n)
-        hero_ids = json.loads((Path(__file__).parent/'hero_ids.json').read_text(encoding='utf-8'))
+        if hero_ids is None:
+            hero_ids = json.loads((Path(__file__).parent/'hero_ids.json').read_text(encoding='utf-8'))
         local,team,hero,_,stamp = helper._identity(n,hero_ids)
         return {'local_id':local,'team':team,'local_hero':hero,
                 'native_match_id':active['match_id'],'native_session':stamp}
@@ -270,24 +286,48 @@ class VolskayaObjective:
     def inspect_saved(self):
         return dict(self._sample(),status='offline_non_atomic')
 
-    def diagnose(self,map_id):
+    def _observe(self,map_id,*,context=None,hero_ids=None):
         if map_id != 'Volskaya' or getattr(self.native.memory,'recorded_non_atomic',False):
             raise NativeUnavailable('carte_ou_capture_objectif_non_prise_en_charge')
         clock = getattr(self.native.memory,'positions_clock',time.monotonic)
+        expected = copy.deepcopy(context)
         start = clock()
         memory = _RecordedMemory(self.native.memory)
         n = NativeReader(memory,profile=self.native.profile)
         before = n.read_clock()
-        identity = self._perspective(n,map_id)
+        identity = self._perspective(n,map_id,hero_ids)
+        if expected is not None:
+            context_map,match_id,local_id,team,_ = AlliedPositions._context(expected)
+            if hero_ids is None:
+                hero_ids = json.loads((Path(__file__).parent/'hero_ids.json').read_text(encoding='utf-8'))
+            if (context_map != map_id or identity['native_match_id'] != match_id
+                    or identity['local_id'] != local_id or identity['team'] != team
+                    or identity['local_hero'] != hero_ids.get(expected['local_player']['hero'],expected['local_player']['hero'])):
+                raise NativeUnavailable('perspective_objectif_incoherente')
         sample = self._sample(n)
         for address,data in memory.read_set:
             if self.native.read(address,len(data)) != data:
                 raise NativeUnavailable('lecture_objectif_dechiree')
         after,window = n.read_clock(),clock()-start
-        if not 0 <= after-before <= MAX_WINDOW_S or not 0 <= window <= MAX_WINDOW_S:
+        if (not 0 <= after-before <= MAX_WINDOW_S or not 0 <= window <= MAX_WINDOW_S
+                or context != expected):
             raise NativeUnavailable('fenetre_objectif_invalide')
-        return dict(sample,**identity,status='diagnostic_unreleased',map_id=map_id,
-                    mission_t_s=after,read_window_s=window)
+        return dict(sample,**identity,map_id=map_id,mission_t_s=after,
+                    read_window_s=window,_acquired=start)
 
-    def read(self,context):
-        raise NativeUnavailable('recette_objectifs_absente')
+    def diagnose(self,map_id):
+        sample = self._observe(map_id)
+        sample.pop('_acquired')
+        return dict(sample,status='diagnostic_unreleased')
+
+    def read(self,context,*,hero_ids=None):
+        if not VALIDATED_MAPS:
+            raise NativeUnavailable('recette_objectifs_absente')
+        map_id,_,_,_,_ = AlliedPositions._context(context)
+        if map_id not in VALIDATED_MAPS:
+            raise NativeUnavailable('recette_objectifs_absente')
+        from .acquisition import issue
+        sample = self._observe(map_id,context=context,hero_ids=hero_ids)
+        acquired = sample.pop('_acquired')
+        sample.update(status='validated',match_id=sample.pop('native_match_id'))
+        return issue(sample,acquired)

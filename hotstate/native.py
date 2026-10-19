@@ -268,6 +268,12 @@ class NativeReader:
             visibility = CurrentVisibility(optional_native).read(context, hero_ids=hero_ids)
         except NativeUnavailable:
             pass  # Unknown current sight never grants enemy tactical permissions.
+        from .objectives import VolskayaObjective
+        objective = None
+        try:
+            objective = VolskayaObjective(optional_native).read(context, hero_ids=hero_ids)
+        except NativeUnavailable:
+            pass  # Unknown objective is not a cached event or a default zero.
         finished = self.read_clock()
         if not 0 <= finished - started <= 1:
             raise NativeUnavailable("observation_native_non_synchrone")
@@ -282,4 +288,6 @@ class NativeReader:
             result["positions"] = positions
         if visibility is not None:
             result['visibility'] = visibility
+        if objective is not None:
+            result['objective'] = objective
         return result

@@ -128,11 +128,10 @@ class ObjectiveTests(unittest.TestCase):
             self.assertEqual(m.reader()._sample()['protector']['state'],'destroyed')
 
     def test_protector_corrupt_recycled_or_untyped_references_refused(self):
-        for kind in ('tag','owner','health','component_cycle','entry_cycle','infinite','catalog_count','catalog_index','entry_flag'):
+        for kind in ('owner','health','component_cycle','entry_cycle','infinite','catalog_count','catalog_index','entry_flag'):
             with self.subTest(kind=kind):
                 m=ObjectiveMemory();m.protector()
-                if kind=='tag':m.pack(0x900000+0x10,'I',2)
-                elif kind=='owner':m.pack(0x900000+0x44,'B',5)
+                if kind=='owner':m.pack(0x900000+0x44,'B',5)
                 elif kind=='health':m.pack(0x900000+0x22C,'i',20000*4096)
                 elif kind=='component_cycle':
                     m.pack(0xA00100,'Q',0xA00100);m.pack(0xB00000+0x78,'B',1)
@@ -142,6 +141,24 @@ class ObjectiveTests(unittest.TestCase):
                 elif kind=='catalog_index':m.pack(0xE03000+0x40,'H',9)
                 else:m.pack(0xF00000+0x3E,'B',2)
                 with self.assertRaises(NativeUnavailable):m.reader()._sample()
+
+    def test_recycled_protector_is_unknown_never_replacement_vitals_or_destroyed(self):
+        m=ObjectiveMemory();m.protector()
+        m.pack(0x900000+0x10,'I',2)
+        original=m.read_memory
+        def forbidden_vitals(address,size):
+            if address in (0x900000+0x44,0x900000+0x39,0x900000+0x220,0x900000+0x22C,0x900000+0x160):
+                raise AssertionError('replacement unit accessed')
+            return original(address,size)
+        m.read_memory=forbidden_vitals
+        m.point(2,active=1,state=2)
+        m.pack(m.g+0x197788,'i',2)
+        sample=m.reader()._sample()
+        self.assertEqual(sample['phase'],'active')
+        self.assertEqual(sample['point']['owner'],'neutral')
+        self.assertEqual(sample['protector']['state'],'unknown')
+        self.assertIsNone(sample['protector']['health_percent'])
+        self.assertIsNone(sample['protector']['remaining_s'])
 
     def test_waiting_warning_active_contested_loss_recapture_and_reset(self):
         m = ObjectiveMemory(); r = m.reader()

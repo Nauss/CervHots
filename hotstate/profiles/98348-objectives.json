@@ -118,6 +118,12 @@
       "sha256": "093c4e85e847e6f1bf9ee8db387db8067bdc42c6f5c93ccb5c68c91943496464"
     },
     {
+      "name": "unit_property_current",
+      "rva": 33884192,
+      "size": 1024,
+      "sha256": "9fd5853fc065eac45bbfc28bc4db7742b5abd9c1e2309aa61dab070ed0703eb8"
+    },
+    {
       "name": "behavior_duration",
       "rva": 33858576,
       "size": 240,
@@ -304,6 +310,12 @@
       "name": "libVLSK_gt_GiantRobotDies_Func",
       "length": 193,
       "sha256": "8c8b7fc9d24801c63beb9ca429222a1bcfb98fe200b9b5f88a7c7191bb891428"
+    },
+    {
+      "index": 1239,
+      "name": "libGame_gf_ComputerPlayerInTeam",
+      "length": 27,
+      "sha256": "3276738bc48c0e8bd2101122192d311edee0c49cdaeec0a5491abd8fa19b0d29"
     }
   ],
   "evidence": "Diagnostic Volskaya current state, active VM operands and installed CASC scripts. Publication closed pending recipe and final review. No gt_* counts or replay production.",

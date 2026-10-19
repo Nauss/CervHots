@@ -7,7 +7,7 @@ que recette synchronisée et revue finale n'ont pas permis l'activation.
 ## Sources actuelles, pas un dernier événement
 
 Le lecteur `hotstate/objectives.py` suit la racine VM active déjà établie pour
-le chrono. Profil strict `98348-objectives.json` : signatures natives et28
+le chrono. Profil strict `98348-objectives.json` : signatures natives et29
 fonctions Galaxy de la même image ; noms, indices, bornes et empreintes sont
 relus à chaque acquisition. Les fonctions `gt_*` du profil prouvent uniquement
 les écritures des timers/variables ; aucun compteur d'invocation n'est lu.
@@ -47,6 +47,27 @@ Award/Disable et ne reclamp pas ensuite. Valeur réelle184396fixed12, soit
 Correction bornée : seul un point INACTIF admet jusqu'à un pas supplémentaire ;
 un point actif, une valeur négative ou un dépassement supérieur restent refusés.
 La première trace et ses refus restent intacts sous leur commit d'acquisition.
+
+La courte recette suivante c41 montre un autre cas réel : le global protecteur
+garde le tag d'index270/génération81, mais ce slot contient désormais génération158.
+Le nouveau lecteur renvoie protecteur UNKNOWN, sans lire le propriétaire/PV/
+composants du remplaçant et sans transformer inconnu en détruit/0. Les champs du
+point B, indépendants et courants, restent lisibles. La durée/vie d'un protecteur
+actif requiert TOUJOURS son propre tag/génération/propriétaire stricts.
+La fonction active1239 ComputerPlayerInTeam (1→11,2→12) et le getter natif de vie
+courante sont désormais eux aussi empreintés. Les tests de non-lecture du
+remplaçant sont distincts des observations live.
+
+`cerveau/objectives.py` projette seulement les champs typés et reçus frais du
+même processus/match/perspective, sans tableaux inactifs, pointeurs, labels,
+comptes ou information héros ennemi. Phase/point/contrôle et protecteur restent
+séparés. La clé tactique tient compte du propriétaire/état/contestation, des
+bandes de progression/vie et de l'urgence, pas de chaque tick de timer.
+`capture_objectives_pipeline.py` exerce le vrai reader.snapshot → lecteur natif
+→ normaliseur → tactical_key avec le contexte relu à chaque échantillon et le
+gate candidat activé UNIQUEMENT dans ce processus diagnostic privé. Gate produit
+toujours fermé. La recette E2E fraîche demeure exigée ; les tests d'intégration
+avec composant simulé ne constituent pas une preuve native supplémentaire.
 
 ## Sécurité et limites du candidat
 
