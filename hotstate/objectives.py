@@ -1,7 +1,7 @@
 """Current Volskaya state from active build98348 Galaxy globals, read-only.
 
-Diagnostic candidate ONLY: release stays closed until synchronized HUD recipe
-and independent review. No trigger counters, event cache or replay producer.
+Validated on Volskaya build98348 with synchronized player-perspective evidence.
+No trigger counters, event cache or replay producer; other maps stay closed.
 """
 from __future__ import annotations
 
@@ -18,7 +18,7 @@ from .positions import AlliedPositions, _RecordedMemory
 PROFILE = json.loads((Path(__file__).parent / 'profiles/98348-objectives.json').read_text(encoding='utf-8'))
 GLOBAL_DATA = 0x3D0C920
 MAX_WINDOW_S = 0.125
-VALIDATED_MAPS = ()
+VALIDATED_MAPS = ('Volskaya',)
 
 
 class VolskayaObjective:

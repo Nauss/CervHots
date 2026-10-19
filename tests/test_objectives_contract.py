@@ -82,9 +82,13 @@ class ObjectiveContractTests(unittest.TestCase):
         self.assertEqual(clean['protector'],{'state':'unknown','team':None,'health_percent':None,'remaining_s':None})
         self.assertEqual(clean['point']['owner'],0)
 
-    def test_product_gate_still_closed_and_public_progress_is_not_a_tick_freshness_key(self):
+    def test_only_validated_map_publishes_and_public_progress_is_not_a_tick_freshness_key(self):
         _,raw=self.raw()
-        self.assertNotIn('objective',snapshot(raw))
+        from hotstate.objectives import VALIDATED_MAPS
+        self.assertEqual(VALIDATED_MAPS,('Volskaya',))
+        self.assertIn('objective',snapshot(raw))
+        wrong=copy.deepcopy(raw);wrong['meta']['map_id']='DragonShire'
+        self.assertNotIn('objective',snapshot(wrong))
         clean=self.normalize(raw); before=tactical_key(clean)
         changed=copy.deepcopy(clean)
         changed['objective']['t']+=0.0625

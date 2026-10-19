@@ -229,7 +229,7 @@ class ObjectiveTests(unittest.TestCase):
         m=ObjectiveMemory();m.recorded_non_atomic=True
         self.assertEqual(m.reader().inspect_saved()['status'],'offline_non_atomic')
         with self.assertRaises(NativeUnavailable):m.reader().diagnose('Volskaya')
-        with self.assertRaisesRegex(NativeUnavailable,'recette_objectifs_absente'):m.reader().read({})
+        with self.assertRaises(NativeUnavailable):m.reader().read({})
 
     def test_synthetic_stability_and_mission_wall_limits(self):
         m=ObjectiveMemory();r=m.reader()

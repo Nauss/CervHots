@@ -1,8 +1,25 @@
-# P2 — objectifs Volskaya build98348, candidat privé
+# P2 — objectifs courants Volskaya build98348
 
-Statut : diagnostic non publié. Ce document ne clôt pas le lot4. Aucun champ
-objectif n'est encore ajouté à l'observation du coach ; `read()` refuse tant
-que recette synchronisée et revue finale n'ont pas permis l'activation.
+Activation bornée à Volskaya98348 après recette réelle joueur+9IA et revue
+indépendante. Les autres cartes, snapshots périmés, observateur et références
+invalides restent refusés. Aucun champ tactique héroïque ennemi supplémentaire.
+Source nouvelle `initdata_native_fields` : config C++ courante, pas blob fabriqué.
+
+Recette réelle11 au gel ef9afd4 : court8frames puis DEUX fenêtres300s finies,
+368 et367frames. Toutes les tentatives ont été rejouées en ordre exact avec les
+horloges originales et tous les PNG relus par SHA ; aucune réception ancienne
+n'est devenue une donnée actuelle. Deux cycles A/B, bleu→rouge→bleu sur A,
+neutralisation, contestation/prolongations, attribution rouge du protecteur,
+transfert réel propriétaire12→piloteIA7, vie/durée variables et fin ont été
+observés. Pas de victoire bleue ni de contrôle humain de l'objectif inventés.
+Les PNG A325/345 montrent35%/5% et0:24/0:07 ; les paquets acceptés donnent
+34.781294/4.2818% et23.13745/6.51245s. L'affichage entier arrondi ne remplace
+pas les valeurs natives. A300 montre83% mais ses deux acquisitions refusées
+ne sont PAS transformées en preuve native. Le panneau disparaît A360 et le
+paquet devient waiting/guardianunknown avec cooldown positif, pas détruit0.
+Les preuves brutes et images sont privées hors Git. Le client11 a quitté la
+partie à06:05:42 avant borne06:06, puis fermé normalement ; audio009 restauré.
+Sans API coach, audio, Mumble, injection ou écriture mémoire pendant la recette.
 
 ## Sources actuelles, pas un dernier événement
 
@@ -83,7 +100,7 @@ avec les mêmes gardes natives/HMAC que `initdata_memory`, sans assouplissement
 pour une autre source. `--native-context` relit/recontrôle la racine à CHAQUE
 échantillon et traverse le VRAI snapshot/NativeReader/normaliseur/clé. Aucun
 blob bitpacké artificiel, scan de tas, ancienne adresse, API ou capture en pause
-n'est utilisé comme validation live. Gate produit toujours fermé avant recette.
+n'est utilisé comme validation live. Le gate produit était fermé avant recette11.
 La fonction active1239 ComputerPlayerInTeam (1→11,2→12) et le getter natif de vie
 courante sont désormais eux aussi empreintés. Les tests de non-lecture du
 remplaçant sont distincts des observations live.
@@ -95,11 +112,11 @@ séparés. La clé tactique tient compte du propriétaire/état/contestation, de
 bandes de progression/vie et de l'urgence, pas de chaque tick de timer.
 `capture_objectives_pipeline.py` exerce le vrai reader.snapshot → lecteur natif
 → normaliseur → tactical_key avec le contexte relu à chaque échantillon et le
-gate candidat activé UNIQUEMENT dans ce processus diagnostic privé. Gate produit
-toujours fermé. La recette E2E fraîche demeure exigée ; les tests d'intégration
-avec composant simulé ne constituent pas une preuve native supplémentaire.
+gate candidat activé UNIQUEMENT dans ce processus diagnostic privé pendant la
+recette11. Le gate produit est maintenant limité à Volskaya98348 ; les tests
+d'intégration simulés ne constituent pas une preuve native supplémentaire.
 
-## Sécurité et limites du candidat
+## Sécurité et limites
 
 Acquisition limitée à Volskaya, perspective humaine locale actuelle5v5 et
 identité native de partie ; origine des scripts active, doubles lectures de
@@ -120,10 +137,10 @@ Fixtures synthétiques séparées : états, perte/reprise/reset, corruption,
 réutilisation génération, vie/durée protecteur, refus et readsets. Revue RO
 préliminaire deleg_1f7adad3 : diagnostic-ready avec réserves, pas revue finale.
 
-Encore obligatoires : vérifier en pixels temps/progression/propriétaires,
-contestation/perte/reprise, apparition/vie/durée/fin du protecteur et le chemin
-normalisé de bout en bout. Mapping11/12, données du composant et durées doivent
-être recoupés dans la nouvelle recette ; toute différence nécessite correctif,
-rejeu et revue. L'ancien HUD donne des références de scénario, pas des lectures
-objectifs manquantes inventées. Aucune extrapolation Dragon/Braxis, aucun champ
-ennemi héros/cooldown débloqué, seuil0.75/silence/opt-ins inchangés.
+La recette11 recoupe les pixels temps/progression/propriétaires, contestation,
+perte/reprise, apparition/vie/durée/fin du protecteur et le chemin normalisé.
+Mapping11/12 et transfert au pilote courant ont été exercés ; les valeurs
+natives restent distinctes des entiers HUD et de sa cadence d'affichage.
+Le second cycle B ne prouve pas une seconde fin du protecteur. L'ancien HUD
+n'invente aucune lecture manquante. Aucune extrapolation Dragon/Braxis, aucun
+champ ennemi héros/cooldown débloqué, seuil0.75/silence/opt-ins inchangés.

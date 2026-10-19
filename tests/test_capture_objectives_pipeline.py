@@ -30,7 +30,7 @@ class ObjectivePipelineTests(unittest.TestCase):
             self.assertEqual(repeat['normalized'],row['normalized'])
             self.assertEqual(repeat['tactical_key'],row['tactical_key'])
         from hotstate.objectives import VALIDATED_MAPS
-        self.assertEqual(VALIDATED_MAPS,())
+        self.assertEqual(VALIDATED_MAPS,('Volskaya',))
 
     def test_missing_objective_does_not_count_other_valid_fields_as_pass(self):
         helper,m,address,size,probe,sample=self.fixture()
