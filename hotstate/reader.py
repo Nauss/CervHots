@@ -333,7 +333,11 @@ def main():
         raise SystemExit("--dump HEAP BIN JSON ou --live")
 
     try:
-        state = snapshot(backend, mapping, debug=args.debug, context=context)
+        if args.live and not args.dump and context is not None:
+            from hotstate.live import read_current
+            state = read_current(backend, mapping, context=context)
+        else:
+            state = snapshot(backend, mapping, debug=args.debug, context=context)
     finally:
         backend.close()
     text = json.dumps(state, ensure_ascii=False, indent=2)

@@ -14,7 +14,7 @@ from grocoapi import GrocoClient, GrocoError
 from grocoapi.client import _load_env_file
 
 from .brain import Coach
-from .runner import ROOT, Pipeline
+from .runner import ROOT, Pipeline, tactical_key
 from .state import snapshot
 
 
@@ -48,6 +48,10 @@ def make_source(args):
     context = make_probe(getattr(args, "player", None), live=not args.dump)
     backend = (DumpBackend(*map(Path, args.dump), image=getattr(args, "image", None)) if args.dump
                else ProcessBackend(args.pid))
+    if not args.dump:
+        from hotstate.live import read_current
+        return lambda: read_current(backend, mapping, context=context,
+            project=lambda raw: snapshot(raw, **options), key=tactical_key), backend
     return lambda: snapshot(memory_snapshot(backend, mapping, context=context), **options), backend
 
 

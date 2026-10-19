@@ -1,6 +1,6 @@
-"""Private RO camps/structures diagnostic, build98348 Volskaya ONLY.
+"""RO camps/structures, fingerprinted build98348 Volskaya ONLY.
 
-Not connected to the coach: catalogue/transition/visibility recipes are pending.
+Public support is bounded to qualified behavior classes on this map/build.
 Raw camp activity and structure vitals must never cross a public boundary merely
 because a minimap icon is visible. Missing/recycled slots are unknown, not dead.
 """
@@ -21,7 +21,7 @@ from .positions import AlliedPositions, _RecordedMemory
 
 PROFILE = json.loads((Path(__file__).parent / 'profiles/98348-battlefield.json').read_text(encoding='utf-8'))
 STRUCTURE_LAYOUT = json.loads((Path(__file__).parent / 'profiles/98348-volskaya-structures.json').read_text(encoding='utf-8'))
-VALIDATED_MAPS = ()
+VALIDATED_MAPS = ('Volskaya',)
 
 
 class _SelectedCensusMemory(_RecordedMemory):

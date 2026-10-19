@@ -1,13 +1,63 @@
-# P2 — camps et structures Volskaya : diagnostic non livré
+# P2 — camps et structures Volskaya : support natif borné
 
-Ce document ne déclare PAS le lot 5 validé ni publié. Le producteur public reste
-fermé, `VALIDATED_MAPS=()`. Le branchement cerveau candidat ne peut donc pas
-émettre ces données hors du collecteur de diagnostic explicitement opt-in.
+## Périmètre produit du lot 5
 
-État du 19/10 après la phase bornée : voir
+`VALIDATED_MAPS=('Volskaya',)` : build98348 fingerprinté uniquement, perspective
+du vrai joueur local depuis le contexte natif. Les cinq camps et le catalogue
+statique de90structures/35types sont couverts. La qualification est par classes
+de comportement prouvées : camps1/2 tourelle,3/4 siège,5 soutien; sept classes de
+structures. Cela ne remplit jamais un état d'instance depuis son symétrique.
+
+Les recettes réelles et leurs replays indépendants établissent capture/nouveau
+cycle et brouillard, dégâts puis destruction de forts/keep, et morph d'une tour
+en ruine au même tag/génération (pas nouvelle allocation, ni mort du corps).
+Le code vérifie chaque identité/type/propriétaire/génération. Une référence
+absente, recyclée ou ambiguë reste Unknown, pas détruite. Sous brouillard, aucun
+état/owner/cycle/minuterie/PV caché n'est projeté. Défenseurs et mercenaires partis
+restent distincts. Les PV sont un pourcentage de vie de composant CURRENT vivant,
+explicitement `health_basis=life_component`, pas le total vie+bouclier/bonus HUD.
+
+Respawn : restant fractionnaire et pause natifs conservés; zéro n'implique pas
+disponibilité. Les bornes observées3.25s(soutien) et102.25s(siège) sont des limites
+de la qualification, pas une précision annoncée au consommateur. Pas de date
+d'apparition extrapolée, de destruction individuelle murs/portes/core prétendue
+observée, ni de dégâts ordinaires sur fontaines invulnérables. L'état intermédiaire
+capture_available découle du script/getter commun, pas d'une acceptation live19.
+
+L'entrée directe `cerveau --live --player ...` utilise `hotstate.live.read_current` :
+un budget physique unique8192lectures/1Mio/65536octets par requête, sans cache,
+pour contexte, vérifications, coeur, familles et rechecks. Les échecs comptent;
+un dépassement est irréversible pour la tentative même si une famille optionnelle
+attrape le refus. Le contrôle125msWHOLE commence avant le contexte et se termine
+après normalisation et clé tactique. Le contexte est recontrôlé à la fin; aucun
+Full hors budget ne peut atteindre le coach. Un autre échec optionnel peut omettre
+la famille sans inventer ses valeurs. Les reçus in-process restent scellés/TTL,
+indépendants de l'horloge mission. Sans label local, le chemin tactique live refuse
+avant toute lecture. Le reader autonome avec joueur partage ce garde physique;
+son export JSON ne renouvelle pas de permissions tactiques interprocessus.
+
+`reader.snapshot` reste une primitive interne non normalisée, utilisée aussi par
+l'instrumentation historique; elle n'est pas une garantie d'acceptation Full.
+Les mesures terrain122/362Full,0budget,79ms sont celles du paquetaba6ae4, pas une
+nouvelle recette sous le dernier adaptateur. Le gate a aussi exercé l'entrée
+produit sur les362readsets exacts : mêmes122Full/147familles absentes/93déchirures,
+7470lectures et196188octets au maximum. Cet audit physique/sémantique fige son
+horloge et exclut explicitement read_window_s; il ne revendique ni nouvelle
+fraîcheur ni nouvelle mesure live. L'audit séparé du collecteur conserve TOUTES
+les lectures et horloges originales. Les tests du chemin produit vérifient les
+refus réels de budget, de délai global et le branchement sans patch du gate.
+
+Aucune autre carte, talent/CD de production, son, API coach ou autoplay n'est
+activé par cette livraison. Les prototypes locaux restent strictement isolés.
+La publication est attestée par le handoff Kanban du lot5 et les hashes Git,
+jamais par la seule réussite d'un collecteur.
+
+## Historique conservé — les gates fermés ci-dessous sont ceux des phases passées
+
+État après la phase d'évaluation bornée (avant livraison) : voir
 [`P2-EVALUATION-BORNEE.md`](P2-EVALUATION-BORNEE.md). Les recettes métier et les
 prototypes locaux y sont distingués des diagnostics historiques ci-dessous ;
-le lot 5 et son catalogue complet restent non livrés.
+le lot5 et son catalogue complet n'étaient alors pas livrés.
 
 ## Continuation native du 19/10 — qualification candidate, gate produit distinct
 

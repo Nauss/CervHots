@@ -56,7 +56,7 @@ class BattlefieldPipelineTests(unittest.TestCase):
                 with self.assertRaisesRegex(AssertionError,'diagnostic differs'):
                     capture.replay_sample(bad,m.module_base,probe,address,size,native_profile=m.profile)
         from hotstate.battlefield import VALIDATED_MAPS
-        self.assertEqual(VALIDATED_MAPS,())
+        self.assertEqual(VALIDATED_MAPS,('Volskaya',))
 
     def test_cli_requires_explicit_private_candidate_before_process(self):
         with patch.object(capture.shared,'ProcessBackend') as process:

@@ -28,7 +28,7 @@ class BattlefieldContractTests(unittest.TestCase):
         return raw
 
     def clean(self,raw):
-        with patch('hotstate.battlefield.VALIDATED_MAPS',('Volskaya',)):return snapshot(raw)
+        return snapshot(raw)
 
     def test_boundary_uses_full_catalogue_and_strips_raw_positions_vitals_tags(self):
         raw=self.raw();p=raw['battlefield']['structures'];p['structures'][0].update(x=123,health=999,tag=45)
@@ -39,7 +39,17 @@ class BattlefieldContractTests(unittest.TestCase):
         text=str(clean['battlefield'])
         for word in ("'health':",'pointer','untrusted_private','native_session','tag','x_fixed'):
             self.assertNotIn(word,text)
-        self.assertNotIn('battlefield',snapshot(raw))
+        with patch('hotstate.battlefield.VALIDATED_MAPS', ()):
+            self.assertNotIn('battlefield',snapshot(raw))
+
+    def test_release_scope_is_only_volskaya_and_native_build(self):
+        from hotstate.battlefield import VALIDATED_MAPS
+        self.assertEqual(VALIDATED_MAPS, ('Volskaya',))
+        self.assertIn('battlefield', snapshot(self.raw()))
+        for map_id, build in (('DragonShire', 98348), ('Braxis', 98348), ('Volskaya', 98349)):
+            raw = self.raw()
+            raw['meta'].update(map_id=map_id, native_build=build)
+            self.assertNotIn('battlefield', snapshot(raw))
 
     def test_structure_percentage_is_explicitly_component_life_not_hud_shields(self):
         clean=self.clean(self.raw())
