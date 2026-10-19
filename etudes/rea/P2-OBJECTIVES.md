@@ -33,7 +33,7 @@ les producteurs UI6117/6118 distinguent :
 
 Le protecteur vient de la variable unité courante affectée après création
 VolskayaVehicle, pas d'un événement historique. Résolution de tag unité,
-génération et propriétaire11/12 ; bit de vie du getter natif UnitIsAlive,
+génération et propriétaire de création ou pilote courant ; bit UnitIsAlive,
 PV maximum/dommages distincts de la progression du point. Sa durée vient du
 composant actif VehicleDragonTimedLife, catalogue courant+nom, liste bornée des
 instances ; conversion fixed16 native vers fixed12 Galaxy par décalage4bits.
@@ -54,6 +54,17 @@ Le nouveau lecteur renvoie protecteur UNKNOWN, sans lire le propriétaire/PV/
 composants du remplaçant et sans transformer inconnu en détruit/0. Les champs du
 point B, indépendants et courants, restent lisibles. La durée/vie d'un protecteur
 actif requiert TOUJOURS son propre tag/génération/propriétaire stricts.
+Un troisième cas réel a été capturé par le pipeline complet550f : propriétaire
+12 à la création, puis9 après embarquement IA, tag toujours valide. Les
+propriétaires1..10 nécessitent désormais un CPlayer ACTUEL résolu, rôle humain/IA
+et équipe0/1, et cette équipe doit correspondre au vainqueur du point courant
+avant toute lecture de vie/durée active. Les autres propriétaires restent
+refusés. Un tag recyclé reste inconnu AVANT tout accès au remplaçant.
+FixedToInt natif (RVA2062460) a été désassemblé : SAR12 puisRET, troncature
+pour nos valeurs positives. L'ancien HUD1:15 face au natif73.95 dans la courte
+550f ne constitue PAS une égalité exacte de durée affichée ; la nouvelle recette
+doit comparer les brackets et la cadence/animation réelle. On ne rajoute pas
+une seconde au champ natif pour fabriquer cet accord.
 La fonction active1239 ComputerPlayerInTeam (1→11,2→12) et le getter natif de vie
 courante sont désormais eux aussi empreintés. Les tests de non-lecture du
 remplaçant sont distincts des observations live.

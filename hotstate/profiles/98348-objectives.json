@@ -140,6 +140,12 @@
       "rva": 12670752,
       "size": 384,
       "sha256": "ad6c325868bb04e07023af00cd50c812e56ca50840f0a45063b0ec422f9f9b98"
+    },
+    {
+      "name": "fixed_to_int",
+      "rva": 33956960,
+      "size": 6,
+      "sha256": "25b3c2c16edcb9edd6ff83258133367f67b802291a4399df3c10d424cc375490"
     }
   ],
   "functions": [

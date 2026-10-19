@@ -64,8 +64,10 @@ class ObjectiveMemory(NativeMemory):
     def reader(self):
         return VolskayaObjective(NativeReader(self, profile=self.profile), profile=self.p)
 
-    def protector(self, owner=11):
+    def protector(self, owner=11, team=None):
         b = self.module_base
+        team = (0 if owner==11 else 1) if team is None else team
+        self.point(1,owner=team+1,state=2)
         self.pack(b+0x34F02C4,'I',16)
         self.pack(b+0x34F02C8,'II',0x900000,0)
         self.pack(b+0x32C38B4,'I',0)
@@ -159,6 +161,22 @@ class ObjectiveTests(unittest.TestCase):
         self.assertEqual(sample['protector']['state'],'unknown')
         self.assertIsNone(sample['protector']['health_percent'])
         self.assertIsNone(sample['protector']['remaining_s'])
+
+    def test_actual_pilot_owner_is_bound_to_current_cplayer_and_winning_team(self):
+        from unittest.mock import patch
+        for team in (0,1):
+            m=ObjectiveMemory();m.protector(owner=9,team=team)
+            m.pack(0x1100000+0x1C,'BB',team,2)
+            r=m.reader()
+            with patch.object(r.native,'player_pointer',return_value=0x1100000) as resolve:
+                result=r._sample()
+                self.assertEqual(result['protector']['team'],team)
+                resolve.assert_called_once_with(9)
+                # A pilot of the other team is NOT accepted by broadening owner IDs.
+                m.pack(0x1100000+0x1C,'B',1-team)
+                with self.assertRaisesRegex(NativeUnavailable,'equipe_protecteur'):r._sample()
+                m.pack(0x1100000+0x1C,'BB',team,3)
+                with self.assertRaisesRegex(NativeUnavailable,'pilote_protecteur'):r._sample()
 
     def test_waiting_warning_active_contested_loss_recapture_and_reset(self):
         m = ObjectiveMemory(); r = m.reader()

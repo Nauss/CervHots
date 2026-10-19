@@ -212,7 +212,7 @@ class VolskayaObjective:
             node = 0 if link & 1 else link
         return 0.0  # Native UnitBehaviorDuration returns zero for absent behavior.
 
-    def _protector(self,n):
+    def _protector(self,n,winning_team=None):
         tag = n.value(n.base+GLOBAL_DATA+0x19779D)
         if (tag+1) & 0xFFFFFFFE == 0:
             return {'state':'absent','team':None,'health_percent':None,'remaining_s':None}
@@ -229,14 +229,27 @@ class VolskayaObjective:
             return {'state':'unknown','team':None,'health_percent':None,'remaining_s':None,
                     'reason':'reference_protecteur_recyclee'}
         owner = n.value(unit+0x44,'B')
-        if owner not in (11,12) or n.unit_pointer(tag,owner) != unit:
+        if owner in (11,12):
+            team = owner-11  # Fingerprinted ComputerPlayerInTeam creation path.
+        elif 1 <= owner <= 10:
+            # Entering the vehicle transfers ownership to its actual pilot.
+            # Resolve THAT current CPlayer; do not infer a team from slot order.
+            player = self._pointer(n.player_pointer(owner))
+            team, kind = struct.unpack('<BB',n.read(player+0x1C,2))
+            if team not in (0,1) or kind not in (1,2):
+                raise NativeUnavailable('pilote_protecteur_objectif_invalide')
+        else:
+            raise NativeUnavailable('proprietaire_protecteur_objectif_invalide')
+        if n.unit_pointer(tag,owner) != unit:
             raise NativeUnavailable('proprietaire_protecteur_objectif_invalide')
         if n.value(unit+0x39,'B') & 6:
-            return {'state':'destroyed','team':owner-11,'health_percent':None,'remaining_s':None}
+            return {'state':'destroyed','team':team,'health_percent':None,'remaining_s':None}
+        if type(winning_team) is not int or winning_team not in (0,1) or team != winning_team:
+            raise NativeUnavailable('equipe_protecteur_objectif_incoherente')
         maximum, damage = n.value(unit+0x220,'i'),n.value(unit+0x22C,'i')
         if not 0 < maximum <= 1000000*4096 or not 0 <= damage <= maximum:
             raise NativeUnavailable('vie_protecteur_objectif_invalide')
-        return {'state':'active','team':owner-11,'health_percent':100*(maximum-damage)/maximum,
+        return {'state':'active','team':team,'health_percent':100*(maximum-damage)/maximum,
                 'remaining_s':self._duration(n,unit)}
 
     def _sample(self, n=None):
@@ -254,7 +267,8 @@ class VolskayaObjective:
         active = [p for p in points if p['active']]
         if len(active)>1 or (active and active[0]['index']!=current):
             raise NativeUnavailable('points_actifs_objectif_ambigus')
-        protector = self._protector(n)
+        winning_team = points[current-1]['owner'] if current else None
+        protector = self._protector(n,winning_team)
         if active and protector['state']=='active':
             raise NativeUnavailable('point_et_protecteur_objectif_incoherents')
         if active:
