@@ -32,6 +32,8 @@ class _SelectedCensusMemory(_RecordedMemory):
     def __init__(self, memory):
         super().__init__(memory)
         self.memo = {}
+        self.full_keys = set()
+        self.bits = {}
         self.headers = set()
         self.header_data = {}
         self.fresh = False
@@ -53,19 +55,48 @@ class _SelectedCensusMemory(_RecordedMemory):
                     # A formerly unused header byte is now consumed: include
                     # its exact selection in the final physical read check.
                     self.read_set.append((address, data))
+                    self.full_keys.add(key)
                     self.memo[key] = data
                     return data
             data = self.fresh_read(address, size)
             if data is not None and len(data) == size:
                 self.memo[key] = data
+                self.full_keys.add(key)
             return data
+        if key not in self.full_keys:
+            # A fog bit read may have fetched the word without consuming all
+            # its bits. A later full-word consumer must retain a FULL guard.
+            self.read_set.append((address,self.memo[key]))
+            self.full_keys.add(key)
         return self.memo[key]
+
+    def bit_test(self, address, bit):
+        if type(bit) is not int or not 0 <= bit < 32:
+            raise NativeUnavailable('bit_visibilite_invalide')
+        key = address,4
+        if key not in self.memo:
+            data = self.memory.read_memory(address,4)
+            if data is None or len(data)!=4:
+                raise NativeUnavailable('mot_visibilite_incomplet')
+            self.memo[key] = data
+        word = int.from_bytes(self.memo[key],'little')
+        mask,expected = self.bits.get(address,(0,0))
+        mask |= 1<<bit
+        self.bits[address] = mask,word & mask
+        return bool(word & (1<<bit))
+
+    def verify_bits(self, native):
+        # Keys/root/layer are ordinary full-field guards. Only actual cell
+        # bits consumed by the native fog/static predicates are masked.
+        for address,(mask,expected) in self.bits.items():
+            word = int.from_bytes(native.read(address,4),'little')
+            if word & mask != expected:
+                raise NativeUnavailable('lecture_champ_bataille_dechiree')
 
     def census_header(self, unit):
         data = self.memory.read_memory(unit+0x10,0x38)
         if data is None or len(data)!=0x38:
             raise NativeUnavailable('entete_recensement_incomplete')
-        self.read_set.append((unit+0x10,data[:4]))
         self.headers.add(unit+0x10)
         self.header_data[unit+0x10] = data
         return data
@@ -309,7 +340,12 @@ class VolskayaBattlefield:
                 header = bulk(unit) if callable(bulk) else None
                 tag = struct.unpack_from('<I',header)[0] if header is not None else n.value(unit+0x10)
                 if (tag+1) & 0xFFFFFFFE == 0 or tag >> 22 != index:
+                    # This is no active reference and produces no row. Its
+                    # allocator churn is not a structure generation source;
+                    # missing layout entries remain unknown, never destroyed.
                     continue
+                if header is not None:
+                    n.memory.read_set.append((unit+0x10,header[:4]))
                 if header is None:
                     flags = n.value(unit+0x39,'B')
                     packed = n.value(unit+(0x20 if flags & 0x20 else 0x18),'Q')
@@ -395,6 +431,7 @@ class VolskayaBattlefield:
             data = self.native.read(address, size)
             if any(data[offset:offset+len(expected)] != expected for offset, expected in slices):
                 raise NativeUnavailable('lecture_champ_bataille_dechiree')
+        memory.verify_bits(self.native)
         window = clock()-start
         if not 0 <= after-before <= 0.125 or not 0 <= window <= 0.125 or context != expected:
             raise NativeUnavailable('lecture_champ_bataille_perimee')

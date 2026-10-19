@@ -58,11 +58,19 @@ class CurrentVisibility:
         layer = n.value(root + 0x10 + player * 4)
         if not 0 <= layer < 16:
             raise NativeUnavailable('couche_brouillard_invalide')
-        word = n.value(root + 0x200d0 + (x // 32 + (layer * 256 + y) * 8) * 4)
+        address = root + 0x200d0 + (x // 32 + (layer * 256 + y) * 8) * 4
+        bit_test = getattr(n.memory,'bit_test',None)
+        if callable(bit_test):
+            return bit_test(address,x & 31)
+        word = n.value(address)
         return bool((word >> (x & 31)) & 1)
 
     @staticmethod
     def _static(n, x, y):
+        bit_test = getattr(n.memory,'bit_test',None)
+        if callable(bit_test):
+            return (0 <= x < 256 and 0 <= y < 256
+                    and bit_test(n.base+0x2f3d630+0x30030+(x//32+y*8)*4,x & 31))
         return (0 <= x < 256 and 0 <= y < 256
                 and bool((n.value(n.base + 0x2f3d630 + 0x30030 + (x // 32 + y * 8) * 4)
                           >> (x & 31)) & 1))
