@@ -89,7 +89,9 @@ class VolskayaObjective:
         gen, _, refs, kind, _, pointer = struct.unpack('<HHHBBQ',n.read(slots+index*16,16))
         if gen != generation or not refs or kind != 19:
             raise NativeUnavailable('generation_type_timer_objectif_invalide')
-        data = n.read(self._pointer(pointer),40)
+        timer_object = getattr(n.memory,'timer_object',None)
+        data = (timer_object(self._pointer(pointer)) if callable(timer_object)
+                else n.read(self._pointer(pointer),40))
         vt, owner = struct.unpack_from('<QI',data)
         repeat, paused, expired, reserved = data[16:20]
         clock, elapsed, deadline = struct.unpack_from('<Iii',data,20)

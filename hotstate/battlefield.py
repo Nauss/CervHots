@@ -12,6 +12,7 @@ import json
 import re
 import struct
 import time
+from bisect import bisect_right, insort
 from pathlib import Path
 
 from .native import NativeReader, NativeUnavailable
@@ -35,6 +36,8 @@ class _SelectedCensusMemory(_RecordedMemory):
         self.full_keys = set()
         self.bits = {}
         self.headers = set()
+        self.header_addresses = []
+        self.timers = set()
         self.header_data = {}
         self.fresh = False
 
@@ -48,7 +51,10 @@ class _SelectedCensusMemory(_RecordedMemory):
             return self.fresh_read(address, size)
         key = address, size
         if key not in self.memo:
-            for header, raw in self.header_data.items():
+            index = bisect_right(self.header_addresses,address)-1
+            if index>=0:
+                header = self.header_addresses[index]
+                raw = self.header_data[header]
                 offset = address-header
                 if 0 <= offset and offset+size <= len(raw):
                     data = raw[offset:offset+size]
@@ -97,19 +103,39 @@ class _SelectedCensusMemory(_RecordedMemory):
         data = self.memory.read_memory(unit+0x10,0x38)
         if data is None or len(data)!=0x38:
             raise NativeUnavailable('entete_recensement_incomplete')
-        self.headers.add(unit+0x10)
+        if unit+0x10 not in self.headers:
+            self.headers.add(unit+0x10)
+            insort(self.header_addresses,unit+0x10)
         self.header_data[unit+0x10] = data
         return data
 
+    def timer_object(self, address):
+        # Native timer properties use vtable/owner, flags, clock, elapsed and
+        # deadline. +12..15 and +32..39 are not consumed by this getter.
+        data = self.memory.read_memory(address,40)
+        if data is None or len(data)!=40:
+            raise NativeUnavailable('objet_timer_incomplet')
+        self.read_set.extend(((address,data[:12]),(address+16,data[16:32])))
+        self.timers.add(address)
+        return data
+
     def coherence_checks(self, reads):
-        # Mask ONLY the census header we already acquired. Never combine a
-        # gap elsewhere (which could read an enemy XY/vital component).
+        # Group only explicitly acquired census/timer objects. Binary lookup
+        # avoids scanning every unit header for every selected field.
+        headers,timers = sorted(self.headers),sorted(self.timers)
+        def enclosing(regions,address,end,size):
+            index = bisect_right(regions,address)-1
+            return regions[index] if index>=0 and end<=regions[index]+size else None
         groups = {}
         for address, data in reads:
-            header = next((h for h in self.headers if h <= address and address+len(data) <= h+0x38), None)
-            key = (address, len(data)) if header is None else (header, 0x38)
+            timer = enclosing(timers,address,address+len(data),40)
+            header = enclosing(headers,address,address+len(data),0x38)
+            key = (timer,40) if timer is not None else (address,len(data)) if header is None else (header,0x38)
             groups.setdefault(key, []).append((address-key[0], data))
-        return [(a, size, slices) for (a, size), slices in groups.items()]
+        # Sampled last, checked first. Elapsed is STILL compared exactly;
+        # it is never advanced, extrapolated or omitted as an unused field.
+        return sorted(((a,size,slices) for (a,size),slices in groups.items()),
+                      key=lambda check: check[0] not in self.timers)
 
 
 def structure_kind(name):
@@ -239,12 +265,10 @@ class VolskayaBattlefield:
             return 'destroyed'
         return 'alive'
 
-    def _camps(self, n):
+    def _camps(self, n, *, include_timers=True):
         g = n.base+GLOBAL_DATA
         if n.value(g+0xE2130) != 5:
             raise NativeUnavailable('nombre_camps_volskaya_invalide')
-        helper = VolskayaObjective(n)
-        registry = helper._timer_registry(n)
         camps, seen_tags, seen_timers = [], set(), set()
         for index, expected_type in enumerate((5, 5, 6, 6, 10), 1):
             a = g+index*780
@@ -274,10 +298,20 @@ class VolskayaBattlefield:
                 'beacon_tag': tag, 'beacon_generation': tag & 0x3FFFFF,
                 'beacon_owner': owner, 'last_capture_team': self._team(n, last_player),
                 'enabled': bool(enabled), 'spawned': bool(spawned), 'state_code': state,
-                'capture_enabled': bool(capture), 'personal_hibernation': bool(hibernation),
-                'birth': helper._timer(n, index*780+0xDF33E, registry),
-                'respawn': helper._timer(n, index*780+0xDF342, registry)})
+                'capture_enabled': bool(capture), 'personal_hibernation': bool(hibernation)})
+        if include_timers:
+            self._camp_timers(n,camps)
         return camps
+
+    def _camp_timers(self,n,camps):
+        if not camps:
+            return
+        helper = VolskayaObjective(n)
+        registry = helper._timer_registry(n)
+        for row in camps:
+            index = row['index']
+            row['birth'] = helper._timer(n,index*780+0xDF33E,registry)
+            row['respawn'] = helper._timer(n,index*780+0xDF342,registry)
 
     def _towns(self, n):
         g = n.base+GLOBAL_DATA
@@ -418,12 +452,13 @@ class VolskayaBattlefield:
             # One bounded observation verifies visibility once and rechecks
             # every consumed camp AND structure source before issuing either.
             CurrentVisibility(n)._verify(n)
-            camps = camp_details(n,self,self._camps(n),identity['local_id'],verify_visibility=False)
+            camps = camp_details(n,self,self._camps(n,include_timers=False),identity['local_id'],verify_visibility=False)
             units = {}
             census = self._census(n,unit_pointers=units)
             result = {'camps':camps,
                       'structures':structure_details(n,self,census,units,identity['local_id'],STRUCTURE_LAYOUT,verify_visibility=False),
                       'unresolved_slots':census['unresolved_slots']}
+            self._camp_timers(n,camps)
         else:
             raise NativeUnavailable('section_champ_bataille_invalide')
         after = self._clock(n, memory)
