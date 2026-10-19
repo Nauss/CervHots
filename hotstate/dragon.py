@@ -1,8 +1,8 @@
-"""Dragon Shire build98348 native diagnostic; NOT released to the coach.
+"""Dragon Shire build98348 objective state, qualified by native recipes20/22.
 
-No event counters/cache, replay state or screen data. The existing rolling
-Dragon capture proves decoding only, not live transitions or freshness. Until
-an independent Dragon recipe qualifies this path, read() always refuses.
+No event counters/cache, replay state or screen data produce live state.
+Capture progress requires beacon CURRENT; channeling requires statue CURRENT.
+Recipes qualify a visible AI channel, not successful local vehicle control.
 """
 from __future__ import annotations
 
@@ -22,7 +22,7 @@ from .positions import AlliedPositions, _RecordedMemory
 from .live import LiveBudget
 
 PROFILE = json.loads((Path(__file__).parent/'profiles/98348-dragon.json').read_text(encoding='utf-8'))
-VALIDATED_MAPS = ()
+VALIDATED_MAPS = ('DragonShire',)
 PHASES = ('waiting', 'warning', 'shrines', 'dragon')
 CAPTURE_STATES = ('contested', 'paused', 'neutral', 'captured', 'reverting', 'capturing')
 

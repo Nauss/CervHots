@@ -178,7 +178,8 @@ class DragonTests(unittest.TestCase):
 
     def test_coach_gate_closed_even_on_fixture(self):
         m = DragonMemory()
-        with self.assertRaisesRegex(NativeUnavailable, 'recette_dragon_absente'):
+        with patch('hotstate.dragon.VALIDATED_MAPS', ()), \
+             self.assertRaisesRegex(NativeUnavailable, 'recette_dragon_absente'):
             m.reader().read({})
         m.recorded_non_atomic = True
         with self.assertRaises(NativeUnavailable):

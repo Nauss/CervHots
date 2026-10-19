@@ -40,10 +40,21 @@ class DragonContractTests(unittest.TestCase):
 
     def test_gate_closed_and_diagnostic_not_a_receipt(self):
         raw, local = packet()
-        self.assertIsNone(project_dragon(raw,local,0))
+        with patch('hotstate.dragon.VALIDATED_MAPS', ()):
+            self.assertIsNone(project_dragon(raw,local,0))
         raw['objective']['status'] = 'diagnostic_unreleased'
         issue(raw['objective'],time.monotonic())
         self.assertIsNone(self.project(raw,local))
+
+    def test_release_scope_is_objective_dragon_only_not_hero_visibility_or_positions(self):
+        from hotstate.dragon import VALIDATED_MAPS
+        from hotstate.positions import VALIDATED_MAPS as positions
+        from hotstate.visibility import VALIDATED_MAPS as visibility
+        from hotstate.battlefield import VALIDATED_MAPS as battlefield
+        self.assertEqual(VALIDATED_MAPS, ('DragonShire',))
+        self.assertEqual(positions, ('Volskaya',))
+        self.assertEqual(visibility, ('Volskaya',))
+        self.assertEqual(battlefield, ('Volskaya',))
 
     def test_typed_projection_discards_private_extras_and_counters(self):
         raw, local = packet(); p = raw['objective']; p['pointer'] = 'PRIVATE'

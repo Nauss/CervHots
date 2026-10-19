@@ -1,8 +1,8 @@
 # P2 — sanctuaires et Chevalier Dragon, build98348
 
-**Date :** 19 octobre 2026 · **Statut :** diagnostic Dragon20 recoupé et vrai
-pipeline candidat exercé en21 ; guard CURRENT des beacons ajouté après release21,
-publication encore fermée avant qualification du correctif et commande locale.
+**Date :** 19 octobre 2026 · **Statut :** champs natifs qualifiés par20/22,
+activation strictement DragonShire/build98348 proposée en revue finale.
+Intégration/main/distant restent à vérifier avant de déclarer la livraison.
 
 ## 1. Résultat exercé et limites
 
@@ -32,11 +32,11 @@ inconnu/désactivé, canalisation, véhicule actif et fin. Elles ne prouvent PAS
 ces transitions en partie. L'ancienne capture isolée ne peut pas compléter
 la recette. Aucun transfert de qualification Volskaya/Braxis.
 
-Tant que son allowlist est vide, `DragonObjective.read()` refuse
-`recette_dragon_absente`. Le nouveau chemin candidat est branché dans le vrai
-NativeReader, puis dans le normaliseur et la clé tactique, mais aucune donnée
-Dragon ne franchit le gate produit fermé. Une acceptation du
-collecteur est explicitement `accepted_diagnostic_NOT_PRODUCT`, pas Full.
+`DragonObjective.read()` est maintenant borné à DragonShire/build98348,
+dans le vrai NativeReader puis le normaliseur et la clé tactique. Les autres
+familles/cartes ne sont pas débloquées. Fermer l'allowlist ou fournir une carte
+non qualifiée refuse `recette_dragon_absente`. Le PREMIER collecteur privé reste
+explicitement `accepted_diagnostic_NOT_PRODUCT`, pas Full.
 Le `capture_dragon_pipeline.py` a, séparément, obtenu des Full candidats sur le
 vrai `hotstate.live.read_current` en21 :13fenêtres,180s,659acquisitions,
 472Full candidats,185lectures déchirées et2objectifs absents, sans dépassement
@@ -44,6 +44,32 @@ de budget selon le manifeste opérateur. Cela prouve la traversée consommateur,
 pas la publication :21 précède le correctif de confidentialité des beacons.
 La commande locale positive UseVehicle n'est pas encore recoupée ; des morts
 locales et courses IA ne sont jamais renommées en succès humain.
+
+Recette22 sous le correctif185376b :7fenêtres,120s,435acquisitions,
+303Full,131lectures déchirées et1objectif absent ;0budget. Auteur et opérateur
+ont rejoué les435traces/TOUTES horloges sans écart ; l'opérateur sur chaque
+Python3.12/3.14. Maximum WHOLE2544lectures/89556octets/32ms, incluant contexte,
+cœur, objectif, rechecks, normalisation et clé.606propriétaires recoupés sans
+écart au replay de la même partie ;1humainStitches+9IA,0observateur, seed/cache
+identiques.73observations beaconCURRENTtrue et533unknown ; les1066intervalles
+de compteurs/états cachés ou désactivés sont absents du readset physique.
+
+Canal IA VISIBLE réellement normalisé :4booléenstrue à360.8125,361.375,
+361.6875,362.25s, tous statueCURRENTtrue. La cible a le même index/génération
+natif et tracker ; activation363.4375s par joueurIA2, puis décès428.4375s,
+dans la borne native(397,435.875]. Le helper du protocole de repli encode les
+tags sur18bits de génération contre22dans game/native : le rapprochement
+utilise EXPLICITEMENT index/génération, pas une fausse égalité numérique.
+Effet channeled UseVehiclePersistent → Initialapply du marqueur → Finalremove,
+références ci-dessous ; aucune durée de canalisation ne vient du marqueur5s.
+
+Une commande LOCALE TargetUnit sur cette même cible à354.3125s est confirmée,
+mais le pilote estIA2, pas local1 : aucune causalité cliclocal→canalIA et aucune
+prise de contrôle humaine ne sont validées. Ce critère expérimental additionnel
+reste NONPASS. Il n'est pas confondu avec le DoD de lecture de canalisation IA
+visible, apparition et fin effectivement recoupées. Pas de contestation PUBLIQUE
+positive observée en22 : les états/captures privés20 ne sont pas promus en Full.
+PC/menu/audio rendus avant19:23, aucune23 ni nouveau budget implicite.
 
 ## 2. Source, identité et sémantique
 
@@ -83,8 +109,8 @@ elle, owner=null. Le normaliseur exige capture_current_visible=true pour tout
 propriétaire connu à une progression inconnue. Ce drapeau ne franchit pas la
 projection. Des changements de contestation cachée ne changent pas la clé.
 Le diagnostic privé sans perspective conserve son ancienne sémantique ; il ne
-peut acquérir un reçu produit. Ces règles sont exercées sur fixtures, pas encore
-qualifiées en nouvelle partie sous le correctif.
+peut acquérir un reçu produit. Ces règles sont exercées sur fixtures ET sur
+les Full22 : champs courants retenus, champs non qualifiés réellement non lus.
 
 Phases MapMechanicsLib : Idle0, ObelisksWarning1, ObelisksAvailable2,
 DragonRampaging3. Les timers start/respawn/warning restent distincts et
@@ -105,7 +131,7 @@ reste channeling=null, sans lecture du marqueur. Le catalogue effectif
 VehicleDragon déclare FogVisibility=Visible (unitdata3106–3107) ; cela ne
 débloque aucune visibilité héroïque ni une carte entière. La projection
 exige également l'assertion CURRENT dans son reçu signé, jamais un flag connu
-ou un simple propriétaire allié. La recette finale doit exercer ce chemin.
+ou un simple propriétaire allié. Les4true normalisés22 exercent ce chemin.
 
 En phase DragonRampaging, le véhicule vient du global unité courant ; le
 pilote doit être le propriétaire actuel1..10 et le global DragonPlayer,
@@ -148,26 +174,27 @@ diagnostique, via l'opt-in explicite `--candidate-dragon`. Un cœur seul ou une
 famille omise n'est jamais Full. Le manifeste inclut aussi le normaliseur,
 la clé et kb/data/map_timings.json, dépendance du nommage de carte.
 
-## 4. Critères encore ouverts pour livraison
+## 4. Qualification, limites et publication
 
-1. Recette Dragon native ciblée, joueur local+9IA, captures/pertes des deux
-   sanctuaires, contestation recoupable, vraie canalisation/interruption ou
-   fin, apparition/durée/fin du même véhicule avec replay indépendant.
-2. Mesure réelle des acquisitions et refus, conservation des readsets et
-   du replay de la même partie. Une ancienne capture ou une naissance
-   tracker seule ne prouve pas ces états live.
-3. Décider/qualifier les seules données publiques ; notamment canalisation
-   cachée, pas de nouveau champ ennemi implicite.
-4. Le vrai consommateur, normalisation typée, reçus et clé ont produit des Full
-   réels en21. Le correctif CURRENT des beacons exige sa propre qualification
-   WHOLE réelle, plus la commande locale indépendamment recoupée ; les341tests
-   PASS sur Python3.12/3.14 ne ferment pas ces critères live.
-5. Revue indépendante finale, intégration/main/push et SHA distant relu.
+1.20 qualifie le décodage natif des deux sanctuaires, captures/pertes/contestation
+   et premier cycle Dragon ;22 qualifie le vrai consommateur corrigé, les scopes
+   CURRENT et une canalisation IA visible du même véhicule, activation et fin.
+2. Les preuves privées/readsets/replays sont préservés hors Git dans le dossier
+   durable de la carte ; pas de nouvelle fraîcheur depuis un rejeu historique.
+3. Aucun PV/XY/CD/talent/pilote ennemi ni référence brute dans la projection.
+   Source incertaine → unknown, pas neutral/ready/destroyed inventé. Le chemin
+   de capture visible garde sa qualification par getter/classe et CURRENT,
+   sans prétendre qu'une contestation publique positive a été observée en22.
+4. Le contrôle local effectif du véhicule reste non qualifié ; la commande sur
+   la cible est une tentative, pas le déclencheur démontré du canal IA.
+5. L'activation finale est une proposition à contre-revoir DISTINCTEMENT du
+   verdict185376b. Aucun PASS implicite du delta allowlist/docs. Main/push et
+   tests sur main restent obligatoires avant clôture ; aucun coach/audio requis.
 
 L'ancien opérateur t_d6e15259/default a clos Volskaya après19/24parties.
-Le soutien ciblé Dragon t_7d4211b0/default a effectué la recette20 et reste
-disponible pour le vrai pipeline après handoff revu/committé/préflighté ;
-il a rendu le menu et l'audio avant l'attente hors ligne. Les sept cartes
+Le soutien ciblé Dragon t_7d4211b0/default a effectué20/21/22 puis terminé
+son seul service GUI/revue borné, sans clore la carte produit. Il a rendu le
+menu, l'audio et la caméra avant l'analyse hors ligne. Les sept cartes
 produit ne sont ni décomposées ni dupliquées. Cody ne prend pas la GUI.
 
 ## Sources clés

@@ -360,7 +360,7 @@
       "sha256": "00628e744e6f2364d24a609ac14590cc7f68d65d90fbcb26c742e9760b521dc3"
     }
   ],
-  "evidence": "Diagnostic only. Dragon active VM in preserved non-atomic live-a dump, installed MapMechanicsLib/GameLib and effect definitions. No live Dragon transition recipe or coach release.",
+  "evidence": "Build98348 DragonShire only. Native diagnostic20 independently recouped capture/loss/contestation and vehicle lifecycle. Corrected real read_current consumer22: 303Full/435, strict ordered reads and clocks, CURRENT-gated beacon progress and visible AI channel to same vehicle index/generation, activation/end independently recouped. No local-pilot success or positive public contested state in22 claimed. Historical replay is reference only, never a live state producer. No hero positions/visibility/battlefield qualification extended.",
   "source_scripts": [
     {
       "logical_path": "mods/heroesdata.stormmod/base.stormdata/triggerlibs/mapmechanicslib.galaxy",
