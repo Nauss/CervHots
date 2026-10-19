@@ -77,6 +77,10 @@ def project_battlefield(raw, local, team):
                     or owner is not None and not (owner=='neutral' or type(owner) is int and owner in (0,1))):
                 return None
         clean[section]={'t':p['mission_t_s'],'entries':out}
+        if section=='structures':
+            # The reader measures (component maximum - damage) / maximum.
+            # This is NOT ShieldedHealthLabel's combined HUD numerator.
+            clean[section]['health_basis']='life_component'
     return clean
 
 

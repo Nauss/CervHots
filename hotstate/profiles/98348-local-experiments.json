@@ -1,0 +1,16 @@
+{
+  "build": 98348,
+  "map": "Volskaya",
+  "hero": "stitches",
+  "context_source": "initdata_native_fields",
+  "cooldown_link": "Abil/StitchesSlam",
+  "signatures": [
+    {"name":"PlayerHasTalent","rva":34337488,"size":64,"sha256":"55ce72c10d5897506ca270168a6aef8121c0b05f02e74f41da60171a88244107"},
+    {"name":"UnitGetCooldown","rva":33880176,"size":64,"sha256":"31591297f97002bc6b78c0d45f8f7cf8363a94af9a452ad6afefd2eac650d2ba"},
+    {"name":"UnitCooldownList","rva":12025872,"size":64,"sha256":"2f1bfa0de651d265e17f350bbc6f8ad331b39d22dfec620e26da457aaf5c307b"},
+    {"name":"TaggedNext","rva":10000768,"size":64,"sha256":"74ca6867ac91fb54367f19467a9b540f04c77d4e6d32e95b97c5b2566f6b624a"},
+    {"name":"TalentCatalogue","rva":6164576,"size":64,"sha256":"248db0def17075ce37129d50315be8136cc5473bf6e548aef8009735348a4a4c"}
+  ],
+  "scope": "Isolated local native experiment only, not coach integration. PlayerHasTalent membership is NOT proof that every bit is a manual choice. Unit cooldown list only, no charges or player-stored cooldowns. Zero remaining is NOT full cast legality.",
+  "internal_cooldown_scale": 65536
+}

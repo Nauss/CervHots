@@ -9,6 +9,74 @@ fermé, `VALIDATED_MAPS=()`. Le branchement cerveau candidat ne peut donc pas
 prototypes locaux y sont distingués des diagnostics historiques ci-dessous ;
 le lot 5 et son catalogue complet restent non livrés.
 
+## Continuation native du 19/10 — qualification candidate, gate produit distinct
+
+Les sections ci-dessous sont l'historique des révisions, pas l'état courant de
+la couverture. Reprise be467161 puis correctif aba6ae4 : `respawn_timer` conserve
+le restant fractionnaire natif et `paused`; l'entier `respawn_s` reste seulement
+la troncature HUD. Zéro ne prouve ni apparition ni disponibilité. Le normaliseur
+conserve la pause et la clé tactique distingue pause/reprise sans suivre chaque
+tick. La section structures porte `health_basis=life_component` : son pourcentage
+ne prétend pas reproduire le numérateur vie+bouclier/bonus du HUD.
+
+Une seule nouvelle partie privée Volskaya joueur+9IA, sans séries PNG/OCR :
+362 acquisitions Full, 122 acceptées, 147 refus de cohérence de la famille et
+93 déchirures du coeur, zéro dépassement budget. Maximum 7511 lectures,
+197979 octets et 79ms pour le pipeline complet accepté. Les 362 suites de
+lectures ET horloges ont été rejouées exactement, par auteur et opérateur.
+
+Support5 : disponible, combattu, capturé, puis nouveau cycle. Capture tracker
+indépendante à158.875s mission. Dernier CURRENT non disponible337.0625 puis
+premier CURRENT disponible340.1875; borne conservatrice [336.9375,340.1875],
+largeur3.25s, pas instant exact d'expiration. Siège3 : disponible, capturé,
+indisponible puis nouveau cycle; capture tracker520.0625. Borne effectivement
+observée [600.9375,703.1875], largeur102.25s : la fenêtre de respawn n'a PAS
+vu un CURRENT non disponible proche de700s. Cette limite n'est pas effacée.
+La naissance des défenseurs précède Idle (attente Galaxy3s, naissance siège
+échelonnée0.25s); une naissance tracker ne remplace pas la borne native.
+
+Qualification par classes, sans prétendre un nouvel état live jamais observé :
+MapScript179–249 configure camps1/2 identiquement pour les propriétés de
+comportement turret, et3/4 pour le siège (géométrie/pathing différents).
+Support5 est une troisième classe, maintenant réellement exercée. Les groupes,
+balises, types et générations restent vérifiés individuellement; camps2/4 sous
+brouillard restent Unknown, jamais remplis depuis leur symétrique. La recette
+19 n'a pas accepté l'état intermédiaire `capture_available`.
+
+Catalogue game17 :90/90 identités initiales indépendamment retrouvées au tracker
+par type+équipe+floorXY, 35types répartis en7classes. Tous les types sont retrouvés
+dans les XML installés extraits; cela ne constitue pas une population dynamique
+simultanée. Les41Full historiques contiennent des structures CURRENT des sept
+classes. Trois forts et un keep ont une mort tracker encadrée par vivant/détruit.
+Tour town-01-slot-03 : vivante641.8125, ruine CURRENT648.75, même tag COMPLET et
+génération; changement de type tracker642.875. Mort du corps650.5625 distincte.
+Ce remplacement applicable est un morph, PAS une nouvelle allocation. Les
+fontaines L2/L3 sont invulnérables dans les XML; pas de dégâts ordinaires ou de
+suppression liée au fort prétendus observés. Murs/portes/core : ne pas affirmer
+des destructions individuellement filmées à partir du seul getter commun.
+
+La réutilisation native locale est isolée dans `hotstate/local_experiments.py`
+et son profil98348 : uniquement Stitches/Volskaya, contexte natif typé, identité
+locale réelle, signatures et garde8192/1MiB/125ms. Aucun producteur image, CLI,
+API, audio ni branchement coach. `owned_talents` désigne PlayerHasTalent, PAS
+une preuve que tout bit est un choix manuel. CD nul de StitchesSlam signifie
+seulement cooldown prêt, `cast_legality=unknown`. Charges, stockage joueur,
+autres héros/cartes/builds et modificateurs universels ne sont pas supportés.
+Les120readsets historiques17/18 sont rejoués intégralement par cette extraction
+(102 acceptations diagnostiques,18 vraies fins de simulation refusées), pas
+relabellisés comme un nouveau live. Aucun reçu consommable public n'est émis.
+
+Preuves locales ignorées : `out/autonomous-p2/2026-10-19/continuation/` dans le
+dépôt principal, notamment `source-class-checks.json`, `class-reference17.json`,
+`native19-summary.json`, `local-experiments-audit.json` et les rapports opérateur.
+Les anciennes preuves et manifestes ne sont pas réécrits. Le paquet aba6ae4 et
+ses34sources sont préservés avant dégel, ainsi que les7JSONL et le replay19.
+
+`VALIDATED_MAPS=()` reste le verrou produit : cette phase remet du code corrigé
+et des preuves de qualification, PAS une livraison main/remote ni une clôture
+de t_8e5c9616. Cette carte gate doit encore vérifier le périmètre exact, décider
+l'activation et l'intégration/publication réelles; Dragon reste en série.
+
 ## Source native et périmètre réel
 
 Build strict 98348 uniquement. Profil `98348-battlefield.json` : empreintes du

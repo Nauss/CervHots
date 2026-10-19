@@ -41,6 +41,10 @@ class BattlefieldContractTests(unittest.TestCase):
             self.assertNotIn(word,text)
         self.assertNotIn('battlefield',snapshot(raw))
 
+    def test_structure_percentage_is_explicitly_component_life_not_hud_shields(self):
+        clean=self.clean(self.raw())
+        self.assertEqual(clean['battlefield']['structures'].get('health_basis'),'life_component')
+
     def test_corruption_freshness_mismatch_fog_and_identity_refuse(self):
         for change in ('receipt','stale','future','tamper','source','match','map','session','diagnostic','window','fogowner','fogstate','boolid','badid','count','duplicate'):
             raw=self.raw();p=raw['battlefield']['camps'];row=p['camps'][0]
