@@ -154,12 +154,15 @@ def structure_kind(name):
     if name in ('TownGateL215BLUR', 'TownGateL215BRUL',
                 'TownGateL3BLURBRVisionBlocked', 'TownGateL3BLURTLVisionBlocked',
                 'TownGateL3BRULBLVisionBlocked', 'TownGateL3BRULTRVisionBlocked',
-                'TownGateL3VerticalLeftVisionBlocked'):
+                'TownGateL3VerticalLeftVisionBlocked', 'TownGateL3VerticalRightVisionBlocked'):
         return 'gate'
     return None
 
 
 class VolskayaBattlefield:
+    CAMP_TYPES = (5, 5, 6, 6, 10)
+    MIN_VM_FUNCTIONS = 6236
+
     def __init__(self, native, *, profile=None, position_profile=None, match_profile=None):
         self.native = native
         self.profile = PROFILE if profile is None else profile
@@ -182,7 +185,7 @@ class VolskayaBattlefield:
                 raise NativeUnavailable('signature_champ_bataille_invalide')
         count, size = n.global_u32(0x2FA70F0), n.global_u32(0x3B8C904)
         table = self._pointer(n.value(n.base+0x3B8C5C8, 'Q'))
-        if (not 6235 < count <= 65536 or not 4 <= size <= 0x180000
+        if (not self.MIN_VM_FUNCTIONS <= count <= 65536 or not 4 <= size <= 0x180000
                 or n.value(n.base+0x2FA7100, 'Q') != table):
             raise NativeUnavailable('racine_vm_champ_bataille_invalide')
         for f in p['functions']:
@@ -270,7 +273,7 @@ class VolskayaBattlefield:
         if n.value(g+0xE2130) != 5:
             raise NativeUnavailable('nombre_camps_volskaya_invalide')
         camps, seen_tags, seen_timers = [], set(), set()
-        for index, expected_type in enumerate((5, 5, 6, 6, 10), 1):
+        for index, expected_type in enumerate(self.CAMP_TYPES, 1):
             a = g+index*780
             kind, defender = struct.unpack('<ii', n.read(a+0xDF070, 8))
             merc = n.value(a+0xDF0BA, 'i')
