@@ -51,7 +51,17 @@ def project_battlefield(raw, local, team):
                 if cycle is not None and (not isinstance(cycle,str) or re.fullmatch('[0-9a-f]{64}',cycle) is None):return None
                 if remaining is not None and (type(remaining) is not int or not 0<=remaining<=600):return None
                 if state=='unknown' and (owner is not None or remaining is not None or cycle is not None):return None
-                out.append({'id':ident,'kind':kind,'state':state,'owner':owner,'current_visible':visible,'cycle':cycle,'respawn_s':remaining})
+                timer=row.get('respawn_timer')
+                clean_timer=None
+                if timer is not None:
+                    if not isinstance(timer,dict):return None
+                    value=timer.get('remaining_s');paused=timer.get('paused')
+                    if (visible is not True or state not in ('captured','unavailable')
+                            or not number(value) or not 0<=value<=600
+                            or type(paused) is not bool or remaining!=int(value)):
+                        return None
+                    clean_timer={'remaining_s':value,'paused':paused}
+                out.append({'id':ident,'kind':kind,'state':state,'owner':owner,'current_visible':visible,'cycle':cycle,'respawn_s':remaining,'respawn_timer':clean_timer})
             else:
                 if not isinstance(ident,str) or ident not in catalogue:return None
                 spec=catalogue[ident];kind=row.get('kind');generation=row.get('generation')
@@ -77,6 +87,9 @@ def battlefield_key(packet):
         rows=[]
         for row in packet[section]['entries']:
             item={k:row[k] for k in ('id','kind','state','owner','current_visible',*extra)}
+            if section=='camps':
+                timer=row.get('respawn_timer')
+                item['respawn_paused']=None if timer is None else timer['paused']
             if section=='structures':
                 h=row['health_percent']
                 item['health_band']=None if h is None else sum(h>c for c in (25,50,75))

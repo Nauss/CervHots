@@ -89,4 +89,43 @@ class BattlefieldContractTests(unittest.TestCase):
             issue(p,time.monotonic())
             self.assertNotIn('battlefield',self.clean(raw))
 
+    def test_precise_respawn_timer_survives_boundary_without_private_fields(self):
+        raw=self.raw();p=raw['battlefield']['camps'];row=p['camps'][0]
+        row.update(state='captured',owner=0,current_visible=True,respawn_s=0,
+                   respawn_timer={'remaining_s':0.0625,'paused':True,'pointer':1234})
+        issue(p,time.monotonic())
+        clean=self.clean(raw)['battlefield']['camps']['entries'][0]
+        self.assertEqual(clean.get('respawn_timer'),{'remaining_s':0.0625,'paused':True})
+
+    def test_precise_respawn_rejects_invalid_hidden_and_stale_metadata(self):
+        for change in ('hidden','unknown','available','fraction','paused','negative','range','boolean','stale','missing'):
+            raw=self.raw();p=raw['battlefield']['camps'];row=p['camps'][0]
+            row.update(state='captured',owner=0,current_visible=True,respawn_s=1,
+                       respawn_timer={'remaining_s':1.0625,'paused':False})
+            if change=='hidden':row['current_visible']=False
+            elif change=='unknown':row.update(state='unknown',owner=None,respawn_s=None)
+            elif change=='available':row.update(state='available',owner='neutral')
+            elif change=='fraction':row['respawn_s']=2
+            elif change=='paused':row['respawn_timer']['paused']=0
+            elif change=='negative':row['respawn_timer']['remaining_s']=-0.0625
+            elif change=='range':row['respawn_timer']['remaining_s']=601
+            elif change=='boolean':row['respawn_timer']['remaining_s']=True
+            elif change=='missing':row['respawn_timer'].pop('remaining_s')
+            issue(p,time.monotonic()-2 if change=='stale' else time.monotonic())
+            with self.subTest(change=change):
+                self.assertNotIn('battlefield',self.clean(raw))
+
+    def test_tactical_key_tracks_respawn_pause_not_fractional_ticks(self):
+        raw=self.raw();p=raw['battlefield']['camps'];row=p['camps'][0]
+        row.update(state='captured',owner=0,current_visible=True,respawn_s=1,
+                   respawn_timer={'remaining_s':1.0625,'paused':False})
+        issue(p,time.monotonic());clean=self.clean(raw);before=tactical_key(clean)
+        changed=copy.deepcopy(clean)
+        timer=changed['battlefield']['camps']['entries'][0]['respawn_timer']
+        timer['remaining_s']=1
+        self.assertEqual(before,tactical_key(changed))
+        timer['paused']=True
+        self.assertNotEqual(before,tactical_key(changed))
+
+
 if __name__=='__main__':unittest.main()

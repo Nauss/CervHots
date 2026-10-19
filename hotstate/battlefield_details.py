@@ -84,7 +84,7 @@ def camp_public(row):
     ident = row['index']
     result = {'id':ident,'kind':('turret','turret','siege_troopers','siege_troopers','support')[ident-1],
               'state':'unknown','owner':None,'current_visible':row.get('anchor_current_visible'),
-              'cycle':None,'respawn_s':None}
+              'cycle':None,'respawn_s':None,'respawn_timer':None}
     if result['current_visible'] is not True:
         return result
     members = row['defender_group']['members']
@@ -111,6 +111,10 @@ def camp_public(row):
         remaining = row['respawn']['remaining_s']
         if remaining is not None and result['state'] in ('captured','unavailable'):
             result['respawn_s'] = int(remaining)
+            # Preserve the native fixed4096 value and pause state. The legacy
+            # integer is the HUD's truncation, not time until camp availability.
+            # Birth/preload, hibernation and availability are distinct states.
+            result['respawn_timer'] = {'remaining_s':remaining,'paused':row['respawn']['paused']}
     return result
 
 

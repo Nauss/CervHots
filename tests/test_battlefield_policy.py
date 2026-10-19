@@ -30,6 +30,20 @@ class BattlefieldPolicyTests(unittest.TestCase):
         r=self.camp();r['state_code']=2;r['respawn']['remaining_s']=None;r['defender_group']['members']=[]
         p=camp_public(r);self.assertEqual(p['state'],'unavailable');self.assertIsNone(p['respawn_s']);self.assertIsNone(p['owner'])
 
+    def test_respawn_timer_preserves_fraction_pause_and_is_not_availability(self):
+        r=self.camp();r.update(state_code=2,last_capture_team=1)
+        r['defender_group']['members']=[]
+        for paused in (False,True):
+            r['respawn']={'remaining_s':0.0625,'paused':paused}
+            p=camp_public(r)
+            self.assertEqual(p['state'],'captured')
+            self.assertEqual(p['respawn_s'],0)  # historical HUD truncation only
+            self.assertEqual(p.get('respawn_timer'),{'remaining_s':0.0625,'paused':paused})
+        r['respawn']['remaining_s']=0
+        self.assertEqual(camp_public(r)['state'],'unavailable')
+        r['anchor_current_visible']=None
+        self.assertIsNone(camp_public(r).get('respawn_timer'))
+
     def test_every_state_refuses_hidden_living_defenders_and_hidden_cycle(self):
         for code in range(6):
             for visible in (False,None):
