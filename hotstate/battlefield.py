@@ -243,14 +243,14 @@ class VolskayaBattlefield:
             self._pointer(page)
             for index in range(page_index*16, min(limit, (page_index+1)*16)):
                 unit = page+(index & 15)*0x2F0
-                # One fixed header, excluding XY (+0x60), vitals (+0x220)
-                # and every hero component. Page roots are rechecked later.
-                header = n.read(unit+0x10, 0x38)
-                tag = struct.unpack_from('<I', header)[0]
+                # Only consumed fields: unused +0x14 and +0x42 bytes change
+                # continuously and are not an identity/type/owner source.
+                # Never read XY (+0x60), vitals (+0x220) or hero components.
+                tag = n.value(unit+0x10)
                 if (tag+1) & 0xFFFFFFFE == 0 or tag >> 22 != index:
                     continue
-                flags = header[0x29]
-                packed = struct.unpack_from('<Q', header, 0x10 if flags & 0x20 else 8)[0]
+                flags = n.value(unit+0x39, 'B')
+                packed = n.value(unit+(0x20 if flags & 0x20 else 0x18), 'Q')
                 catalog = self._pointer(packed & ~31)
                 if catalog not in names:
                     try:
@@ -262,7 +262,7 @@ class VolskayaBattlefield:
                 kind = structure_kind(name)
                 if kind is None:
                     continue
-                owner = header[0x34]
+                owner = n.value(unit+0x44, 'B')
                 rows.append(dict(tag=tag, generation=tag & 0x3FFFFF,
                     unit_type=name, kind=kind, team=self._team(n, owner),
                     state=self._life(name, flags)))
@@ -295,7 +295,7 @@ class VolskayaBattlefield:
         result = {'camps': self._camps(n), 'structures': self._towns(n), 'census': self._census(n),
                   'catalogue_complete': False}
         after = self._clock(n, memory)
-        for address, data in memory.read_set:
+        for address, data in self._coherence_reads(memory.read_set):
             if self.native.read(address, len(data)) != data:
                 raise NativeUnavailable('lecture_champ_bataille_dechiree')
         window = clock()-start
@@ -303,6 +303,19 @@ class VolskayaBattlefield:
             raise NativeUnavailable('lecture_champ_bataille_perimee')
         return dict(result, **identity, status='diagnostic_unreleased', map_id=map_id,
                     mission_t_s=after, read_window_s=window)
+
+    @staticmethod
+    def _coherence_reads(read_set):
+        # Initial reads remain fully recorded, including repetitions. Never
+        # coalesce a contradiction; only identical address/size/bytes can use
+        # one final equality check. Overlapping different sizes stay separate.
+        unique = {}
+        for address, data in read_set:
+            key = address, len(data)
+            if key in unique and unique[key] != data:
+                raise NativeUnavailable('lecture_champ_bataille_dechiree')
+            unique[key] = data
+        return [(address, data) for (address, size), data in unique.items()]
 
     @staticmethod
     def _clock(n, memory):

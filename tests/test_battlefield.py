@@ -145,6 +145,12 @@ class BattlefieldTests(unittest.TestCase):
         n=NativeReader(recorded,profile=m.profile);r=VolskayaBattlefield(n,profile={})
         with patch.object(r,'_unit_type',return_value='HeroMuradin'):
             census=r._census(n)
+        for read in trace.reads:
+            address=read['address']
+            page=(address-0x1000000)//0x10000
+            if 0<=page<64 and address>=0x1000000:
+                offset=(address-(0x1000000+page*0x10000))%0x2F0
+                self.assertIn((offset,read['size']),((0x10,4),(0x39,1),(0x18,8),(0x20,8),(0x44,1)))
         for address,data in recorded.read_set:
             self.assertEqual(trace.read_memory(address,len(data)),data)
         self.assertLess(len(trace.reads),8192)
@@ -165,5 +171,13 @@ class BattlefieldTests(unittest.TestCase):
         self.assertFalse(any(address==counter for address,data in recorded.read_set))
         for address,data in recorded.read_set:
             self.assertEqual(m.read_memory(address,len(data)),data)
+
+    def test_coherence_coalesces_only_identical_reads_rejects_contradictions(self):
+        reads=[(0x10000,b'ab'),(0x20000,b'c'),(0x10000,b'ab')]
+        self.assertEqual(VolskayaBattlefield._coherence_reads(reads),reads[:2])
+        with self.assertRaises(NativeUnavailable):
+            VolskayaBattlefield._coherence_reads([*reads,(0x10000,b'zz')])
+        # Same starting address, different size remains a separate check.
+        self.assertEqual(len(VolskayaBattlefield._coherence_reads([*reads,(0x10000,b'a')])),3)
 
 if __name__=='__main__':unittest.main()

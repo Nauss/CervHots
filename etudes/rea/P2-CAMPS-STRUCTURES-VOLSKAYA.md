@@ -48,8 +48,9 @@ live réservée à l'opérateur assistant autorisé, durée <=300s, intervalle >
 fichier neuf sous out/ ignoré, zéro GUI/pilotage/API/son. Capture avant/PNG/après,
 traces ordonnées exactes et rejeu strict. Gel du commit et empreintes de toutes
 les sources natives/profils plus collecteur. Le tableau des unités est borné à
-1024 slots ; ses en-têtes de 56 octets excluent XY/vitales/composants, et seuls
-les types de structures retenus sont retournés. Budget trace inchangé : 8192
+1024 slots ; seules les lectures ciblées tag/type/flags/propriétaire sont faites,
+sans XY/vitales/composants, et seuls les types de structures retenus sont
+retournés. Budget trace inchangé : 8192
 lectures, 1Mio par tentative, toute saturation est un refus.
 
 L'égalité du read-set garde racines et champs métier. Le compteur mission est
@@ -73,3 +74,23 @@ Restent obligatoires : recette réelle joueur+9IA, références carte/catalogue
 indépendantes, capture/respawn/destruction/remplacement et brouillard, politique
 publique, normaliseur et vrai pipeline, revue finale indépendante et livraison
 main/remote. Un inventaire ou ce diagnostic ne les remplace pas.
+
+## Diagnostic joueur 12, révision 1 et correctif borné
+
+La courte capture réelle du candidat a1e5aee a produit 5 images/10 tentatives,
+4 acceptées et 6 refusées pour lecture déchirée. Les 76 tentatives des deux
+fenêtres ont été rejouées sous cette révision historique ; la fenêtre suivante
+interrompue tôt a donné 33 images/66 refus (35 budget, 31 cohérence), sans succès.
+Les 38 PNG et les sources historiques sont préservées en privé ; aucune recette
+capture/respawn/destruction/brouillard n'est encore déclarée acquise.
+
+Le read-set a localisé les déchirures principales sur des octets CUnit inutilisés
+(+0x14, +0x42) inclus dans les anciens blocs de 56 octets. Le correctif lit
+uniquement tag+0x10, flags+0x39, lien catalogue+0x18 ou +0x20, et propriétaire+0x44.
+Toutes ces données consommées et les racines restent vérifiées. La relecture de
+cohérence coalesce seulement les répétitions identiques adresse/taille/octets ;
+une répétition contradictoire refuse la capture, les tailles différentes restent
+séparées. Les lectures initiales et le rejeu ordonné ne sont pas coalescés.
+Ce changement n'augmente ni 8192 lectures ni 125ms et n'ouvre aucun champ public.
+Le booléen brut `spawned` n'est pas une preuve d'apparition : sa déclaration est
+présente dans les scripts conservés, mais aucune affectation n'y a été trouvée.
