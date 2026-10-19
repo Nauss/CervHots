@@ -90,7 +90,28 @@ class DragonObjective:
             return owner-11
         raise NativeUnavailable('proprietaire_sanctuaire_dragon_invalide')
 
-    def _shrines(self, n):
+    def _current_visible(self, n, unit, local_id):
+        from .visibility import CurrentVisibility, _UnknownVisibility
+        helper = AlliedPositions(n, profile=self.position_profile)
+        helper._verify(n)
+        visibility = CurrentVisibility(n)
+        visibility._verify(n)
+        try:
+            return visibility._current(n, unit, local_id+1, helper)
+        except _UnknownVisibility:
+            return None
+
+    @staticmethod
+    def _capture_fields(n, cp, enabled):
+        counter, goal, maximum = struct.unpack('<iii', n.read(cp+9, 12))
+        state, empty_decay, contested_decay = struct.unpack('<iii', n.read(cp+29, 12))
+        if (enabled not in (0, 1) or goal != 64 or maximum != goal
+                or not -maximum <= counter <= maximum or not 0 <= state < len(CAPTURE_STATES)
+                or empty_decay != 0 or contested_decay != 2):
+            raise NativeUnavailable('etat_capture_dragon_invalide')
+        return counter, goal, state
+
+    def _shrines(self, n, local_id=None):
         g = n.base+GLOBAL_DATA
         count = n.value(g+0x11869, 'i')
         if n.value(g+0xE2B4A, 'i') != 2 or not 2 <= count <= 15:
@@ -111,11 +132,10 @@ class DragonObjective:
                 continue
             cp = g+0x118C5+index*132
             enabled = n.value(cp, 'B')
-            counter, goal, maximum = struct.unpack('<iii', n.read(cp+9, 12))
-            state, empty_decay, contested_decay = struct.unpack('<iii', n.read(cp+29, 12))
-            if (enabled not in (0, 1) or goal != 64 or maximum != goal
-                    or not -maximum <= counter <= maximum or not 0 <= state < len(CAPTURE_STATES)
-                    or empty_decay != 0 or contested_decay != 2):
+            if local_id is None:
+                # Preserve the PRIVATE diagnostic's exact historical read order.
+                counter, goal, state = self._capture_fields(n, cp, enabled)
+            elif enabled not in (0, 1):
                 raise NativeUnavailable('etat_capture_dragon_invalide')
             beacon_tag = n.value(cp+1)
             if beacon_tag in beacons:
@@ -130,7 +150,22 @@ class DragonObjective:
             # residual owner/state/counter are NOT current shrine activity.
             if enabled and self._owner(n.value(beacon+0x44, 'B')) != owner:
                 raise NativeUnavailable('proprietaires_capture_dragon_incoherents')
-            row.update(owner=owner, state=CAPTURE_STATES[state] if enabled else 'disabled',
+            row.update(owner=owner, state='unknown' if enabled else 'disabled')
+            if local_id is not None:
+                # Sun/Moon themselves are globally Visible, but their distinct
+                # capture BEACONS are Dimmed. Public ownership is not permission
+                # to disclose progress or infer an unseen enemy's contestation.
+                visible = self._current_visible(n, beacon, local_id) if enabled else None
+                row['capture_current_visible'] = visible
+                if enabled and visible is True:
+                    counter, goal, state = self._capture_fields(n, cp, enabled)
+                else:
+                    # Redacting AFTER reading would still leak hidden changes:
+                    # coherence failure would drop the family and alter the key.
+                    # Never put hidden/disabled progress into the public readset.
+                    result.append(row)
+                    continue
+            row.update(state=CAPTURE_STATES[state] if enabled else 'disabled',
                        contested=state == 0 if enabled else None,
                        capture_counter=counter if enabled else None,
                        capture_goal=goal if enabled else None)
@@ -147,18 +182,10 @@ class DragonObjective:
         owner = self._owner(n.value(unit+0x44, 'B'))
         if owner == 'neutral':
             return dict(result, state='inactive')
-        if any(s['owner'] != owner or s['state'] in ('unknown', 'disabled') for s in shrines):
+        if any(s['owner'] != owner or s['state'] == 'disabled' for s in shrines):
             raise NativeUnavailable('statue_sanctuaires_dragon_incoherents')
         if local_id is not None:
-            from .visibility import CurrentVisibility, _UnknownVisibility
-            helper = AlliedPositions(n, profile=self.position_profile)
-            helper._verify(n)
-            visibility = CurrentVisibility(n)
-            visibility._verify(n)
-            try:
-                visible = visibility._current(n, unit, local_id+1, helper)
-            except _UnknownVisibility:
-                visible = None
+            visible = self._current_visible(n, unit, local_id)
             # Team ownership is not permission to disclose an unseen channel.
             # Do not even read the marker when CURRENT sight is unestablished.
             if visible is not True:
@@ -204,7 +231,7 @@ class DragonObjective:
         if not 0 <= code < len(PHASES):
             raise NativeUnavailable('phase_dragon_invalide')
         phase = PHASES[code]
-        shrines = self._shrines(n)
+        shrines = self._shrines(n, local_id)
         registry = self.mechanics._timer_registry(n)
         timers = {name: self.mechanics._timer(n, offset, registry) for name, offset in
                   (('start', 0xE2B36), ('respawn', 0xE2B3A), ('warning', 0xE2B3E))}

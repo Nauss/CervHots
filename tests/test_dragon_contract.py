@@ -15,8 +15,15 @@ from cerveau.state import snapshot
 from cerveau.runner import tactical_key
 
 
-def packet():
+def public_fixture():
     p = DragonMemory().sample()
+    for row in p['shrines']:
+        row['capture_current_visible'] = True if row['state'] != 'disabled' else None
+    return p
+
+
+def packet():
+    p = public_fixture()
     p.update(status='validated', map_id='DragonShire', match_id='a'*64, local_id=0, team=0,
              local_hero='stitches', mission_t_s=123.5, read_window_s=0.01)
     issue(p, time.monotonic())
@@ -75,7 +82,8 @@ class DragonContractTests(unittest.TestCase):
 
     def test_channel_requires_current_sight_not_owner_or_known_flag(self):
         raw, local = packet(); p = raw['objective']
-        p['shrines'] = [{'id':name,'owner':0,'state':'captured','contested':False} for name in ('sun','moon')]
+        p['shrines'] = [{'id':name,'owner':0,'state':'captured','contested':False,
+                         'capture_current_visible':True} for name in ('sun','moon')]
         p['statue'] = {'state':'capturable','team':0,'channeling':True,'name':'PRIVATE'}
         for visible in (None,False,'known',1,True):
             with self.subTest(visible=visible):
@@ -86,19 +94,20 @@ class DragonContractTests(unittest.TestCase):
 
     def test_unknown_not_neutral_and_countdown_ticks_not_tactical_changes(self):
         raw, local = packet(); p = raw['objective']
-        p['shrines'][0].update(state='unknown',owner=None,contested=None)
+        p['shrines'][0].update(state='unknown',owner=None,contested=None,capture_current_visible=None)
         p['respawn']['remaining_s'] = 130; issue(p,time.monotonic()); first = self.project(raw,local)
         self.assertIsNone(first['shrines'][0]['owner'])
         p['respawn']['remaining_s'] = 129; issue(p,time.monotonic()); second = self.project(raw,local)
         self.assertEqual(dragon_key(first),dragon_key(second))
         p['respawn']['paused'] = True; issue(p,time.monotonic()); third = self.project(raw,local)
         self.assertNotEqual(dragon_key(first),dragon_key(third))
-        p['shrines'][0]['owner'] = 'neutral'; issue(p,time.monotonic())
+        p['shrines'][0]['owner'] = 'neutral'
+        p['shrines'][0].pop('capture_current_visible'); issue(p,time.monotonic())
         self.assertIsNone(self.project(raw,local))
 
     def test_real_native_optional_dispatch_normalizer_and_key(self):
         m = VisibilityMemory(); m.context['meta']['map_id'] = 'DragonShire'
-        sample = DragonMemory().sample()
+        sample = public_fixture()
         sample.update(map_id='DragonShire', match_id=m.context['meta']['match_id'], local_id=5, team=1,
                       local_hero='ragnaros', mission_t_s=123.5, read_window_s=0.01,
                       native_session='SYNTHETIC', _acquired=time.monotonic())

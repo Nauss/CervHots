@@ -1,7 +1,8 @@
 # P2 — sanctuaires et Chevalier Dragon, build98348
 
-**Date :** 19 octobre 2026 · **Statut :** diagnostic Dragon20 réellement recoupé,
-pipeline consommateur candidat implémenté ; publication fermée avant recette finale.
+**Date :** 19 octobre 2026 · **Statut :** diagnostic Dragon20 recoupé et vrai
+pipeline candidat exercé en21 ; guard CURRENT des beacons ajouté après release21,
+publication encore fermée avant qualification du correctif et commande locale.
 
 ## 1. Résultat exercé et limites
 
@@ -36,8 +37,13 @@ Tant que son allowlist est vide, `DragonObjective.read()` refuse
 NativeReader, puis dans le normaliseur et la clé tactique, mais aucune donnée
 Dragon ne franchit le gate produit fermé. Une acceptation du
 collecteur est explicitement `accepted_diagnostic_NOT_PRODUCT`, pas Full.
-Le nouveau `capture_dragon_pipeline.py` devra, séparément, obtenir des Full
-sur le vrai `hotstate.live.read_current`, pas sur ce premier diagnostic.
+Le `capture_dragon_pipeline.py` a, séparément, obtenu des Full candidats sur le
+vrai `hotstate.live.read_current` en21 :13fenêtres,180s,659acquisitions,
+472Full candidats,185lectures déchirées et2objectifs absents, sans dépassement
+de budget selon le manifeste opérateur. Cela prouve la traversée consommateur,
+pas la publication :21 précède le correctif de confidentialité des beacons.
+La commande locale positive UseVehicle n'est pas encore recoupée ; des morts
+locales et courses IA ne sont jamais renommées en succès humain.
 
 ## 2. Source, identité et sémantique
 
@@ -62,13 +68,33 @@ peut retenir propriétaire/compteur/état antérieurs pendant3s ; ces valeurs
 ne deviennent pas une contestation/progression courante. Une référence
 recyclée donne owner=null/state=unknown, jamais neutral par défaut.
 
+Les sanctuaires Sun/Moon sont eux-mêmes FogVisibility=Visible (Moon hérite
+deSun), mais leurs unités DISTINCTES DragonballCaptureBeacon sont Dimmed
+(unitdata1393–1401). Ni le propriétaire public du sanctuaire, ni une animation
+envoyée à PlayerGroupAll ne qualifient CURRENT sur le beacon. Après release21,
+le chemin consommateur vérifie séparément CURRENT pour chaque beacon actif,
+AVANT toute lecture des compteurs/états de progression. Ces champs cachés ne
+sont ni lus ni ajoutés à la cohérence : leur mutation ne peut pas faire tomber
+la famille optionnelle et révéler indirectement une activité via la clé.
+False/unknown donne state=unknown, contested=null et compteurs=null ; le
+propriétaire PUBLIC du sanctuaire reste connu. Une référence non résolue garde,
+elle, owner=null. Le normaliseur exige capture_current_visible=true pour tout
+état de capture actif, et une preuve explicite false/null pour combiner un
+propriétaire connu à une progression inconnue. Ce drapeau ne franchit pas la
+projection. Des changements de contestation cachée ne changent pas la clé.
+Le diagnostic privé sans perspective conserve son ancienne sémantique ; il ne
+peut acquérir un reçu produit. Ces règles sont exercées sur fixtures, pas encore
+qualifiées en nouvelle partie sous le correctif.
+
 Phases MapMechanicsLib : Idle0, ObelisksWarning1, ObelisksAvailable2,
 DragonRampaging3. Les timers start/respawn/warning restent distincts et
 vérifient registre, type19, génération, propriétaire, vtable et bornes.
 Aucune origine HUD ou échéance exacte n'est reconstruite depuis un replay.
 
 La statue capturable doit être VehicleDragon, possédée par11/12, avec les
-deux sanctuaires courants de la même équipe. Le marqueur fini
+deux propriétaires publics courants de la même équipe. Une progression de beacon
+inconnue n'efface pas ce contrôle public et n'interdit pas à elle seule la statue.
+Le marqueur fini
 TransformHeroVehicleBeingCapturedBehavior est ajouté par InitialEffect de
 UseVehiclePersistent et retiré par FinalEffect, succès ou interruption.
 Sa durée catalogue5s n'est PAS le temps de canalisation3s configuré par
@@ -132,9 +158,10 @@ la clé et kb/data/map_timings.json, dépendance du nommage de carte.
    tracker seule ne prouve pas ces états live.
 3. Décider/qualifier les seules données publiques ; notamment canalisation
    cachée, pas de nouveau champ ennemi implicite.
-4. Le vrai consommateur, normalisation typée, reçus et clé sont maintenant
-   implémentés en candidat et exercés sur fixtures ; restent coût WHOLE réel
-   non mocké et recette exacte. Les fixtures ne ferment pas ce critère.
+4. Le vrai consommateur, normalisation typée, reçus et clé ont produit des Full
+   réels en21. Le correctif CURRENT des beacons exige sa propre qualification
+   WHOLE réelle, plus la commande locale indépendamment recoupée ; les341tests
+   PASS sur Python3.12/3.14 ne ferment pas ces critères live.
 5. Revue indépendante finale, intégration/main/push et SHA distant relu.
 
 L'ancien opérateur t_d6e15259/default a clos Volskaya après19/24parties.

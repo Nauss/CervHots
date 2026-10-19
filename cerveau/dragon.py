@@ -35,16 +35,26 @@ def project_dragon(raw, local, team):
         state, owner, contested = row.get('state'), row.get('owner'), row.get('contested')
         if state not in ('unknown', 'disabled', 'contested', 'paused', 'neutral', 'captured', 'reverting', 'capturing'):
             return None
+        capture_sight = row.get('capture_current_visible')
+        if capture_sight is not None and type(capture_sight) is not bool:
+            return None
+        valid_owner = owner == 'neutral' or type(owner) is int and owner in (0, 1)
         if state == 'unknown':
-            if owner is not None or contested is not None:
+            if contested is not None or capture_sight is True:
+                return None
+            # A known globally Visible shrine owner can coexist with UNKNOWN
+            # progress on its different, dimmed beacon. Missing source evidence
+            # must not turn an unresolved reference into a neutral/owned shrine.
+            if owner is not None and (not valid_owner or 'capture_current_visible' not in row):
                 return None
         else:
-            if not (owner == 'neutral' or type(owner) is int and owner in (0, 1)):
+            if not valid_owner:
                 return None
             if state == 'disabled':
                 if contested is not None:
                     return None
-            elif type(contested) is not bool or contested != (state == 'contested'):
+            elif (capture_sight is not True or type(contested) is not bool
+                  or contested != (state == 'contested')):
                 return None
         shrines.append({'id': ident, 'owner': owner, 'state': state, 'contested': contested})
     dragon, statue = p.get('dragon'), p.get('statue')
@@ -68,7 +78,7 @@ def project_dragon(raw, local, team):
         return None
     if ss == 'capturable':
         if (phase != 'shrines' or type(st) is not int or st not in (0, 1)
-                or any(s['owner'] != st or s['state'] in ('unknown', 'disabled') for s in shrines)):
+                or any(s['owner'] != st or s['state'] == 'disabled' for s in shrines)):
             return None
     elif st is not None:
         return None

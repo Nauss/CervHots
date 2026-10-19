@@ -5,7 +5,7 @@ from contextlib import ExitStack
 from unittest.mock import patch
 
 from test_native_context import TypedContextMemory
-from test_dragon import DragonMemory
+from test_dragon_contract import public_fixture
 from hotstate.live import read_current
 from hotstate.dragon import DragonObjective
 from etudes.rea.scripts import capture_dragon_pipeline as capture
@@ -27,7 +27,7 @@ class DragonPipelineTests(unittest.TestCase):
 
     def test_actual_consumer_entrypoint_snapshot_normalizer_key_and_exact_replay(self):
         m = TypedContextMemory(); probe = self.probe(m)
-        sample = DragonMemory().sample()
+        sample = public_fixture()
         with self.options(m,sample), patch.object(capture,'read_current',wraps=read_current) as called:
             row = capture.take_sample(m,probe,clock=lambda:100.0,native_profile=m.profile)
             self.assertEqual(row['status'],'accepted',row.get('rejected'))
@@ -55,7 +55,7 @@ class DragonPipelineTests(unittest.TestCase):
 
     def test_observer_and_non_atomic_source_refused(self):
         m = TypedContextMemory(); probe = self.probe(m)
-        with self.options(m,DragonMemory().sample()):
+        with self.options(m,public_fixture()):
             m.pack(0x120000,'I',0x20)
             row = capture.take_sample(m,probe,clock=lambda:100.0,native_profile=m.profile)
             self.assertEqual(row['status'],'rejected')
