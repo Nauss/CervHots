@@ -159,7 +159,7 @@ class VolskayaObjective:
         except UnicodeError:
             raise NativeUnavailable('nom_comportement_objectif_invalide') from None
 
-    def _duration(self, n, unit):
+    def _duration(self, n, unit, behavior_name='VehicleDragonTimedLife'):
         # Follow the SAME first active component selection as UnitBehaviorDuration.
         # Bounded traversal; no generic private-memory search or cached pointer.
         head = n.value(unit+0x160,'Q')
@@ -182,7 +182,7 @@ class VolskayaObjective:
                 if n.read(getter,6) != b'\xB8\x03\0\0\0\xC3':
                     continue
                 catalog = self._pointer(n.value(component+0x70,'Q') & ~31)
-                if self._behavior_name(n,catalog) != 'VehicleDragonTimedLife':
+                if self._behavior_name(n,catalog) != behavior_name:
                     continue
                 sentinel = component+0xC0
                 entry = n.value(sentinel,'Q')

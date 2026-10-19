@@ -59,10 +59,11 @@ class NativeContextProbe:
             raise NativeUnavailable('chaine_contexte_native_invalide')
         return value
 
-    def observe_native(self, backend, *, native_profile=None):
+    def observe_native(self, backend, *, native_profile=None, clock=None):
         if getattr(backend, 'recorded_non_atomic', False):
             raise NativeUnavailable('contexte_natif_capture_non_atomique')
-        started = time.monotonic()
+        clock = time.monotonic if clock is None else clock
+        started = clock()
         recorded = _RecordedMemory(backend)
         n = NativeReader(recorded, profile=native_profile)
         initial = ActiveMatch().observe(n)
@@ -110,7 +111,7 @@ class NativeContextProbe:
         if not self.map_cache.get(key, {}).get('map_id'):
             self.map_cache[key] = self.map_resolver(key)
         self.recheck(backend)
-        if not 0 <= time.monotonic() - started <= 0.125:
+        if not 0 <= clock() - started <= 0.125:
             raise NativeUnavailable('contexte_natif_perime')
         self.result = {k: v for k, v in result.items() if not k.startswith('_')}
         self.result['meta'] = {**self.map_cache[key], 'context_source': SOURCE,

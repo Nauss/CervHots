@@ -1,0 +1,407 @@
+{
+  "build": 98348,
+  "pe_timestamp": 1791173268,
+  "image_size": 73064448,
+  "signatures": [
+    {
+      "name": "active_table_publication",
+      "rva": 33473247,
+      "size": 120,
+      "sha256": "442dc06ead438133fe0b88f327413aed8142c9dc92e47ee346f2d35b934d0643"
+    },
+    {
+      "name": "function_count",
+      "rva": 33477488,
+      "size": 7,
+      "sha256": "f75c534e24995b940a934ed3f3884719fd69c6453d6c8e9c45a4309749fcc9ca"
+    },
+    {
+      "name": "active_call",
+      "rva": 33525936,
+      "size": 256,
+      "sha256": "01b4fba6ca7eeab6ead9ae1e45d38d0dab67a552193ebcc502208e35b67a58a9"
+    },
+    {
+      "name": "vm_global_loads",
+      "rva": 33526944,
+      "size": 1024,
+      "sha256": "e5e10662a1f66445b7cbad2d3fae88dde87f2d5efc73c8a7ba2e817180fe819c"
+    },
+    {
+      "name": "vm_dispatch",
+      "rva": 33604116,
+      "size": 32,
+      "sha256": "ad8746195c2e9e234ff97afd985fef9393782c3954b7e7ff9ca9ccb10337849d"
+    },
+    {
+      "name": "timer_elapsed",
+      "rva": 12754352,
+      "size": 64,
+      "sha256": "b9b4cee553da37d49c20c35a9c9b6799531de1a54b9db962aa0a5996c61b4ca5"
+    },
+    {
+      "name": "timer_pause",
+      "rva": 12754848,
+      "size": 64,
+      "sha256": "8677485a3b89ab6b5484554dad05dbedad757a378494675c3db1f97d25bdecd8"
+    },
+    {
+      "name": "timer_start",
+      "rva": 11462960,
+      "size": 160,
+      "sha256": "a8fd20127ed1f7f8e4b6bd37c18a662bca66081f45a7c78551bdbb11d32a4570"
+    },
+    {
+      "name": "timer_remaining",
+      "rva": 11461920,
+      "size": 32,
+      "sha256": "48f446eb80b743032e5c3c66627d1fbab5564811968de6b802dc48d4d20c548b"
+    },
+    {
+      "name": "timer_update",
+      "rva": 11462064,
+      "size": 208,
+      "sha256": "6cd560d5a17b2a49ea23b08d09d59c5e3e1b7754dea465cdf86a0ae93db27604"
+    },
+    {
+      "name": "timer_type",
+      "rva": 11436368,
+      "size": 6,
+      "sha256": "4becd086c8729211c845a4bf1497d75a688c76b952462edfe7f7b5a56f63b399"
+    },
+    {
+      "name": "component_skip_inactive",
+      "rva": 12174720,
+      "size": 128,
+      "sha256": "851a890f2696f5b6a269cc755f4d46ffe42cf16f490ec3797ac6b45eb668e480"
+    },
+    {
+      "name": "component_next",
+      "rva": 12174960,
+      "size": 128,
+      "sha256": "1e3c34dae773f51fee989a15507ebbbe03adff152a4a12ddabf2ece8884b6c66"
+    },
+    {
+      "name": "behavior_catalog_link",
+      "rva": 33675200,
+      "size": 64,
+      "sha256": "cab3cfbbc3c5160b8ef968df2ef36059aa7ecb1c88f0a23b2dc7201e43e090eb"
+    },
+    {
+      "name": "behavior_catalog_index",
+      "rva": 6170416,
+      "size": 96,
+      "sha256": "ec2ec58d24a8bf8dc0ba94ecb4ef7f3893d38a724ea44a75ca8fc7661c81c61c"
+    },
+    {
+      "name": "vm_indexed_globals",
+      "rva": 33596928,
+      "size": 928,
+      "sha256": "8668d715c22e0c7705fc6dbf3368abaef7eab60e58d7aae4f0626cc28fb4c692"
+    },
+    {
+      "name": "unit_resolver",
+      "rva": 6601424,
+      "size": 160,
+      "sha256": "9511596e89dfeabe32d3e0f8b0c28a327df7b925b50162d80622eaf44f9e09dd"
+    },
+    {
+      "name": "unit_alive",
+      "rva": 33896144,
+      "size": 48,
+      "sha256": "78309b92ae1bd575298616461a250d14c75761d6aaab12a671a406b12c80a28b"
+    },
+    {
+      "name": "unit_owner",
+      "rva": 33882944,
+      "size": 48,
+      "sha256": "093c4e85e847e6f1bf9ee8db387db8067bdc42c6f5c93ccb5c68c91943496464"
+    },
+    {
+      "name": "unit_property_current",
+      "rva": 33884192,
+      "size": 1024,
+      "sha256": "9fd5853fc065eac45bbfc28bc4db7742b5abd9c1e2309aa61dab070ed0703eb8"
+    },
+    {
+      "name": "behavior_duration",
+      "rva": 33858576,
+      "size": 240,
+      "sha256": "efc354b2018d1a51abf7d5ffeb70ff0033cf2cbdc3ecf3b2045e3f752ac83a50"
+    },
+    {
+      "name": "component_lookup",
+      "rva": 10847168,
+      "size": 256,
+      "sha256": "f6c044f0c2080e61c716716dd63960af8444853c73d47dcba9b8e1169dfef6d5"
+    },
+    {
+      "name": "behavior_remaining",
+      "rva": 12670752,
+      "size": 384,
+      "sha256": "ad6c325868bb04e07023af00cd50c812e56ca50840f0a45063b0ec422f9f9b98"
+    },
+    {
+      "name": "fixed_to_int",
+      "rva": 33956960,
+      "size": 6,
+      "sha256": "25b3c2c16edcb9edd6ff83258133367f67b802291a4399df3c10d424cc375490"
+    },
+    {
+      "name": "unit_type",
+      "rva": 33890640,
+      "size": 137,
+      "sha256": "8bfef42a15ad574f90bfce56fe69ab8a5e7b1ffe10ef90752406366ec6669021"
+    },
+    {
+      "name": "unit_catalog_link",
+      "rva": 33661792,
+      "size": 51,
+      "sha256": "e61c424b303e864a776d94e82d9d16af7f1021a2b7e1da63fb92112d5f3215e7"
+    },
+    {
+      "name": "unit_catalog_lookup",
+      "rva": 6167408,
+      "size": 60,
+      "sha256": "747e1879e3de810650ceac8bbb73e86494c3ca5822425694e8a5f5603d97a840"
+    },
+    {
+      "name": "typed_unit_group_unit",
+      "rva": 34384880,
+      "size": 255,
+      "sha256": "edf390355fb66e38c3b0a84f8b93dbe650dcb48fb5b6eb4ed14b16b01613c8cf"
+    },
+    {
+      "name": "typed_unit_group_count",
+      "rva": 34374000,
+      "size": 256,
+      "sha256": "c9855611c6f563e70422e67cb3670592662a767fbe1486327a24dea0dc5f459a"
+    }
+  ],
+  "functions": [
+    {
+      "index": 708,
+      "name": "libGame_gf_CapturePointChangeOwnership",
+      "length": 53,
+      "sha256": "f12fd361fc18aa7e1041473e8428d3e63382d13dde73e310a78b63603ed0ec87"
+    },
+    {
+      "index": 710,
+      "name": "libGame_gf_CapturePointCreate",
+      "length": 378,
+      "sha256": "30e3d1ce740dfafe47d91c27c8eea891505488dacee13ffda1364e194838e8cc"
+    },
+    {
+      "index": 711,
+      "name": "libGame_gf_CapturePointEnable",
+      "length": 168,
+      "sha256": "31e4c1f1d8ee5adaae8c880ecf971b619285b2bb70eb09d81984a4dd17eeea76"
+    },
+    {
+      "index": 713,
+      "name": "auto_libGame_gf_CapturePointDisable_TriggerFunc",
+      "length": 93,
+      "sha256": "226cce649079d7d0159f0b881186fdb4bdcdb52dd7132ff8c467f8addeb2f61f"
+    },
+    {
+      "index": 718,
+      "name": "libGame_gf_CapturePointFullyCaptured",
+      "length": 56,
+      "sha256": "aa9f3f5b68c813dca2d8e3cde314adad21a4aa5c460316fca4fc9d66a7ec38c0"
+    },
+    {
+      "index": 719,
+      "name": "libGame_gf_CapturePointCounter",
+      "length": 21,
+      "sha256": "689ae887136d7262cf5769fce20fe1c287477441f6a37e1fae54138ae60e33e1"
+    },
+    {
+      "index": 720,
+      "name": "libGame_gf_CapturePointCounterMax",
+      "length": 21,
+      "sha256": "27b7316613fbb875ee32aba41cf3a5a6f37050164b891c94bd2b3c59a8157231"
+    },
+    {
+      "index": 721,
+      "name": "libGame_gf_CapturePointContested",
+      "length": 27,
+      "sha256": "6eb80c6ff2a818366cab53fe472c1c5ab0a6c30a2d65414cbd4b9d52a5cee418"
+    },
+    {
+      "index": 1239,
+      "name": "libGame_gf_ComputerPlayerInTeam",
+      "length": 27,
+      "sha256": "3276738bc48c0e8bd2101122192d311edee0c49cdaeec0a5491abd8fa19b0d29"
+    },
+    {
+      "index": 1347,
+      "name": "libGame_gt_CapturePointLogic_Func",
+      "length": 3890,
+      "sha256": "d60920812830075b538a4d211808d2729e22149aca660471ed398b64155218da"
+    },
+    {
+      "index": 1795,
+      "name": "auto_libMapM_gf_MMGardensDragonInitTowers_TriggerFunc",
+      "length": 1053,
+      "sha256": "665a7690fee71b795e69c0f0103dea118f4f2492da820bd48e902b48500414eb"
+    },
+    {
+      "index": 1797,
+      "name": "auto_libMapM_gf_MMGardensDragonChangeDragonballTowerOwnership_TriggerFunc",
+      "length": 259,
+      "sha256": "12b8e8d92b96ceb725a37dbdfe4d6fde5a0344e25940da60fb8125fd80ea5081"
+    },
+    {
+      "index": 1799,
+      "name": "auto_libMapM_gf_MMGardensDragonDeactivateStatue_TriggerFunc",
+      "length": 345,
+      "sha256": "431c9cf58ab25dfd57f2f217ee115a10fd8df654bd16c3a8dba07c9c2ca8b9c3"
+    },
+    {
+      "index": 1801,
+      "name": "auto_libMapM_gf_MMGardensDragonActivateStatueForTeam_TriggerFunc",
+      "length": 526,
+      "sha256": "5ee73ea6bebccb147e8db4217b956d86ed190d4f16d0e4b472ca2ada0c457508"
+    },
+    {
+      "index": 1802,
+      "name": "libMapM_gf_MMGardensDragonDragonDuration",
+      "length": 35,
+      "sha256": "efbb8f757319ef05416d7531d12530cf560cf76253c47e12b8f7448028e051b3"
+    },
+    {
+      "index": 1941,
+      "name": "libMapM_gt_MMGardensDragonInit_Func",
+      "length": 127,
+      "sha256": "18e24c72652bab06f279bc2d6e666080d7427080a343c8b4fb655ec4856a2b7c"
+    },
+    {
+      "index": 1943,
+      "name": "libMapM_gt_MMGardensDragonGateOpen_Func",
+      "length": 40,
+      "sha256": "9bbd93ee66053eefeb3ffacc850391bbeff9c5e7dd3fb81bf62a747dd17af9da"
+    },
+    {
+      "index": 1945,
+      "name": "libMapM_gt_MMGardensDragonWarningTimerStart_Func",
+      "length": 80,
+      "sha256": "b53f3b890903d7044cf96ecb976429fd63662348b9c884e952e351ed9cefa62d"
+    },
+    {
+      "index": 1947,
+      "name": "libMapM_gt_MMGardensDragonTowerGoalActivationTimerExpires_Func",
+      "length": 67,
+      "sha256": "6a35a8e85d79beb2002eaefb1e37ba535ea93797e11ee97dc010449a06cc0509"
+    },
+    {
+      "index": 1949,
+      "name": "libMapM_gt_MMGardensDragonWarningTimerExpires_Func",
+      "length": 443,
+      "sha256": "fd25adb5c71810c50ecb08e850df2506b36c6270fa89d97a921f4cd3ead6f5b1"
+    },
+    {
+      "index": 1951,
+      "name": "libMapM_gt_MMGardensDragonDragonEventStarts_Func",
+      "length": 47,
+      "sha256": "d3bee924fc78803a3f78812528f99ec3f91b888b338d267b5f61896425322c71"
+    },
+    {
+      "index": 1953,
+      "name": "libMapM_gt_MMGardensDragonDragonEventEnds_Func",
+      "length": 40,
+      "sha256": "a09d7a60d15109846fc89b5ea8b4aef0fc408641f461093402e7d971b3bf5e64"
+    },
+    {
+      "index": 1955,
+      "name": "libMapM_gt_MMGardensDragonTurnOnDragonTowersFirstTime_Func",
+      "length": 248,
+      "sha256": "fc22a70e3de3c84c660d671609e2a4677bcf2d3b71fe352cdd1508c7be5af36e"
+    },
+    {
+      "index": 1957,
+      "name": "libMapM_gt_MMGardensDragonTurnOnDragonTowersAgain_Func",
+      "length": 357,
+      "sha256": "67b937b5e1aab494ad24e86f6af6240fce283f4aa64f930bc64e9f2cc4d7f9d0"
+    },
+    {
+      "index": 1959,
+      "name": "libMapM_gt_MMGardensDragonDragonTowerChangeOwnershipEventFires_Func",
+      "length": 424,
+      "sha256": "21037eda1523da3549d760a6619563e0d76a0a1bd59be60f49da873670bb19b9"
+    },
+    {
+      "index": 1961,
+      "name": "libMapM_gt_MMGardensDragonDragonTowerCheckObeliskStatus_Func",
+      "length": 154,
+      "sha256": "c2d2222e1e5313045c1ccc9dc056a6f4445341d3ae80ba2da1f722cadf799510"
+    },
+    {
+      "index": 1963,
+      "name": "libMapM_gt_MMGardensDragonTransformChannelStart_Func",
+      "length": 35,
+      "sha256": "3e86f2ffb359ad4fa1c41e08799af2fb1fd69be81491ccb69ef2c35c9e190aa6"
+    },
+    {
+      "index": 1965,
+      "name": "libMapM_gt_MMGardensDragonTransformChannelFinish_Func",
+      "length": 939,
+      "sha256": "9bc07f95ffd08c4375c610135c806db60f4dbebfd05f19040d0a3d00931a05e0"
+    },
+    {
+      "index": 1969,
+      "name": "libMapM_gt_MMGardensDragonDragonKnightDiesorExpires_Func",
+      "length": 183,
+      "sha256": "15e336aabdb5eb1fd3668f706d54130ca52d439444efefff105cc1c3abfc5069"
+    },
+    {
+      "index": 1971,
+      "name": "libMapM_gt_MMGardensDragonObjectiveUIHandler_Func",
+      "length": 416,
+      "sha256": "00628e744e6f2364d24a609ac14590cc7f68d65d90fbcb26c742e9760b521dc3"
+    }
+  ],
+  "evidence": "Diagnostic only. Dragon active VM in preserved non-atomic live-a dump, installed MapMechanicsLib/GameLib and effect definitions. No live Dragon transition recipe or coach release.",
+  "source_scripts": [
+    {
+      "logical_path": "mods/heroesdata.stormmod/base.stormdata/triggerlibs/mapmechanicslib.galaxy",
+      "sha256": "d49dbde21198963f953efa16c8d8bb6b035d2d8bd8f0d41b5989fecbb4e35b1f"
+    },
+    {
+      "logical_path": "mods/heroesdata.stormmod/base.stormdata/triggerlibs/mapmechanicslib_h.galaxy",
+      "sha256": "cef6f04b1723e88bfb33b8a04584798276fea30f9920d1bd21055646e2bb52da"
+    },
+    {
+      "logical_path": "mods/heroesmapmods/battlegroundmapmods/dragonshire.stormmod/base.stormdata/gamedata/abildata.xml",
+      "sha256": "d33949827b03a5bac7729025ffe5e67f43ae0621e74abe5486de6b8d5c1a07ab"
+    },
+    {
+      "logical_path": "mods/heroesdata.stormmod/base.stormdata/gamedata/abildata.xml",
+      "sha256": "d46f3eb576f9672c4c7722e95d136b5327ea4745941299a54507f1a2175dc049"
+    },
+    {
+      "logical_path": "mods/heroesmapmods/battlegroundmapmods/dragonshire.stormmod/base.stormdata/gamedata/behaviordata.xml",
+      "sha256": "e7ced27aa8ee70dd867b152120380b1836d7e62b5c36c578879c4cb7d702b079"
+    },
+    {
+      "logical_path": "mods/heroesdata.stormmod/base.stormdata/gamedata/behaviordata.xml",
+      "sha256": "ad326522849b387aef954d3f1f80165d18d1fa0a6d212d29f07ec5b06daf6884"
+    },
+    {
+      "logical_path": "mods/heroesmapmods/battlegroundmapmods/dragonshire.stormmod/base.stormdata/gamedata/effectdata.xml",
+      "sha256": "38e746c486da8a22ced070f9a6e517a9f28de63c78179b327c891c30446cd446"
+    },
+    {
+      "logical_path": "mods/heroesdata.stormmod/base.stormdata/gamedata/effectdata.xml",
+      "sha256": "72eadb172d398a95a37929e62b65247be504b39dbd899bb05a2f47a6991e2ea0"
+    },
+    {
+      "logical_path": "mods/heroesmapmods/battlegroundmapmods/dragonshire.stormmod/base.stormdata/gamedata/unitdata.xml",
+      "sha256": "871c23230d951d1fd7bf61e57b51cf0d3e0e275c85a00a3bcd794223d9cf4217"
+    },
+    {
+      "logical_path": "mods/heroesdata.stormmod/base.stormdata/gamedata/unitdata.xml",
+      "sha256": "e313828c13bf3b053abd3d58e5d78da72b111202977f0873617eefbfadc61bd5"
+    }
+  ],
+  "map": "DragonShire"
+}
