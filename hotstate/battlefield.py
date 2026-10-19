@@ -1,0 +1,322 @@
+"""Private RO camps/structures diagnostic, build98348 Volskaya ONLY.
+
+Not connected to the coach: catalogue/transition/visibility recipes are pending.
+Raw camp activity and structure vitals must never cross a public boundary merely
+because a minimap icon is visible. Missing/recycled slots are unknown, not dead.
+"""
+from __future__ import annotations
+
+import copy
+import hashlib
+import json
+import re
+import struct
+import time
+from pathlib import Path
+
+from .native import NativeReader, NativeUnavailable
+from .objectives import VolskayaObjective, GLOBAL_DATA
+from .positions import AlliedPositions, _RecordedMemory
+
+PROFILE = json.loads((Path(__file__).parent / 'profiles/98348-battlefield.json').read_text(encoding='utf-8'))
+VALIDATED_MAPS = ()
+
+
+def structure_kind(name):
+    if name == 'KingsCore':
+        return 'core'
+    if name == 'TownCannonTowerDead':
+        return 'tower_ruins'
+    if name in ('TownTownHallL2', 'TownTownHallL3'):
+        return 'fort' if name.endswith('L2') else 'keep'
+    if name in ('TownMoonwellL2', 'TownMoonwellL3'):
+        return 'healing_fountain'
+    if name in ('TownCannonTowerL2', 'TownCannonTowerL3', 'TownCannonTowerL3Standalone'):
+        return 'tower'
+    if isinstance(name, str) and re.fullmatch(r'TownWallRadial(?:[1-9]|1[0-9]|2[01])L[23]', name):
+        return 'wall'
+    if name in ('TownGateL215BLUR', 'TownGateL215BRUL',
+                'TownGateL3BLURBRVisionBlocked', 'TownGateL3BLURTLVisionBlocked',
+                'TownGateL3BRULBLVisionBlocked', 'TownGateL3BRULTRVisionBlocked',
+                'TownGateL3VerticalLeftVisionBlocked'):
+        return 'gate'
+    return None
+
+
+class VolskayaBattlefield:
+    def __init__(self, native, *, profile=None, position_profile=None, match_profile=None):
+        self.native = native
+        self.profile = PROFILE if profile is None else profile
+        self.position_profile = position_profile
+        self.match_profile = match_profile
+
+    _pointer = staticmethod(VolskayaObjective._pointer)
+
+    def _verify(self, n):
+        p = self.profile
+        if (p.get('build') != 98348 or n.profile.get('build') != 98348
+                or len(p.get('functions', ())) != 12 or not p.get('signatures')
+                or n.value(n.base + 0x35C8CD9, 'B') != 1):
+            raise NativeUnavailable('profil_champ_bataille_invalide')
+        pe = n.base + n.global_u32(0x3C)
+        if n.value(pe+8) != p['pe_timestamp'] or n.value(pe+80) != p['image_size']:
+            raise NativeUnavailable('build_champ_bataille_invalide')
+        for s in p['signatures']:
+            if hashlib.sha256(n.read(n.base+s['rva'], s['size'])).hexdigest() != s['sha256']:
+                raise NativeUnavailable('signature_champ_bataille_invalide')
+        count, size = n.global_u32(0x2FA70F0), n.global_u32(0x3B8C904)
+        table = self._pointer(n.value(n.base+0x3B8C5C8, 'Q'))
+        if (not 6235 < count <= 65536 or not 4 <= size <= 0x180000
+                or n.value(n.base+0x2FA7100, 'Q') != table):
+            raise NativeUnavailable('racine_vm_champ_bataille_invalide')
+        for f in p['functions']:
+            if not 0 <= f['index'] < count:
+                raise NativeUnavailable('index_vm_champ_bataille_invalide')
+            record = self._pointer(n.value(table+f['index']*8, 'Q'))
+            off = n.value(record+8)
+            if (n.value(record+0x50) != f['index'] or not 4 <= off
+                    or not 0 < f['length'] <= 8192 or off+f['length'] > size):
+                raise NativeUnavailable('borne_vm_champ_bataille_invalide')
+            ln, flags = struct.unpack('<II', n.read(record+0x58, 8))
+            if ln >> 2 != len(f['name']):
+                raise NativeUnavailable('nom_vm_champ_bataille_invalide')
+            string = self._pointer(n.value(record+0x60, 'Q')) if flags & 2 else record+0x60
+            if n.read(string, ln>>2) != f['name'].encode('ascii'):
+                raise NativeUnavailable('nom_vm_champ_bataille_invalide')
+            if hashlib.sha256(n.read(n.base+0x3B8C920+off, f['length'])).hexdigest() != f['sha256']:
+                raise NativeUnavailable('code_vm_champ_bataille_invalide')
+
+    def _resolve(self, n, tag):
+        if type(tag) is not int or not 0 <= tag <= 0xFFFFFFFF or (tag+1) & 0xFFFFFFFE == 0:
+            return None
+        index = tag >> 22
+        limit = n.global_u32(0x34F02C4)
+        if not 1 <= limit <= 65536 or index >= limit:
+            return None
+        page = (tag >> 26)*8
+        low = n.global_u32(0x34F02C8+page) ^ n.global_u32(0x32C38B4)
+        high = (n.global_u32(0x34F02CC+page)+n.global_u32(0x32C55D0)) & 0xFFFFFFFF
+        unit = self._pointer(((high << 32) | low)+(index & 15)*0x2F0)
+        # No owner, type, position or vitals read on a recycled reference.
+        return unit if n.value(unit+0x10) == tag else None
+
+    def _unit_type(self, n, unit):
+        flags = n.value(unit+0x39, 'B')
+        packed = n.value(unit+(0x20 if flags & 0x20 else 0x18), 'Q')
+        catalog = self._pointer(packed & ~31)
+        index = n.value(catalog+2, 'H')
+        root = self._pointer(n.value(n.base+0x3388B18, 'Q'))
+        database = self._pointer(n.value(root+0x2A0, 'Q'))
+        count = n.value(database+0x90)
+        if not 0 < count <= 65536 or index >= count:
+            raise NativeUnavailable('borne_catalogue_unite_invalide')
+        table = self._pointer(n.value(database+0xA0, 'Q'))
+        descriptor = self._pointer(n.value(table+index*8, 'Q'))
+        if n.value(descriptor+0x40, 'H') != index:
+            raise NativeUnavailable('index_catalogue_unite_invalide')
+        string = self._pointer(n.value(descriptor+0x30, 'Q'))
+        header = string+0x18
+        length, string_flags = struct.unpack('<II', n.read(header, 8))
+        length >>= 2
+        if not 0 < length <= 128:
+            raise NativeUnavailable('longueur_type_unite_invalide')
+        buffer = self._pointer(n.value(header+8, 'Q'), alignment=1) if string_flags & 2 else header+8
+        try:
+            name = n.read(buffer, length).decode('ascii')
+        except UnicodeError:
+            raise NativeUnavailable('type_unite_non_ascii') from None
+        if not re.fullmatch('[A-Za-z0-9_]+', name):
+            raise NativeUnavailable('type_unite_invalide')
+        return name
+
+    def _team(self, n, owner):
+        if owner in (11, 12):
+            return owner-11
+        if owner == 15:
+            return 'neutral'
+        if 1 <= owner <= 10:
+            player = self._pointer(n.player_pointer(owner))
+            team, kind = struct.unpack('<BB', n.read(player+0x1C, 2))
+            if team in (0, 1) and kind in (1, 2):
+                return team
+        raise NativeUnavailable('proprietaire_champ_bataille_invalide')
+
+    @staticmethod
+    def _life(name, flags):
+        if name is None or flags is None:
+            return 'unknown'
+        if name == 'TownCannonTowerDead' or flags & 6:
+            return 'destroyed'
+        return 'alive'
+
+    def _camps(self, n):
+        g = n.base+GLOBAL_DATA
+        if n.value(g+0xE2130) != 5:
+            raise NativeUnavailable('nombre_camps_volskaya_invalide')
+        helper = VolskayaObjective(n)
+        registry = helper._timer_registry(n)
+        camps, seen_tags, seen_timers = [], set(), set()
+        for index, expected_type in enumerate((5, 5, 6, 6, 10), 1):
+            a = g+index*780
+            kind, defender = struct.unpack('<ii', n.read(a+0xDF070, 8))
+            merc = n.value(a+0xDF0BA, 'i')
+            enabled, hibernation = struct.unpack('<BB', n.read(a+0xDF33B, 2))
+            spawned = n.value(a+0xDF352, 'B')
+            state = n.value(a+0xDF353, 'i')
+            capture = n.value(a+0xDF367, 'B')
+            if (kind != 0 or defender != expected_type or merc != expected_type
+                    or any(v not in (0, 1) for v in (enabled, hibernation, spawned, capture))
+                    or state not in range(6)):
+                raise NativeUnavailable('etat_camp_volskaya_invalide')
+            tag = n.value(a+0xDF363)
+            refs = (n.value(a+0xDF33E), n.value(a+0xDF342))
+            if tag in seen_tags or refs[0] == refs[1] or any(ref in seen_timers for ref in refs):
+                raise NativeUnavailable('references_camps_ambigues')
+            seen_tags.add(tag)
+            seen_timers.update(refs)
+            unit = self._resolve(n, tag)
+            if unit is None or self._unit_type(n, unit) != 'TownMercCampCaptureBeacon':
+                raise NativeUnavailable('reference_balise_camp_invalide')
+            owner = n.value(unit+0x44, 'B')
+            n.unit_pointer(tag, owner)
+            last_player = n.value(a+0xDF337, 'i')
+            camps.append({'index': index, 'defender_type': defender, 'merc_type': merc,
+                'beacon_tag': tag, 'beacon_generation': tag & 0x3FFFFF,
+                'beacon_owner': owner, 'last_capture_team': self._team(n, last_player),
+                'enabled': bool(enabled), 'spawned': bool(spawned), 'state_code': state,
+                'capture_enabled': bool(capture), 'personal_hibernation': bool(hibernation),
+                'birth': helper._timer(n, index*780+0xDF33E, registry),
+                'respawn': helper._timer(n, index*780+0xDF342, registry)})
+        return camps
+
+    def _towns(self, n):
+        g = n.base+GLOBAL_DATA
+        if n.value(g+0xD4F8D) != 12:
+            raise NativeUnavailable('nombre_villes_volskaya_invalide')
+        result, seen = [], set()
+        for town in range(1, 13):
+            a = g+town*1065
+            lane, owner = struct.unpack('<ii', n.read(a+0xD4F91, 8))
+            count = n.value(a+0xD4FA2)
+            if lane not in (1, 2, 3) or owner not in (11, 12) or not 1 <= count <= 63:
+                raise NativeUnavailable('ville_volskaya_invalide')
+            for index in range(1, count+1):
+                kind = n.value(a+0xD4FA6+index*4)
+                tag = n.value(a+0xD50A6+index*4)
+                if kind not in range(1, 7) or tag in seen:
+                    raise NativeUnavailable('registre_structure_ambigu')
+                seen.add(tag)
+                unit = self._resolve(n, tag)
+                row = dict(town=town, index=index, lane=lane, town_team=owner-11,
+                           preset=kind, tag=tag, generation=tag & 0x3FFFFF)
+                if unit is None:
+                    row.update(state='unknown', reason='reference_absente_ou_recyclee')
+                else:
+                    current_owner = n.value(unit+0x44, 'B')
+                    n.unit_pointer(tag, current_owner)
+                    name = self._unit_type(n, unit)
+                    flags = n.value(unit+0x39, 'B')
+                    row.update(unit_type=name, kind=structure_kind(name),
+                        team=self._team(n, current_owner), state=self._life(name, flags))
+                    if row['kind'] is None:
+                        row.update(state='unknown', reason='type_structure_non_couvert')
+                result.append(row)
+        return result
+
+    def _census(self, n):
+        """Bounded ACTIVE unit table; not a heap/name occurrence scan.
+
+        Raw diagnostics only. Non-structure names, owners, XY and vitals are
+        not returned. A table slot is checked against its full current tag.
+        """
+        limit = n.global_u32(0x34F02C4)
+        if not 1 <= limit <= 1024:
+            raise NativeUnavailable('borne_recensement_unites_invalide')
+        rows, unknown, names = [], [], {}
+        for page_index in range((limit+15)//16):
+            off = page_index*8
+            low = n.global_u32(0x34F02C8+off)^n.global_u32(0x32C38B4)
+            high = (n.global_u32(0x34F02CC+off)+n.global_u32(0x32C55D0)) & 0xFFFFFFFF
+            page = (high << 32) | low
+            if not page:
+                continue
+            self._pointer(page)
+            for index in range(page_index*16, min(limit, (page_index+1)*16)):
+                unit = page+(index & 15)*0x2F0
+                # One fixed header, excluding XY (+0x60), vitals (+0x220)
+                # and every hero component. Page roots are rechecked later.
+                header = n.read(unit+0x10, 0x38)
+                tag = struct.unpack_from('<I', header)[0]
+                if (tag+1) & 0xFFFFFFFE == 0 or tag >> 22 != index:
+                    continue
+                flags = header[0x29]
+                packed = struct.unpack_from('<Q', header, 0x10 if flags & 0x20 else 8)[0]
+                catalog = self._pointer(packed & ~31)
+                if catalog not in names:
+                    try:
+                        names[catalog] = self._unit_type(n, unit)
+                    except NativeUnavailable:
+                        unknown.append(index)
+                        continue
+                name = names[catalog]
+                kind = structure_kind(name)
+                if kind is None:
+                    continue
+                owner = header[0x34]
+                rows.append(dict(tag=tag, generation=tag & 0x3FFFFF,
+                    unit_type=name, kind=kind, team=self._team(n, owner),
+                    state=self._life(name, flags)))
+        return {'structures': rows, 'unresolved_slots': unknown,
+                'unit_limit': limit, 'known_structure_count': len(rows)}
+
+    def inspect_saved(self):
+        self._verify(self.native)
+        return {'status': 'offline_non_atomic', 'camps': self._camps(self.native),
+                'structures': self._towns(self.native), 'catalogue_complete': False,
+                'census': self._census(self.native)}
+
+    def diagnose(self, map_id, *, context=None, hero_ids=None):
+        if map_id != 'Volskaya' or getattr(self.native.memory, 'recorded_non_atomic', False):
+            raise NativeUnavailable('carte_ou_capture_champ_bataille_non_prise_en_charge')
+        expected = copy.deepcopy(context)
+        clock = getattr(self.native.memory, 'positions_clock', time.monotonic)
+        start = clock()
+        memory = _RecordedMemory(self.native.memory)
+        n = NativeReader(memory, profile=self.native.profile)
+        before = self._clock(n, memory)
+        self._verify(n)
+        identity = VolskayaObjective(n, position_profile=self.position_profile,
+            match_profile=self.match_profile)._perspective(n, map_id, hero_ids)
+        if expected is not None:
+            cm, match, local, team, _ = AlliedPositions._context(expected)
+            if (cm != map_id or identity['native_match_id'] != match
+                    or identity['local_id'] != local or identity['team'] != team):
+                raise NativeUnavailable('perspective_champ_bataille_incoherente')
+        result = {'camps': self._camps(n), 'structures': self._towns(n), 'census': self._census(n),
+                  'catalogue_complete': False}
+        after = self._clock(n, memory)
+        for address, data in memory.read_set:
+            if self.native.read(address, len(data)) != data:
+                raise NativeUnavailable('lecture_champ_bataille_dechiree')
+        window = clock()-start
+        if not 0 <= after-before <= 0.125 or not 0 <= window <= 0.125 or context != expected:
+            raise NativeUnavailable('lecture_champ_bataille_perimee')
+        return dict(result, **identity, status='diagnostic_unreleased', map_id=map_id,
+                    mission_t_s=after, read_window_s=window)
+
+    @staticmethod
+    def _clock(n, memory):
+        # The tick counter is a bounded interval, NOT a stable business field.
+        # Retain all four reads of its encoded root in the equality read-set;
+        # omit only the final four-byte counter from that equality comparison.
+        # TraceMemory still records it for exact ordered playback.
+        start = len(memory.read_set)
+        value = n.read_clock()
+        if len(memory.read_set) != start+5 or len(memory.read_set[-1][1]) != 4:
+            raise NativeUnavailable('trace_horloge_champ_bataille_invalide')
+        memory.read_set.pop()
+        return value
+
+    def read(self, context, **options):
+        # No runtime monkeypatch or valid-looking fixture opens this producer.
+        raise NativeUnavailable('champ_bataille_non_valide_en_recette')

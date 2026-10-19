@@ -1,0 +1,244 @@
+{
+  "build": 98348,
+  "pe_timestamp": 1791173268,
+  "image_size": 73064448,
+  "signatures": [
+    {
+      "name": "active_table_publication",
+      "rva": 33473247,
+      "size": 120,
+      "sha256": "442dc06ead438133fe0b88f327413aed8142c9dc92e47ee346f2d35b934d0643"
+    },
+    {
+      "name": "function_count",
+      "rva": 33477488,
+      "size": 7,
+      "sha256": "f75c534e24995b940a934ed3f3884719fd69c6453d6c8e9c45a4309749fcc9ca"
+    },
+    {
+      "name": "active_call",
+      "rva": 33525936,
+      "size": 256,
+      "sha256": "01b4fba6ca7eeab6ead9ae1e45d38d0dab67a552193ebcc502208e35b67a58a9"
+    },
+    {
+      "name": "vm_global_loads",
+      "rva": 33526944,
+      "size": 1024,
+      "sha256": "e5e10662a1f66445b7cbad2d3fae88dde87f2d5efc73c8a7ba2e817180fe819c"
+    },
+    {
+      "name": "vm_dispatch",
+      "rva": 33604116,
+      "size": 32,
+      "sha256": "ad8746195c2e9e234ff97afd985fef9393782c3954b7e7ff9ca9ccb10337849d"
+    },
+    {
+      "name": "timer_elapsed",
+      "rva": 12754352,
+      "size": 64,
+      "sha256": "b9b4cee553da37d49c20c35a9c9b6799531de1a54b9db962aa0a5996c61b4ca5"
+    },
+    {
+      "name": "timer_pause",
+      "rva": 12754848,
+      "size": 64,
+      "sha256": "8677485a3b89ab6b5484554dad05dbedad757a378494675c3db1f97d25bdecd8"
+    },
+    {
+      "name": "timer_start",
+      "rva": 11462960,
+      "size": 160,
+      "sha256": "a8fd20127ed1f7f8e4b6bd37c18a662bca66081f45a7c78551bdbb11d32a4570"
+    },
+    {
+      "name": "timer_remaining",
+      "rva": 11461920,
+      "size": 32,
+      "sha256": "48f446eb80b743032e5c3c66627d1fbab5564811968de6b802dc48d4d20c548b"
+    },
+    {
+      "name": "timer_update",
+      "rva": 11462064,
+      "size": 208,
+      "sha256": "6cd560d5a17b2a49ea23b08d09d59c5e3e1b7754dea465cdf86a0ae93db27604"
+    },
+    {
+      "name": "timer_type",
+      "rva": 11436368,
+      "size": 6,
+      "sha256": "4becd086c8729211c845a4bf1497d75a688c76b952462edfe7f7b5a56f63b399"
+    },
+    {
+      "name": "component_skip_inactive",
+      "rva": 12174720,
+      "size": 128,
+      "sha256": "851a890f2696f5b6a269cc755f4d46ffe42cf16f490ec3797ac6b45eb668e480"
+    },
+    {
+      "name": "component_next",
+      "rva": 12174960,
+      "size": 128,
+      "sha256": "1e3c34dae773f51fee989a15507ebbbe03adff152a4a12ddabf2ece8884b6c66"
+    },
+    {
+      "name": "behavior_catalog_link",
+      "rva": 33675200,
+      "size": 64,
+      "sha256": "cab3cfbbc3c5160b8ef968df2ef36059aa7ecb1c88f0a23b2dc7201e43e090eb"
+    },
+    {
+      "name": "behavior_catalog_index",
+      "rva": 6170416,
+      "size": 96,
+      "sha256": "ec2ec58d24a8bf8dc0ba94ecb4ef7f3893d38a724ea44a75ca8fc7661c81c61c"
+    },
+    {
+      "name": "vm_indexed_globals",
+      "rva": 33596928,
+      "size": 928,
+      "sha256": "8668d715c22e0c7705fc6dbf3368abaef7eab60e58d7aae4f0626cc28fb4c692"
+    },
+    {
+      "name": "unit_resolver",
+      "rva": 6601424,
+      "size": 160,
+      "sha256": "9511596e89dfeabe32d3e0f8b0c28a327df7b925b50162d80622eaf44f9e09dd"
+    },
+    {
+      "name": "unit_alive",
+      "rva": 33896144,
+      "size": 48,
+      "sha256": "78309b92ae1bd575298616461a250d14c75761d6aaab12a671a406b12c80a28b"
+    },
+    {
+      "name": "unit_owner",
+      "rva": 33882944,
+      "size": 48,
+      "sha256": "093c4e85e847e6f1bf9ee8db387db8067bdc42c6f5c93ccb5c68c91943496464"
+    },
+    {
+      "name": "unit_property_current",
+      "rva": 33884192,
+      "size": 1024,
+      "sha256": "9fd5853fc065eac45bbfc28bc4db7742b5abd9c1e2309aa61dab070ed0703eb8"
+    },
+    {
+      "name": "behavior_duration",
+      "rva": 33858576,
+      "size": 240,
+      "sha256": "efc354b2018d1a51abf7d5ffeb70ff0033cf2cbdc3ecf3b2045e3f752ac83a50"
+    },
+    {
+      "name": "component_lookup",
+      "rva": 10847168,
+      "size": 256,
+      "sha256": "f6c044f0c2080e61c716716dd63960af8444853c73d47dcba9b8e1169dfef6d5"
+    },
+    {
+      "name": "behavior_remaining",
+      "rva": 12670752,
+      "size": 384,
+      "sha256": "ad6c325868bb04e07023af00cd50c812e56ca50840f0a45063b0ec422f9f9b98"
+    },
+    {
+      "name": "fixed_to_int",
+      "rva": 33956960,
+      "size": 6,
+      "sha256": "25b3c2c16edcb9edd6ff83258133367f67b802291a4399df3c10d424cc375490"
+    },
+    {
+      "name": "unit_type",
+      "rva": 33890640,
+      "size": 137,
+      "sha256": "8bfef42a15ad574f90bfce56fe69ab8a5e7b1ffe10ef90752406366ec6669021"
+    },
+    {
+      "name": "unit_catalog_link",
+      "rva": 33661792,
+      "size": 51,
+      "sha256": "e61c424b303e864a776d94e82d9d16af7f1021a2b7e1da63fb92112d5f3215e7"
+    },
+    {
+      "name": "unit_catalog_lookup",
+      "rva": 6167408,
+      "size": 60,
+      "sha256": "747e1879e3de810650ceac8bbb73e86494c3ca5822425694e8a5f5603d97a840"
+    }
+  ],
+  "functions": [
+    {
+      "index": 1291,
+      "name": "libGame_gf_TownAddStructureToTownArray",
+      "length": 304,
+      "sha256": "751af563d864e47f35dd3c96f8540e470566098d90ff9847f3f7a4cca6afa2bf"
+    },
+    {
+      "index": 1553,
+      "name": "libGame_gt_TownStructureDies_Func",
+      "length": 875,
+      "sha256": "0a51ee9776db7022d424939ad7dd12b80ff6a9c7550e135ad888b35b4f7ea8f1"
+    },
+    {
+      "index": 1629,
+      "name": "libGame_gt_InitializeTownSystem_Func",
+      "length": 374,
+      "sha256": "8b8a982e5e5aa286ae627ae691c29d5074b9c9b5f0ebc797afc427dac870d619"
+    },
+    {
+      "index": 1695,
+      "name": "libMapM_gf_JungleInitializeCreepCamp",
+      "length": 680,
+      "sha256": "b48885dadd90afc8bb16a4fd1c6965eea3376ead4e87bf9ab3b5d4c4c2525e07"
+    },
+    {
+      "index": 1704,
+      "name": "libMapM_gf_JungleUpdateTextTagForCamp",
+      "length": 1163,
+      "sha256": "0b5507c18b4e600c1f30dc0a8b8bd8973bfb9d141d9d2d3fd2388073bbe9ac22"
+    },
+    {
+      "index": 1710,
+      "name": "libMapM_gf_JungleTransitionCampIntoState",
+      "length": 411,
+      "sha256": "3d547d2ad6de96abb9b26a93df70abde7309c8babbc18462bc8547bf77d7ecad"
+    },
+    {
+      "index": 1719,
+      "name": "libMapM_gf_JungleTurnOnCampCaptureBeacon",
+      "length": 66,
+      "sha256": "dd7ccd01cfa1c4143e94e8997072147c5d24f7daf028f1b2513ff0fe082dfe0a"
+    },
+    {
+      "index": 1720,
+      "name": "libMapM_gf_JungleTurnOffCampCaptureBeacon",
+      "length": 37,
+      "sha256": "172e60cb2111ceb54cefd6edc295d680511e328e1d071f581021ae22e3b18b87"
+    },
+    {
+      "index": 1722,
+      "name": "libMapM_gf_JungleGrantCaptureRewards",
+      "length": 1313,
+      "sha256": "1ef1daa0cb98286b6ca1963a86dc20d9eb0a16619b2823e84dbb89b55ede69e4"
+    },
+    {
+      "index": 1730,
+      "name": "libMapM_gf_JungleDropLootBannerinMercCamp",
+      "length": 70,
+      "sha256": "d1e7dff9f3efe73284e63f60453ef6347eb45819d2fdf30595f74018221d35d9"
+    },
+    {
+      "index": 1853,
+      "name": "libMapM_gt_JungleCreepCampRespawnTimerExpires_Func",
+      "length": 271,
+      "sha256": "cb2d14e808dc96bd89d442826e7e0e7d2691dde0d93dafe1d051d284e19ee804"
+    },
+    {
+      "index": 6231,
+      "name": "gf_HookupJungleCreepData",
+      "length": 813,
+      "sha256": "6a50cb769059b388b87d24d847bb588ca64a1770cd8ed08db02829405494ba84"
+    }
+  ],
+  "evidence": "OFFLINE DIAGNOSTIC ONLY. Active VM function operands; saved non-atomic Volskaya pre-spawn. No release or live/visibility proof."
+}
