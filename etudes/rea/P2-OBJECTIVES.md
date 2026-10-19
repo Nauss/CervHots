@@ -40,6 +40,14 @@ instances ; conversion fixed16 native vers fixed12 Galaxy par décalage4bits.
 La source UI affiche `FixedToInt(duration)+1`, pas la durée brute exacte.
 Les parcours sont RO : aucune fonction du client n'est invoquée.
 
+Premier diagnostic joueur partie10 : l'état inactif du point terminé conserve
+un dépassement de45s, parce que AdvanceVictory incrémente d'un pas0.0625s AVANT
+Award/Disable et ne reclamp pas ensuite. Valeur réelle184396fixed12, soit
+45.0185546875s, supérieure au but184320 de76fixed, inférieure à un pas256.
+Correction bornée : seul un point INACTIF admet jusqu'à un pas supplémentaire ;
+un point actif, une valeur négative ou un dépassement supérieur restent refusés.
+La première trace et ses refus restent intacts sous leur commit d'acquisition.
+
 ## Sécurité et limites du candidat
 
 Acquisition limitée à Volskaya, perspective humaine locale actuelle5v5 et

@@ -104,6 +104,19 @@ class ObjectiveMemory(NativeMemory):
 
 
 class ObjectiveTests(unittest.TestCase):
+    def test_completed_inactive_point_retains_at_most_one_source_step_overshoot(self):
+        m=ObjectiveMemory()
+        # Synthetic regression for the real game10 terminal184396/4096 value.
+        # Old trace remains replayed under its original commit, never rewritten.
+        m.point(1,owner=2,state=2,progress=(0,184396/4096))
+        self.assertEqual(m.reader()._sample()['phase'],'waiting')
+        m.point(1,owner=2,state=2,progress=(0,45.0625))
+        self.assertEqual(m.reader()._sample()['points'][0]['victory_percent'],[0,100])
+        m.point(1,owner=2,state=2,progress=(0,45.0625+1/4096))
+        with self.assertRaises(NativeUnavailable):m.reader()._sample()
+        m.point(1,active=1,owner=2,state=0,progress=(0,184396/4096))
+        with self.assertRaises(NativeUnavailable):m.reader()._sample()
+
     def test_protector_life_and_behavior_duration_are_not_point_progress(self):
         for owner in (11,12):
             m=ObjectiveMemory();m.protector(owner)

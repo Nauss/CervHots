@@ -123,7 +123,10 @@ class VolskayaObjective:
                 or state not in (0,1,2,3) or overtime not in (0,1)
                 or not -256 <= remaining <= 5*4096
                 or any(not 0 <= x <= contest_goal for x in contest)
-                or any(not 0 <= x <= victory_goal for x in victory)):
+                # AdvanceVictory adds one 0.0625s step BEFORE awarding and
+                # disabling the point. That terminal value is retained on the
+                # inactive record; unlike the live progress it is not clamped.
+                or any(not 0 <= x <= victory_goal + (0 if active else 256) for x in victory)):
             raise NativeUnavailable('etat_point_objectif_invalide')
         # state is authoritative; isContested is a separate UI callout flag.
         # Empty is NOT necessarily neutral: victory can progress while empty.
