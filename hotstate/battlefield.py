@@ -29,12 +29,56 @@ class _SelectedCensusMemory(_RecordedMemory):
     TraceMemory still records every raw requested byte. The transient header
     excludes XY/vitals; unused dirty flags are not mistaken for source fields.
     """
+    def __init__(self, memory):
+        super().__init__(memory)
+        self.memo = {}
+        self.headers = set()
+        self.header_data = {}
+        self.fresh = False
+
+    def fresh_read(self, address, size):
+        return super().read_memory(address, size)
+
+    def read_memory(self, address, size):
+        # Only this _observe owns this memo. Final checks bypass it entirely.
+        # A cache hit is not an extra process read and is not logged as one.
+        if self.fresh:
+            return self.fresh_read(address, size)
+        key = address, size
+        if key not in self.memo:
+            for header, raw in self.header_data.items():
+                offset = address-header
+                if 0 <= offset and offset+size <= len(raw):
+                    data = raw[offset:offset+size]
+                    # A formerly unused header byte is now consumed: include
+                    # its exact selection in the final physical read check.
+                    self.read_set.append((address, data))
+                    self.memo[key] = data
+                    return data
+            data = self.fresh_read(address, size)
+            if data is not None and len(data) == size:
+                self.memo[key] = data
+            return data
+        return self.memo[key]
+
     def census_header(self, unit):
         data = self.memory.read_memory(unit+0x10,0x38)
         if data is None or len(data)!=0x38:
             raise NativeUnavailable('entete_recensement_incomplete')
         self.read_set.append((unit+0x10,data[:4]))
+        self.headers.add(unit+0x10)
+        self.header_data[unit+0x10] = data
         return data
+
+    def coherence_checks(self, reads):
+        # Mask ONLY the census header we already acquired. Never combine a
+        # gap elsewhere (which could read an enemy XY/vital component).
+        groups = {}
+        for address, data in reads:
+            header = next((h for h in self.headers if h <= address and address+len(data) <= h+0x38), None)
+            key = (address, len(data)) if header is None else (header, 0x38)
+            groups.setdefault(key, []).append((address-key[0], data))
+        return [(a, size, slices) for (a, size), slices in groups.items()]
 
 
 def structure_kind(name):
@@ -347,8 +391,9 @@ class VolskayaBattlefield:
         else:
             raise NativeUnavailable('section_champ_bataille_invalide')
         after = self._clock(n, memory)
-        for address, data in self._coherence_reads(memory.read_set):
-            if self.native.read(address, len(data)) != data:
+        for address, size, slices in memory.coherence_checks(self._coherence_reads(memory.read_set)):
+            data = self.native.read(address, size)
+            if any(data[offset:offset+len(expected)] != expected for offset, expected in slices):
                 raise NativeUnavailable('lecture_champ_bataille_dechiree')
         window = clock()-start
         if not 0 <= after-before <= 0.125 or not 0 <= window <= 0.125 or context != expected:
@@ -367,7 +412,13 @@ class VolskayaBattlefield:
         # coalesce a contradiction; only identical address/size/bytes can use
         # one final equality check. Overlapping different sizes stay separate.
         unique = {}
+        observed_bytes = {}
         for address, data in read_set:
+            for offset, value in enumerate(data):
+                at = address+offset
+                if at in observed_bytes and observed_bytes[at] != value:
+                    raise NativeUnavailable('lecture_champ_bataille_dechiree')
+                observed_bytes[at] = value
             key = address, len(data)
             if key in unique and unique[key] != data:
                 raise NativeUnavailable('lecture_champ_bataille_dechiree')
@@ -381,7 +432,12 @@ class VolskayaBattlefield:
         # omit only the final four-byte counter from that equality comparison.
         # TraceMemory still records it for exact ordered playback.
         start = len(memory.read_set)
-        value = n.read_clock()
+        # Both boundary clocks (including roots) must be actual fresh reads.
+        memory.fresh = True
+        try:
+            value = n.read_clock()
+        finally:
+            memory.fresh = False
         if len(memory.read_set) != start+5 or len(memory.read_set[-1][1]) != 4:
             raise NativeUnavailable('trace_horloge_champ_bataille_invalide')
         memory.read_set.pop()

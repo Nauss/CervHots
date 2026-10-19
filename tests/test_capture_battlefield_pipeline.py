@@ -25,7 +25,7 @@ class BattlefieldPipelineTests(unittest.TestCase):
     def test_reader_native_boundary_normalizer_key_and_exact_replay(self):
         helper=fixtures.PipelineCollectorTests();m,address,size,probe=helper.fixture()
         a,b,c=helper.options(m)
-        with a,b,c,patch.object(VolskayaBattlefield,'_observe',side_effect=self.sample) as observe,patch('cerveau.brain.Coach.decide',side_effect=AssertionError('coach forbidden')):
+        with a,b,c,patch.object(VolskayaBattlefield,'_observe',autospec=True,side_effect=lambda reader,*args,**kwargs:self.sample(*args,**kwargs)) as observe,patch('cerveau.brain.Coach.decide',side_effect=AssertionError('coach forbidden')):
             row=capture.take_sample(fixtures.FixtureProcess(m),probe,address,size,native_profile=m.profile,clock=fixtures.FixtureClock())
             self.assertEqual(row['status'],'accepted',(row.get('rejected'),row.get('optional_battlefield_refusals')))
             self.assertEqual(len(row['normalized']['battlefield']['structures']['entries']),90)
@@ -46,6 +46,15 @@ class BattlefieldPipelineTests(unittest.TestCase):
                 self.assertFalse(fresh(tampered))
             repeat=capture.replay_sample(row,m.module_base,probe,address,size,native_profile=m.profile)
             self.assertEqual(repeat['normalized'],row['normalized'])
+            self.assertEqual(repeat['private_battlefield_observations'],row['private_battlefield_observations'])
+            self.assertNotIn('_acquired',row['private_battlefield_observations'][0])
+            for key in ('private_battlefield_observations','optional_battlefield_refusals'):
+                bad=copy.deepcopy(row);bad.pop(key)
+                with self.assertRaisesRegex(AssertionError,'diagnostic missing'):
+                    capture.replay_sample(bad,m.module_base,probe,address,size,native_profile=m.profile)
+                bad=copy.deepcopy(row);bad[key].append({'tampered':True})
+                with self.assertRaisesRegex(AssertionError,'diagnostic differs'):
+                    capture.replay_sample(bad,m.module_base,probe,address,size,native_profile=m.profile)
         from hotstate.battlefield import VALIDATED_MAPS
         self.assertEqual(VALIDATED_MAPS,())
 

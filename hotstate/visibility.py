@@ -190,7 +190,7 @@ class CurrentVisibility:
                     or result['local_hero'] != hero_ids.get(expected['local_player']['hero'], expected['local_player']['hero'])
                     or any(p['team'] != result['members'][p['id']]['team'] for p in expected['players'])):
                 raise NativeUnavailable('perspective_visibilite_incoherente')
-        for address, data in memory.read_set:
+        for address, data in memory.coherence_reads('lecture_visibilite_dechiree'):
             if self.native.read(address, len(data)) != data:
                 raise NativeUnavailable('lecture_visibilite_dechiree')
         after, window = n.read_clock(), clock() - start

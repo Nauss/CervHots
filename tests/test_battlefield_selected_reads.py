@@ -67,8 +67,10 @@ class SelectedCensusTests(unittest.TestCase):
                     if mode=='camp_delta':m.pack(0xF10000,'I',2)
                     elif mode=='structure_delta':m.pack(0xF20000,'I',8)
                     elif mode=='contradiction':
-                        m.pack(0xF10000,'I',2);n.value(0xF10000)
-                        m.pack(0xF10000,'I',1);n.value(0xF10000)
+                        # Explicit physical observations, not memo hits. ABA
+                        # entirely between reads remains undetectable.
+                        m.pack(0xF10000,'I',2);n.memory.fresh_read(0xF10000,4)
+                        m.pack(0xF10000,'I',1);n.memory.fresh_read(0xF10000,4)
                     return []
                 with patch('hotstate.battlefield.VALIDATED_MAPS',('Volskaya',)), \
                      patch.object(r,'_verify'),patch.object(r,'_camps',return_value=[]), \

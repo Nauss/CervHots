@@ -319,7 +319,7 @@ class VolskayaObjective:
                     or identity['local_hero'] != hero_ids.get(expected['local_player']['hero'],expected['local_player']['hero'])):
                 raise NativeUnavailable('perspective_objectif_incoherente')
         sample = self._sample(n)
-        for address,data in memory.read_set:
+        for address,data in memory.coherence_reads('lecture_objectif_dechiree'):
             if self.native.read(address,len(data)) != data:
                 raise NativeUnavailable('lecture_objectif_dechiree')
         after,window = n.read_clock(),clock()-start

@@ -189,7 +189,7 @@ class NativeReader:
         # Optional enrichments own their read-sets and rejection policy. An XY
         # read already refused as torn must not poison the independent core.
         result = n._read_state(expected, hero_ids=hero_ids, optional_native=self)
-        for address, data in memory.read_set:
+        for address, data in memory.coherence_reads('lecture_native_dechiree'):
             if self.read(address, len(data)) != data:
                 raise NativeUnavailable('lecture_native_dechiree')
         window = time.monotonic() - acquired

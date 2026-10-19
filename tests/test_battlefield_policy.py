@@ -66,8 +66,10 @@ class BattlefieldPolicyTests(unittest.TestCase):
             with patch('hotstate.battlefield_details.CurrentVisibility._verify'),patch('hotstate.battlefield_details.CurrentVisibility._current',return_value=visible),patch('hotstate.battlefield_details.PositionMemo._xy',return_value=(0,0)):
                 result=structure_details(n,SimpleNamespace(position_profile=None),{'structures':[row]},{1:0x900000},0,{'structures':[spec]})
             if visible is True:
-                self.assertEqual(calls,[0x900000+0x220,0x900000+0x22C])
+                self.assertEqual(calls,[0x900000+0x220,0x900000+0x22C,0x900000+0x224,0x900000+0x230])
                 self.assertEqual(structure_public(result[0])['health_percent'],75)
+                self.assertEqual(result[0]['observation']['visible_vitals']['life'],7500)
+                self.assertNotIn('visible_vitals',structure_public(result[0]))
             else:
                 self.assertEqual(calls,[])
                 self.assertIsNone(structure_public(result[0])['health_percent'])

@@ -38,6 +38,24 @@ class _RecordedMemory:
             self.read_set.append((address, data))
         return data
 
+    def coherence_reads(self, reason):
+        # Initial reads are never cached here. Repeated, identical source
+        # fields need one final physical equality check, not one per getter.
+        # Reject conflicting initial observations before coalescing them.
+        unique = {}
+        observed = {}
+        for address, data in self.read_set:
+            for offset, value in enumerate(data):
+                at = address+offset
+                if at in observed and observed[at] != value:
+                    raise NativeUnavailable(reason)
+                observed[at] = value
+            key = address, len(data)
+            if key in unique and unique[key] != data:
+                raise NativeUnavailable(reason)
+            unique[key] = data
+        return [(address, data) for (address, size), data in unique.items()]
+
 
 class AlliedPositions:
     def __init__(self, native, *, profile=None):
@@ -232,7 +250,7 @@ class AlliedPositions:
         result = self._sample(n, map_id, allies, hero_ids)
         # No retry/cached fallback: keys, roots, code, owner, tag, flags and XY
         # are all reread. This is a conservative torn-read detector, not a lock.
-        for address, data in memory.read_set:
+        for address, data in memory.coherence_reads('lecture_positions_dechiree'):
             if self.native.read(address, len(data)) != data:
                 raise NativeUnavailable('lecture_positions_dechiree')
         after = n.read_clock()
