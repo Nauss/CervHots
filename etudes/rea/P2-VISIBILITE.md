@@ -1,5 +1,9 @@
 # P2 — visibilité courante joueur : travail conservé, recette manquante
 
+> Historique du18octobre. Validation et activation bornée du19octobre :
+> voir `P2-VISIBILITE-VALIDATION.md`. Les besoins humains et budgets historiques
+> ci-dessous ont été remplacés par le mandat nocturne de l'opérateur assistant.
+
 État au 18 octobre 2026 : **NON LIVRÉ, publication ennemie fermée**.
 Historique de la première préparation. État actuel, recettes autonomes et
 identité native : voir `P2-VISIBILITE-RECETTE.md`. Les demandes de créneau humain

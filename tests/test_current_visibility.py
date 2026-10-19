@@ -141,7 +141,7 @@ class CurrentVisibilityTests(unittest.TestCase):
             self.assertIsNone(result['heroes'][2]['visible'])
             self.assertNotIn('acquisition', result)
             self.assertNotIn('x', result['heroes'][0])
-            with self.assertRaisesRegex(NativeUnavailable, 'recette_visibilite_joueur_absente'):
+            with patch('hotstate.visibility.VALIDATED_MAPS', ()), self.assertRaisesRegex(NativeUnavailable, 'recette_visibilite_joueur_absente'):
                 m.visibility().read(m.context)
             m.recorded_non_atomic = True
             with self.assertRaisesRegex(NativeUnavailable, 'non_atomique'): m.enemy()

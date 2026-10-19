@@ -1,5 +1,9 @@
 # Reprise visibilité — identité active vérifiée, cycles brouillard non prouvés
 
+> Historique de préparation. Les deux cycles sont désormais documentés dans
+> `P2-VISIBILITE-VALIDATION.md` (19octobre, Volskaya uniquement). Les anciennes
+> limites budgétaires ci-dessous ne remplacent pas le mandat nocturne amendé.
+
 État : travail de branche NON LIVRÉ ; allowlist visibilité vide. Ce document
 remplace les demandes historiques de créneau humain dans P2-VISIBILITE.md :
 l'opérateur assistant t_cc601651 possède seul la GUI et conduit les recettes.

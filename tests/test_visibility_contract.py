@@ -86,12 +86,26 @@ class VisibilityContractTests(unittest.TestCase):
 
     def test_diagnostic_and_disabled_map_never_publish(self):
         m = VisibilityMemory()
-        with self.assertRaisesRegex(NativeUnavailable, 'recette_visibilite_joueur_absente'):
+        with patch('hotstate.visibility.VALIDATED_MAPS', ()), self.assertRaisesRegex(NativeUnavailable, 'recette_visibilite_joueur_absente'):
             m.visibility().read(m.context, hero_ids=m.hero_ids)
         raw = raw_state(m)
         raw['visibility'] = m.visibility().diagnose('Volskaya', hero_ids=m.hero_ids)
         with patch('hotstate.visibility.VALIDATED_MAPS', ('Volskaya',)):
             self.assertNotIn('visibility', snapshot(raw))
+
+    def test_actual_release_scope_is_only_proven_volskaya(self):
+        from hotstate.visibility import VALIDATED_MAPS
+        self.assertEqual(VALIDATED_MAPS, ('Volskaya',))
+        m = VisibilityMemory(); m.fog(True)
+        result = m.visibility().read(m.context, hero_ids=m.hero_ids)
+        self.assertEqual(result['status'], 'validated')
+        self.assertTrue(result['heroes'][0]['visible'])
+        self.assertIn('acquisition', result)
+        for map_id in ('DragonShire', 'BraxisHoldout'):
+            context = copy.deepcopy(m.context)
+            context['meta']['map_id'] = map_id
+            with self.subTest(map_id=map_id), self.assertRaisesRegex(NativeUnavailable, 'recette_visibilite_joueur_absente'):
+                m.visibility().read(context, hero_ids=m.hero_ids)
 
     def test_tactical_freshness_cancels_on_fog_or_unknown_not_new_timestamp(self):
         from cerveau.runner import tactical_key

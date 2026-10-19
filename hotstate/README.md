@@ -14,15 +14,18 @@ Deux timers non nuls ont aussi été validés dans une nouvelle partie IA sur
 Volskaya puis exactement contre son tracker. Ajout du18/10 : positions des héros
 principaux alliés vivants sur Volskaya, avec perspective native locale prouvée,
 relecture exacte et reçu d'acquisition âgé au plus1s. Dragon/Braxis, positions
-ennemies, visibilité, objectifs/camps/structures et capacités restent exclus.
+ennemies, objectifs/camps/structures et capacités restent exclus. Depuis le19/10,
+la visibilité CURRENT est validée uniquement sur Volskaya build98348, sans
+ouvrir d'autre champ ennemi ; voir `etudes/rea/P2-VISIBILITE-VALIDATION.md`.
 Recette et limites pixels : `etudes/rea/P2-POSITIONS-RECETTE.md` depuis la racine.
 Les positions nécessitent lecteur et normaliseur dans le même processus live ;
 un JSON `--state` interprocessus ou un dump historique ne les autorise pas.
 Le reste de cette note conserve l'historique initial du 10 octobre.
 
-Travail lot visibilité du18/10 (non livré, avant recette ciblée) :
-`visibility.py` est un lecteur diagnostic conservateur, publication ennemie
-fermée. `etudes/rea/P2-VISIBILITE.md` décrit les sources, limites et le collecteur
+Lot visibilité : `visibility.py` est un lecteur conservateur, activé uniquement
+pour le booléen courant Volskaya après deux cycles joueur recoupés. Positions,
+PV/ressources, talents et cooldowns ennemis restent fermés.
+`etudes/rea/P2-VISIBILITE.md` décrit les sources, limites et le collecteur
 borné. Le durcissement associé exige désormais une perspective native humaine
 courante et un reçu du même processus âgé au plus1s pour transmettre PV/ressources
 alliés au modèle ; un JSON externe ou dump historique ne les autorise plus.

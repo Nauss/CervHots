@@ -1,4 +1,4 @@
-"""Conservative build98348 CURRENT player visibility, diagnostics only.
+"""Conservative build98348 CURRENT player visibility, Volskaya only.
 
 The source path is Galaxy's visible UnitFilter, NOT known/explored memory.
 Unsupported behavior callbacks/footprint fallback yield None, never False.
@@ -17,7 +17,9 @@ from .native import MASK, NativeReader, NativeUnavailable
 from .positions import AlliedPositions, _RecordedMemory
 
 PROFILE = json.loads((Path(__file__).parent / 'profiles/98348-visibility.json').read_text(encoding='utf-8'))
-VALIDATED_MAPS = ()
+# Two player-perspective fog cycles, independently checked against replay8.
+# Other maps remain closed; visibility never grants other enemy fields.
+VALIDATED_MAPS = ('Volskaya',)
 MAX_WINDOW_S = 0.125
 
 
