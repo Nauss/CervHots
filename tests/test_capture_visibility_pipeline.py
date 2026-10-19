@@ -31,6 +31,18 @@ class FixtureClock:
 
 
 class PipelineCollectorTests(unittest.TestCase):
+    def test_freeze_includes_regular_package_initializer_for_offline_replay(self):
+        import sys
+        from types import SimpleNamespace
+        with patch.object(capture, 'frozen_sources', return_value=('a'*40, {})) as freeze, \
+                patch.object(capture, 'ProcessBackend') as process, \
+                patch.dict(sys.modules, {'PIL': SimpleNamespace(ImageGrab=object())}), \
+                patch('hotstate.protocols.load_protocol', return_value=SimpleNamespace(__name__='synthetic_protocol')), \
+                contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(capture.main(['--preflight', '--expected-commit', 'a'*40]), 0)
+        self.assertIn(capture.ROOT/'cerveau/__init__.py', freeze.call_args.kwargs['extra_paths'])
+        process.assert_not_called()
+
     def fixture(self):
         m = VisibilityMemory(); m.fog(True)
         address = 0x200000

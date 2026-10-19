@@ -321,7 +321,8 @@ def main(argv=None):
     parser.add_argument('--png', action='store_true')
     args = parser.parse_args(argv)
     extras = tuple(ROOT / p for p in ('etudes/rea/scripts/capture_visibility_pipeline.py',
-                     'cerveau/state.py', 'cerveau/runner.py', 'cerveau/brain.py', 'kb/data/map_timings.json'))
+                     'cerveau/__init__.py', 'cerveau/state.py', 'cerveau/runner.py',
+                     'cerveau/brain.py', 'kb/data/map_timings.json'))
     commit, manifest = frozen_sources(args.expected_commit, extra_paths=extras)
     if args.preflight:
         from PIL import ImageGrab

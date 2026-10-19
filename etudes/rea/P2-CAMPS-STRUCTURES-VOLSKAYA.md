@@ -4,6 +4,11 @@ Ce document ne déclare PAS le lot 5 validé ni publié. Le producteur public re
 fermé, `VALIDATED_MAPS=()`. Le branchement cerveau candidat ne peut donc pas
 émettre ces données hors du collecteur de diagnostic explicitement opt-in.
 
+État du 19/10 après la phase bornée : voir
+[`P2-EVALUATION-BORNEE.md`](P2-EVALUATION-BORNEE.md). Les recettes métier et les
+prototypes locaux y sont distingués des diagnostics historiques ci-dessous ;
+le lot 5 et son catalogue complet restent non livrés.
+
 ## Source native et périmètre réel
 
 Build strict 98348 uniquement. Profil `98348-battlefield.json` : empreintes du
