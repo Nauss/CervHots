@@ -11,6 +11,7 @@ import json
 import re
 import struct
 import time
+from contextlib import contextmanager
 from pathlib import Path
 
 from .native import MASK, NativeReader, NativeUnavailable
@@ -26,16 +27,33 @@ def playable_bounds(map_id):
 
 
 class _RecordedMemory:
-    def __init__(self, memory):
+    def __init__(self, memory, *, cache=False):
         self.memory = memory
         self.module_base = memory.module_base
         self.recorded_non_atomic = getattr(memory, 'recorded_non_atomic', False)
         self.read_set = []
+        self.cache = cache
+        self.memo = {}
+        self.fresh = False
+
+    @contextmanager
+    def fresh_reads(self):
+        previous = self.fresh
+        self.fresh = True
+        try:
+            yield
+        finally:
+            self.fresh = previous
 
     def read_memory(self, address, size):
+        key = address,size
+        if self.cache and not self.fresh and key in self.memo:
+            return self.memo[key]
         data = self.memory.read_memory(address, size)
         if data is not None:
             self.read_set.append((address, data))
+            if self.cache and not self.fresh and len(data)==size:
+                self.memo[key] = data
         return data
 
     def coherence_reads(self, reason):
@@ -55,6 +73,15 @@ class _RecordedMemory:
                 raise NativeUnavailable(reason)
             unique[key] = data
         return [(address, data) for (address, size), data in unique.items()]
+
+    def validate_clock_end(self, start, reason):
+        # The final clock was read AFTER physical equality checks. Its roots
+        # must still agree with every observed source, but the last tick may
+        # legitimately advance within the explicit bounded time interval.
+        if len(self.read_set)!=start+5 or len(self.read_set[-1][1])!=4:
+            raise NativeUnavailable('trace_horloge_finale_invalide')
+        self.read_set.pop()  # Final tick ONLY; retain all four encoded roots.
+        self.coherence_reads(reason)
 
 
 class AlliedPositions:
@@ -235,7 +262,7 @@ class AlliedPositions:
         expected_context = self._context(context) if context is not None else None
         clock = getattr(self.native.memory, 'positions_clock', time.monotonic)
         wall = clock()
-        memory = _RecordedMemory(self.native.memory)
+        memory = _RecordedMemory(self.native.memory,cache=True)
         n = NativeReader(memory, profile=self.native.profile)
         before = n.read_clock()
         local_id, team, hero, members, stamp = self._identity(n, hero_ids)
@@ -253,7 +280,9 @@ class AlliedPositions:
         for address, data in memory.coherence_reads('lecture_positions_dechiree'):
             if self.native.read(address, len(data)) != data:
                 raise NativeUnavailable('lecture_positions_dechiree')
+        clock_start = len(memory.read_set)
         after = n.read_clock()
+        memory.validate_clock_end(clock_start,'lecture_positions_dechiree')
         window = clock() - wall
         if not 0 <= after - before <= MAX_WINDOW_S or not 0 <= window <= MAX_WINDOW_S:
             raise NativeUnavailable('fenetre_positions_trop_large')

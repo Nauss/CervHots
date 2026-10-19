@@ -110,6 +110,17 @@ class PipelineCollectorTests(unittest.TestCase):
             row=self.take(m,address,size,probe,clock=FixtureClock())
             with self.subTest(change=change):self.assertNotEqual(row['status'],'accepted')
 
+    def test_whole_pipeline_limit_includes_context_core_rechecks_and_normalization(self):
+        m,address,size,probe=self.fixture();clock=FixtureClock();real=capture.normalize
+        def delayed(raw):
+            clock.value+=0.2  # All local native acquisitions already completed.
+            return real(raw)
+        with patch.object(capture,'normalize',side_effect=delayed):
+            row=self.take(m,address,size,probe,clock=clock)
+        self.assertEqual(row['rejected'],'fenetre_pipeline_globale_depassee')
+        self.assertGreater(row['whole_snapshot_window_s'],0.125)
+        self.assertIn('visibility',row['normalized'])  # Fresh receipt != bounded whole acquisition.
+
     def test_elapsed_wall_age_not_mission_pause_controls_normalizer(self):
         m,address,size,probe=self.fixture();clock=FixtureClock();real=capture.normalize
         def delayed(raw):

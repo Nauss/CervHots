@@ -114,6 +114,7 @@ def take_sample(backend, probe, address, size=65536, *, native_profile=None, clo
             stack.enter_context(patch.object(CurrentVisibility, 'read', observed_read))
             if memory.recorded_non_atomic:
                 raise NativeUnavailable('capture_pipeline_non_atomique')
+            whole_started = time.monotonic()
             pre = NativeReader(memory, profile=native_profile)
             initial = ActiveMatch().observe(pre)
             # No trigger counter claim from the targeted initData-only region.
@@ -142,6 +143,9 @@ def take_sample(backend, probe, address, size=65536, *, native_profile=None, clo
                    ('health', 'health_max', 'resource', 'resource_max', 'x', 'y', 'cooldowns', 'talents'))
                    for h in clean['heroes']):
                 raise AssertionError('enemy tactical leak in diagnostic normalizer')
+            row['whole_snapshot_window_s'] = time.monotonic()-whole_started
+            if not 0 <= row['whole_snapshot_window_s'] <= 0.125:
+                raise NativeUnavailable('fenetre_pipeline_globale_depassee')
             row['status'] = 'accepted'
     except (NativeUnavailable, ValueError) as exc:
         row['rejected'] = str(exc)
@@ -173,6 +177,8 @@ def replay_sample(row, module_base, probe, address, size=65536, *, native_profil
         raise AssertionError('pipeline refusal differs')
     if repeated.get('normalized') != row.get('normalized') or repeated.get('tactical_key') != row.get('tactical_key'):
         raise AssertionError('pipeline boundary/key differs')
+    if repeated.get('whole_snapshot_window_s') != row.get('whole_snapshot_window_s'):
+        raise AssertionError('whole pipeline clock differs')
     repeated['execution_kind'] = 'historical_exact_replay_NOT_LIVE'
     return repeated
 

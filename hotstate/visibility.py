@@ -181,7 +181,7 @@ class CurrentVisibility:
             hero_ids = json.loads((Path(__file__).parent / 'hero_ids.json').read_text(encoding='utf-8'))
         clock = getattr(self.native.memory, 'positions_clock', time.monotonic)
         start = clock()
-        memory = _RecordedMemory(self.native.memory)
+        memory = _RecordedMemory(self.native.memory,cache=True)
         n = NativeReader(memory, profile=self.native.profile)
         before = n.read_clock()
         helper = AlliedPositions(n, profile=self.position_profile)
@@ -201,7 +201,10 @@ class CurrentVisibility:
         for address, data in memory.coherence_reads('lecture_visibilite_dechiree'):
             if self.native.read(address, len(data)) != data:
                 raise NativeUnavailable('lecture_visibilite_dechiree')
-        after, window = n.read_clock(), clock() - start
+        clock_start = len(memory.read_set)
+        after = n.read_clock()
+        memory.validate_clock_end(clock_start,'lecture_visibilite_dechiree')
+        window = clock()-start
         if not 0 <= after - before <= MAX_WINDOW_S or not 0 <= window <= MAX_WINDOW_S or context != expected:
             raise NativeUnavailable('fenetre_ou_contexte_visibilite_invalide')
         return dict(result, map_id=map_id, mission_t_s=after, read_window_s=window,

@@ -308,7 +308,7 @@ class VolskayaObjective:
         clock = getattr(self.native.memory,'positions_clock',time.monotonic)
         expected = copy.deepcopy(context)
         start = clock()
-        memory = _RecordedMemory(self.native.memory)
+        memory = _RecordedMemory(self.native.memory,cache=True)
         n = NativeReader(memory,profile=self.native.profile)
         before = n.read_clock()
         identity = self._perspective(n,map_id,hero_ids)
@@ -324,7 +324,10 @@ class VolskayaObjective:
         for address,data in memory.coherence_reads('lecture_objectif_dechiree'):
             if self.native.read(address,len(data)) != data:
                 raise NativeUnavailable('lecture_objectif_dechiree')
-        after,window = n.read_clock(),clock()-start
+        clock_start = len(memory.read_set)
+        after = n.read_clock()
+        memory.validate_clock_end(clock_start,'lecture_objectif_dechiree')
+        window = clock()-start
         if (not 0 <= after-before <= MAX_WINDOW_S or not 0 <= window <= MAX_WINDOW_S
                 or context != expected):
             raise NativeUnavailable('fenetre_objectif_invalide')

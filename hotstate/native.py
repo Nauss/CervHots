@@ -10,6 +10,7 @@ import json
 import struct
 import copy
 import time
+from contextlib import nullcontext
 from pathlib import Path
 
 MASK = 0xFFFFFFFF
@@ -70,12 +71,16 @@ class NativeReader:
         return self.value(self.base + rva)
 
     def read_clock(self):
-        high = (self.global_u32(0x32C2130) + self.global_u32(0x34F01D4) + 0x6D6AFAFC) & MASK
-        low = self.global_u32(0x34F01D0) ^ self.global_u32(0x32C4880)
-        seconds = self.value(((high << 32) | low) + 0x68, "i") / 4096
-        if not 0 <= seconds <= 21600:
-            raise NativeUnavailable("horloge_native_invalide")
-        return seconds
+        # A per-acquisition source memo must NEVER freeze either the tick or
+        # its encoded roots. Both boundaries still make five physical reads.
+        scope = getattr(self.memory,'fresh_reads',nullcontext)
+        with scope():
+            high = (self.global_u32(0x32C2130) + self.global_u32(0x34F01D4) + 0x6D6AFAFC) & MASK
+            low = self.global_u32(0x34F01D0) ^ self.global_u32(0x32C4880)
+            seconds = self.value(((high << 32) | low) + 0x68, "i") / 4096
+            if not 0 <= seconds <= 21600:
+                raise NativeUnavailable("horloge_native_invalide")
+            return seconds
 
     def player_pointer(self, native_id):
         if self.global_u32(0x3366118) != 14:
@@ -177,7 +182,7 @@ class NativeReader:
         if hero_ids is None:
             hero_ids = json.loads((Path(__file__).parent / 'hero_ids.json').read_text(encoding='utf-8'))
         acquired = time.monotonic()
-        memory = _RecordedMemory(self.memory)
+        memory = _RecordedMemory(self.memory,cache=True)
         n = NativeReader(memory, profile=self.profile)
         identity = AlliedPositions(n, profile=self.profile)._identity(n, hero_ids)
         native_id, native_team, hero, members, stamp = identity
