@@ -98,3 +98,51 @@ séparées. Les lectures initiales et le rejeu ordonné ne sont pas coalescés.
 Ce changement n'augmente ni 8192 lectures ni 125ms et n'ouvre aucun champ public.
 Le booléen brut `spawned` n'est pas une preuve d'apparition : sa déclaration est
 présente dans les scripts conservés, mais aucune affectation n'y a été trouvée.
+
+## Résultat réel R3 et correctif R4 strictement hors ligne
+
+Les diagnostics R3 sous 30ca38c ont été rejoués avec leurs sources historiques
+préservées, et non avec R4 : 402 tentatives, 201 PNG hachées, 304 acceptations de
+SECTIONS natives privées. Le Full court a donné zéro acceptation sur dix : cinq
+budgets 8192, quatre cohérences natives, un battlefield absent après refus de
+cohérence. Un exit 0 du collecteur ne signifie pas un succès du pipeline.
+Les acceptations de sections ne prouvent ni normalisation Full ni livraison 5.
+
+La visite du camp 1 a montré les deux défenseurs et le libellé de fortification ;
+la visibilité des membres a évolué False/False, True/True, puis False/False après
+retrait. L'ancre Unknown n'est pas False et ne doit pas être renommée ainsi.
+Capture, réapparition, remplacement et matrice complète restent à qualifier.
+
+Sur le core sélectionné, la capture réelle affiche 26400/17600 tandis que les
+lectures conditionnelles +0x220 et +0x22C valent respectivement 72089600 et zéro :
+elles produisent le composant 17600 et son ratio 100%. Ce n'est PAS une égalité
+avec les PV totaux du panneau. Aucun clamp de 150 à 100, bouclier ou bonus n'est
+présumé comme explication validée. Le getter compilé contient d'autres branches
+de propriétés ; les composants supplémentaires du core R3 n'ont pas été lus.
+La sémantique des PV doit être réconciliée sur une prochaine recette autorisée.
+
+Après libération explicite du gel R3 et fin des recettes, R4 réduit les I/O du
+recensement avec un bloc privé de 56 octets. La trace conserve tout le bloc, mais
+le read-set de cohérence sélectionne uniquement le tag, les flags, le lien
+catalogue de la bonne branche et le propriétaire effectivement consommés.
+Les octets inutilisés +0x14/+0x42 ne sont donc toujours pas des sources vérifiées.
+Une variation d'un champ consommé, une contradiction répétée ou un bloc tronqué
+refuse ; les XY/vitales de héros ne sont jamais lus par ce recensement.
+
+Le chemin candidat produit désormais les deux familles depuis UNE acquisition
+combinée bornée à 125ms : une vérification de profil/identité/visibilité, puis
+recheck de TOUS les champs consommés des deux familles, sans cache inter-frame.
+Les deux reçus restent distincts et identifiés par leur section, mais partagent
+la même fenêtre réelle et le même instant d'acquisition. Pas de prétention à
+l'atomicité du moteur ni d'augmentation du budget de 8192 lectures.
+
+Le benchmark R4 sur anciens octets non atomiques avec identité MOCKÉE mesure
+6765 lectures (6782 avec constructeur), contre 7913 hors constructeur dans le
+benchmark R3. Il ne comprend pas le vrai contexte/core/identité du pipeline et
+ne prouve PAS que le Full réel entre dans le budget. La preuve Full R3 reste un
+échec, les traces R3 ne doivent pas être rejouées en prétendant utiliser R4.
+
+VALIDATED_MAPS reste vide. Aucun nouveau live, partie 13, activation, push main
+ou livraison/déblocage 6 n'est autorisé par ces correctifs hors ligne. Une future
+fenêtre de recette explicite est nécessaire après correction et revue ; la fin
+de la fenêtre nocturne n'est pas un besoin de propriétaire comme pilote.

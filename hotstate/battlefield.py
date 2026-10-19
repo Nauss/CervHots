@@ -23,6 +23,20 @@ STRUCTURE_LAYOUT = json.loads((Path(__file__).parent / 'profiles/98348-volskaya-
 VALIDATED_MAPS = ()
 
 
+class _SelectedCensusMemory(_RecordedMemory):
+    """One private bulk I/O, equality checks only for consumed CUnit fields.
+
+    TraceMemory still records every raw requested byte. The transient header
+    excludes XY/vitals; unused dirty flags are not mistaken for source fields.
+    """
+    def census_header(self, unit):
+        data = self.memory.read_memory(unit+0x10,0x38)
+        if data is None or len(data)!=0x38:
+            raise NativeUnavailable('entete_recensement_incomplete')
+        self.read_set.append((unit+0x10,data[:4]))
+        return data
+
+
 def structure_kind(name):
     if name == 'KingsCore':
         return 'core'
@@ -247,11 +261,19 @@ class VolskayaBattlefield:
                 # Only consumed fields: unused +0x14 and +0x42 bytes change
                 # continuously and are not an identity/type/owner source.
                 # Never read XY (+0x60), vitals (+0x220) or hero components.
-                tag = n.value(unit+0x10)
+                bulk = getattr(n.memory,'census_header',None)
+                header = bulk(unit) if callable(bulk) else None
+                tag = struct.unpack_from('<I',header)[0] if header is not None else n.value(unit+0x10)
                 if (tag+1) & 0xFFFFFFFE == 0 or tag >> 22 != index:
                     continue
-                flags = n.value(unit+0x39, 'B')
-                packed = n.value(unit+(0x20 if flags & 0x20 else 0x18), 'Q')
+                if header is None:
+                    flags = n.value(unit+0x39,'B')
+                    packed = n.value(unit+(0x20 if flags & 0x20 else 0x18),'Q')
+                else:
+                    flags = header[0x29]
+                    off = 0x10 if flags & 0x20 else 8
+                    packed = struct.unpack_from('<Q',header,off)[0]
+                    n.memory.read_set.extend(((unit+0x39,header[0x29:0x2A]),(unit+0x10+off,header[off:off+8])))
                 catalog = self._pointer(packed & ~31)
                 if catalog not in names:
                     try:
@@ -263,7 +285,11 @@ class VolskayaBattlefield:
                 kind = structure_kind(name)
                 if kind is None:
                     continue
-                owner = n.value(unit+0x44, 'B')
+                if header is None:
+                    owner = n.value(unit+0x44,'B')
+                else:
+                    owner = header[0x34]
+                    n.memory.read_set.append((unit+0x44,header[0x34:0x35]))
                 if unit_pointers is not None:
                     unit_pointers[tag] = unit
                 rows.append(dict(tag=tag, generation=tag & 0x3FFFFF,
@@ -284,7 +310,7 @@ class VolskayaBattlefield:
         expected = copy.deepcopy(context)
         clock = getattr(self.native.memory, 'positions_clock', time.monotonic)
         start = clock()
-        memory = _RecordedMemory(self.native.memory)
+        memory = _SelectedCensusMemory(self.native.memory)
         n = NativeReader(memory, profile=self.native.profile)
         before = self._clock(n, memory)
         self._verify(n)
@@ -305,6 +331,18 @@ class VolskayaBattlefield:
             units = {}
             census = self._census(n,unit_pointers=units)
             result = {'structures':structure_details(n,self,census,units,identity['local_id'],STRUCTURE_LAYOUT),
+                      'unresolved_slots':census['unresolved_slots']}
+        elif section == 'combined':
+            from .visibility import CurrentVisibility
+            from .battlefield_details import camp_details,structure_details
+            # One bounded observation verifies visibility once and rechecks
+            # every consumed camp AND structure source before issuing either.
+            CurrentVisibility(n)._verify(n)
+            camps = camp_details(n,self,self._camps(n),identity['local_id'],verify_visibility=False)
+            units = {}
+            census = self._census(n,unit_pointers=units)
+            result = {'camps':camps,
+                      'structures':structure_details(n,self,census,units,identity['local_id'],STRUCTURE_LAYOUT,verify_visibility=False),
                       'unresolved_slots':census['unresolved_slots']}
         else:
             raise NativeUnavailable('section_champ_bataille_invalide')
@@ -356,12 +394,13 @@ class VolskayaBattlefield:
         if map_id not in VALIDATED_MAPS:
             raise NativeUnavailable('champ_bataille_non_valide_en_recette')
         packets = {}
+        raw = self._observe(map_id,section='combined',context=context,**options)
+        acquired = raw.pop('_acquired')
         for section,project in (('camps',camp_public),('structures',structure_public)):
-            raw = self._observe(map_id,section=section,context=context,**options)
-            acquired = raw.pop('_acquired')
             packet = {k:raw[k] for k in ('map_id','local_id','team','local_hero','native_session',
                        'mission_t_s','read_window_s','section')}
             packet.update(status='validated',match_id=match_id)
+            packet['section'] = section
             packet[section] = [project(row) for row in raw[section]]
             packets[section] = issue(packet,acquired)
         return packets

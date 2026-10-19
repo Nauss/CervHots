@@ -62,8 +62,8 @@ def group_members(n, reader, index, local_id, helper):
     return {'reference':ref,'members':result}
 
 
-def camp_details(n, reader, rows, local_id):
-    CurrentVisibility(n)._verify(n)
+def camp_details(n, reader, rows, local_id, *, verify_visibility=True):
+    if verify_visibility:CurrentVisibility(n)._verify(n)
     helper = PositionMemo(AlliedPositions(n,profile=reader.position_profile))
     for row in rows:
         unit = reader._resolve(n,row['beacon_tag'])
@@ -114,8 +114,8 @@ def camp_public(row):
     return result
 
 
-def structure_details(n, reader, census, units, local_id, layout):
-    CurrentVisibility(n)._verify(n)
+def structure_details(n, reader, census, units, local_id, layout, *, verify_visibility=True):
+    if verify_visibility:CurrentVisibility(n)._verify(n)
     helper = PositionMemo(AlliedPositions(n,profile=reader.position_profile))
     by_point = {(s['x_fixed'],s['y_fixed']):s for s in layout['structures']}
     matched, ambiguous = {}, set()
