@@ -1,12 +1,13 @@
 # P2 — camps et structures Volskaya : diagnostic non livré
 
 Ce document ne déclare PAS le lot 5 validé ni publié. Le producteur public reste
-fermé, `VALIDATED_MAPS=()`, et aucun branchement cerveau n'est ajouté.
+fermé, `VALIDATED_MAPS=()`. Le branchement cerveau candidat ne peut donc pas
+émettre ces données hors du collecteur de diagnostic explicitement opt-in.
 
 ## Source native et périmètre réel
 
 Build strict 98348 uniquement. Profil `98348-battlefield.json` : empreintes du
-résolveur natif, type d'unité/catalogue, VM et douze fonctions Galaxy actives.
+résolveur natif, type d'unité/catalogue, VM et quinze fonctions Galaxy actives.
 Racine des globaux VM `module+0x3D0C920`, contrôles du tableau actif et des noms,
 indices, bornes et bytecodes. Aucune recherche d'occurrence de nom dans le tas.
 Les opérandes indexées du VM utilisent un stride ushort à +3, un offset 24-bit
@@ -39,7 +40,10 @@ la capture passée, pas un ennemi actuellement en train de combattre.
 Dead=2 inclut le préspawn. Paused=3 peut signifier défenseurs vaincus/balise ouverte
 avant récompense, pas pause de la partie. HibernatingReadyToRespawn n'est pas prêt.
 Ces codes restent privés en attendant une politique prouvée par recette.
-Aucun PV, XY, ressource, talent ou cooldown ennemi n'est ajouté au payload.
+Aucun XY, ressource, talent ou cooldown ennemi n'est ajouté au payload. Le
+candidat PV ne concerne que des structures du catalogue statique confirmé,
+CURRENT réellement vrai et unité vivante ; les octets PV ne sont pas lus quand
+la visibilité est fausse/inconnue. Cela ne donne aucune permission aux héros.
 
 ## Collecteur de recherche
 

@@ -164,6 +164,18 @@
       "rva": 6167408,
       "size": 60,
       "sha256": "747e1879e3de810650ceac8bbb73e86494c3ca5822425694e8a5f5603d97a840"
+    },
+    {
+      "name": "typed_unit_group_unit",
+      "rva": 34384880,
+      "size": 255,
+      "sha256": "edf390355fb66e38c3b0a84f8b93dbe650dcb48fb5b6eb4ed14b16b01613c8cf"
+    },
+    {
+      "name": "typed_unit_group_count",
+      "rva": 34374000,
+      "size": 256,
+      "sha256": "c9855611c6f563e70422e67cb3670592662a767fbe1486327a24dea0dc5f459a"
     }
   ],
   "functions": [
@@ -238,6 +250,24 @@
       "name": "gf_HookupJungleCreepData",
       "length": 813,
       "sha256": "6a50cb769059b388b87d24d847bb588ca64a1770cd8ed08db02829405494ba84"
+    },
+    {
+      "index": 1680,
+      "name": "libMapM_gf_InitializeSiegeTrooperMercType",
+      "length": 405,
+      "sha256": "01425d5b5140d331586c9d49c2c2ac3529816dfe6d8b029983d4d281d8c1241d"
+    },
+    {
+      "index": 1708,
+      "name": "auto_libMapM_gf_JungleRespawnCreepsForCamp_TriggerFunc",
+      "length": 806,
+      "sha256": "57b8913a474b9f83f4bdb573314e36ff85445cb061c6e0dcdf0518593b3f587f"
+    },
+    {
+      "index": 6234,
+      "name": "gt_InitializeMap_Func",
+      "length": 1572,
+      "sha256": "bccf352c0874e5307090f1550c2ec662b9206f17d74bad98645abec52ebca2c1"
     }
   ],
   "evidence": "OFFLINE DIAGNOSTIC ONLY. Active VM function operands; saved non-atomic Volskaya pre-spawn. No release or live/visibility proof."

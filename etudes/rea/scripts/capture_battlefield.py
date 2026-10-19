@@ -23,13 +23,13 @@ from hotstate.reader import ProcessBackend
 
 
 def attempt(backend, *, native_profile=None, battlefield_profile=None,
-            position_profile=None, match_profile=None):
+            position_profile=None, match_profile=None, section='inventory'):
     trace = TraceMemory(backend)
-    row = {'wall_before': utc(), 'monotonic_before': time.monotonic()}
+    row = {'wall_before': utc(), 'monotonic_before': time.monotonic(),'requested_section':section}
     try:
         n = NativeReader(trace, profile=native_profile)
         row['battlefield'] = VolskayaBattlefield(n, profile=battlefield_profile,
-            position_profile=position_profile, match_profile=match_profile).diagnose('Volskaya')
+            position_profile=position_profile, match_profile=match_profile).diagnose('Volskaya',section=section)
     except NativeUnavailable as exc:
         row['rejected'] = str(exc)
     row.update(wall_after=utc(), monotonic_after=time.monotonic(), reads=trace.reads,
@@ -51,6 +51,7 @@ def capture_frame(backend, *, screenshot=None, **profiles):
 
 
 def replay_attempt(base, packet, **profiles):
+    profiles.setdefault('section',packet.get('requested_section','inventory'))
     backend = ReplayTrace(base, packet['reads'], packet['core_monotonic'])
     actual = attempt(backend, **profiles)
     backend.finish()
@@ -71,6 +72,7 @@ def main(argv=None):
     parser.add_argument('--duration', type=float, default=120)
     parser.add_argument('--interval', type=float, default=1)
     parser.add_argument('--png', action='store_true')
+    parser.add_argument('--section',choices=('inventory','camps','structures'),default='inventory')
     args = parser.parse_args(argv)
     if not 0 < args.duration <= 300 or not 0.25 <= args.interval <= 10:
         parser.error('duration/interval hors bornes')
@@ -95,14 +97,14 @@ def main(argv=None):
             stream.write(json.dumps({'kind': 'targeted_current_battlefield', 'status': 'diagnostic_unreleased',
                 'commit': commit, 'sources_sha256': manifest, 'pid': backend.pid, 'module_base': backend.module_base,
                 'map_id_requested': 'Volskaya', 'wall': utc(), 'monotonic_s': time.monotonic(),
-                'png': args.png, 'heap_scan': False, 'coach_or_audio': False})+'\n')
+                'png': args.png, 'heap_scan': False, 'coach_or_audio': False,'section':args.section})+'\n')
             stream.flush()
             deadline, sequence = time.monotonic()+args.duration, 0
             while time.monotonic() < deadline:
                 png = out.with_name(f'{out.stem}-{sequence:05d}.png')
                 def screenshot():
                     return capture_game_image(png, state, grab)
-                row = capture_frame(backend, screenshot=screenshot if grab else None)
+                row = capture_frame(backend, screenshot=screenshot if grab else None,section=args.section)
                 row['sequence'] = sequence
                 stream.write(json.dumps(row, allow_nan=False)+'\n')
                 stream.flush()

@@ -19,6 +19,7 @@ from .objectives import VolskayaObjective, GLOBAL_DATA
 from .positions import AlliedPositions, _RecordedMemory
 
 PROFILE = json.loads((Path(__file__).parent / 'profiles/98348-battlefield.json').read_text(encoding='utf-8'))
+STRUCTURE_LAYOUT = json.loads((Path(__file__).parent / 'profiles/98348-volskaya-structures.json').read_text(encoding='utf-8'))
 VALIDATED_MAPS = ()
 
 
@@ -55,7 +56,7 @@ class VolskayaBattlefield:
     def _verify(self, n):
         p = self.profile
         if (p.get('build') != 98348 or n.profile.get('build') != 98348
-                or len(p.get('functions', ())) != 12 or not p.get('signatures')
+                or len(p.get('functions', ())) != 15 or not p.get('signatures')
                 or n.value(n.base + 0x35C8CD9, 'B') != 1):
             raise NativeUnavailable('profil_champ_bataille_invalide')
         pe = n.base + n.global_u32(0x3C)
@@ -132,7 +133,7 @@ class VolskayaBattlefield:
     def _team(self, n, owner):
         if owner in (11, 12):
             return owner-11
-        if owner == 15:
+        if owner in (0,15):
             return 'neutral'
         if 1 <= owner <= 10:
             player = self._pointer(n.player_pointer(owner))
@@ -223,7 +224,7 @@ class VolskayaBattlefield:
                 result.append(row)
         return result
 
-    def _census(self, n):
+    def _census(self, n, *, unit_pointers=None):
         """Bounded ACTIVE unit table; not a heap/name occurrence scan.
 
         Raw diagnostics only. Non-structure names, owners, XY and vitals are
@@ -263,6 +264,8 @@ class VolskayaBattlefield:
                 if kind is None:
                     continue
                 owner = n.value(unit+0x44, 'B')
+                if unit_pointers is not None:
+                    unit_pointers[tag] = unit
                 rows.append(dict(tag=tag, generation=tag & 0x3FFFFF,
                     unit_type=name, kind=kind, team=self._team(n, owner),
                     state=self._life(name, flags)))
@@ -275,7 +278,7 @@ class VolskayaBattlefield:
                 'structures': self._towns(self.native), 'catalogue_complete': False,
                 'census': self._census(self.native)}
 
-    def diagnose(self, map_id, *, context=None, hero_ids=None):
+    def _observe(self, map_id, *, section='inventory', context=None, hero_ids=None):
         if map_id != 'Volskaya' or getattr(self.native.memory, 'recorded_non_atomic', False):
             raise NativeUnavailable('carte_ou_capture_champ_bataille_non_prise_en_charge')
         expected = copy.deepcopy(context)
@@ -292,8 +295,19 @@ class VolskayaBattlefield:
             if (cm != map_id or identity['native_match_id'] != match
                     or identity['local_id'] != local or identity['team'] != team):
                 raise NativeUnavailable('perspective_champ_bataille_incoherente')
-        result = {'camps': self._camps(n), 'structures': self._towns(n), 'census': self._census(n),
-                  'catalogue_complete': False}
+        if section == 'inventory':
+            result = {'camps':self._camps(n),'structures':self._towns(n),'census':self._census(n),'catalogue_complete':False}
+        elif section == 'camps':
+            from .battlefield_details import camp_details
+            result = {'camps':camp_details(n,self,self._camps(n),identity['local_id'])}
+        elif section == 'structures':
+            from .battlefield_details import structure_details
+            units = {}
+            census = self._census(n,unit_pointers=units)
+            result = {'structures':structure_details(n,self,census,units,identity['local_id'],STRUCTURE_LAYOUT),
+                      'unresolved_slots':census['unresolved_slots']}
+        else:
+            raise NativeUnavailable('section_champ_bataille_invalide')
         after = self._clock(n, memory)
         for address, data in self._coherence_reads(memory.read_set):
             if self.native.read(address, len(data)) != data:
@@ -302,7 +316,12 @@ class VolskayaBattlefield:
         if not 0 <= after-before <= 0.125 or not 0 <= window <= 0.125 or context != expected:
             raise NativeUnavailable('lecture_champ_bataille_perimee')
         return dict(result, **identity, status='diagnostic_unreleased', map_id=map_id,
-                    mission_t_s=after, read_window_s=window)
+                    mission_t_s=after, read_window_s=window,section=section,_acquired=start)
+
+    def diagnose(self, map_id, *, section='inventory', context=None, hero_ids=None):
+        result = self._observe(map_id,section=section,context=context,hero_ids=hero_ids)
+        result.pop('_acquired')
+        return result
 
     @staticmethod
     def _coherence_reads(read_set):
@@ -331,5 +350,18 @@ class VolskayaBattlefield:
         return value
 
     def read(self, context, **options):
-        # No runtime monkeypatch or valid-looking fixture opens this producer.
-        raise NativeUnavailable('champ_bataille_non_valide_en_recette')
+        from .acquisition import issue
+        from .battlefield_details import camp_public,structure_public
+        map_id, match_id, _, _, _ = AlliedPositions._context(context)
+        if map_id not in VALIDATED_MAPS:
+            raise NativeUnavailable('champ_bataille_non_valide_en_recette')
+        packets = {}
+        for section,project in (('camps',camp_public),('structures',structure_public)):
+            raw = self._observe(map_id,section=section,context=context,**options)
+            acquired = raw.pop('_acquired')
+            packet = {k:raw[k] for k in ('map_id','local_id','team','local_hero','native_session',
+                       'mission_t_s','read_window_s','section')}
+            packet.update(status='validated',match_id=match_id)
+            packet[section] = [project(row) for row in raw[section]]
+            packets[section] = issue(packet,acquired)
+        return packets

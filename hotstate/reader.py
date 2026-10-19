@@ -296,6 +296,13 @@ def snapshot(backend, mapping: dict, debug: bool = False, *, context=None,
             else:
                 state["meta"].update(native["meta"])
                 state.update({k: v for k, v in native.items() if k != "meta"})
+                # Independent bounded family acquisitions, not a claim that
+                # camps/structures and the earlier hero core are atomic.
+                from .battlefield import VolskayaBattlefield
+                try:
+                    state['battlefield'] = VolskayaBattlefield(reader).read(state)
+                except NativeUnavailable:
+                    pass
     return state
 
 
