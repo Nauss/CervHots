@@ -8,8 +8,22 @@ def number(v):
     return type(v) is int or type(v) is float and math.isfinite(v)
 
 
-def project_battlefield(raw, local, team):
+def map_contract(map_id):
     from hotstate.battlefield import VALIDATED_MAPS, STRUCTURE_LAYOUT
+    if map_id in VALIDATED_MAPS:
+        return STRUCTURE_LAYOUT, ('turret','turret','siege_troopers','siege_troopers','support')
+    from hotstate.dragon_battlefield import VALIDATED_MAPS as DRAGON_MAPS, DragonBattlefield
+    if map_id in DRAGON_MAPS:
+        from hotstate.dragon_catalogue import qualified_layout
+        from hotstate.native import NativeUnavailable
+        try:
+            return qualified_layout(), DragonBattlefield.CAMP_KINDS
+        except NativeUnavailable:
+            return None
+    return None
+
+
+def project_battlefield(raw, local, team):
     meta=raw.get('meta',{});parts=raw.get('battlefield');core=raw.get('perspective')
     if (not isinstance(local,dict) or team!=local.get('team') or not isinstance(parts,dict)
             or meta.get('source')!='live' or meta.get('native_build')!=98348
@@ -17,11 +31,14 @@ def project_battlefield(raw, local, team):
             or not isinstance(core,dict) or not fresh(core)
             or not isinstance(meta.get('match_id'),str) or re.fullmatch('[0-9a-f]{64}',meta['match_id']) is None):
         return None
+    contract=map_contract(meta.get('map_id'))
+    if contract is None:return None
+    layout,camp_kinds=contract
     clean={}
     for section,expected_count in (('camps',5),('structures',90)):
         p=parts.get(section)
         if (not isinstance(p,dict) or not fresh(p) or p.get('status')!='validated'
-                or p.get('map_id') not in VALIDATED_MAPS or p.get('map_id')!=meta.get('map_id')
+                or p.get('map_id')!=meta.get('map_id')
                 or p.get('match_id')!=meta['match_id'] or p.get('section')!=section
                 or type(p.get('local_id')) is not int or p['local_id']!=local.get('id')
                 or type(p.get('team')) is not int or p['team']!=team
@@ -35,7 +52,7 @@ def project_battlefield(raw, local, team):
         if not isinstance(rows,list) or len(rows)!=expected_count:
             return None
         out=[];ids=set()
-        catalogue={x['id']:x for x in STRUCTURE_LAYOUT['structures']}
+        catalogue={x['id']:x for x in layout['structures']}
         for row in rows:
             if not isinstance(row,dict):return None
             ident=row.get('id');visible=row.get('current_visible');state=row.get('state');owner=row.get('owner')
@@ -44,7 +61,7 @@ def project_battlefield(raw, local, team):
             ids.add(ident)
             if section=='camps':
                 if type(ident) is not int or ident not in range(1,6):return None
-                kind=('turret','turret','siege_troopers','siege_troopers','support')[ident-1]
+                kind=camp_kinds[ident-1]
                 if row.get('kind')!=kind or state not in ('available','fighting','capture_available','captured','unavailable','unknown'):
                     return None
                 cycle=row.get('cycle');remaining=row.get('respawn_s')

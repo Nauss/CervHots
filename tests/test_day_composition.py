@@ -8,10 +8,14 @@ from unittest.mock import patch
 from test_cooldown_packet import memory_fixture
 import test_talents_product as talent_fixture
 import test_capture_talents as talent_collector
+import test_capture_dragon_battlefield_pipeline as battlefield_fixture
+from test_dragon_contract import public_fixture
 from test_capture_visibility_pipeline import FixtureClock, FixtureProcess
 from hotstate import live, talents, cooldown_packet, cooldown_qualification
 from hotstate.acquisition import issue
 from hotstate.native import NativeReader, NativeUnavailable
+from hotstate.dragon import DragonObjective
+from hotstate.dragon_battlefield import DragonBattlefield
 from cerveau.state import snapshot
 from cerveau.runner import tactical_key
 
@@ -51,7 +55,7 @@ class DayCompositionTests(unittest.TestCase):
             return result
         self.stack.enter_context(patch.object(live, 'LiveBudget', side_effect=budget))
 
-    def take(self):
+    def take(self, probe=None):
         seen = {}
         def project(raw):
             seen['raw'] = raw
@@ -59,7 +63,7 @@ class DayCompositionTests(unittest.TestCase):
         def key(clean):
             seen['key'] = tactical_key(clean)
         clean = live.read_current(FixtureProcess(self.memory), {'triggers': {}},
-                                  context=self.memory.probe(), project=project, key=key)
+                                  context=self.memory.probe() if probe is None else probe, project=project, key=key)
         return clean, seen
 
     def test_both_families_use_one_actual_consumer_budget_and_core_receipt(self):
@@ -159,6 +163,73 @@ class DayCompositionTests(unittest.TestCase):
             with self.subTest(family=family):
                 self.assertNotIn(family, clean)
                 self.assertIn(peer, clean)
+
+    @contextlib.contextmanager
+    def dragon_options(self):
+        # Business observations for objective/battlefield are literal stubs;
+        # both local families still traverse their real mapped native readers.
+        # No fixture value or cost here qualifies a live Dragon observation.
+        probe = self.memory.probe()
+        probe.map_resolver = lambda _: {'map_id': 'DragonShire', 'map': 'Dragon Shire'}
+        def objective(context, **options):
+            local = context['local_player']
+            return dict(public_fixture(), map_id='DragonShire',
+                        match_id=context['meta']['match_id'], local_id=local['id'],
+                        team=local['team'], local_hero='ragnaros', mission_t_s=123.5,
+                        read_window_s=0.001, _acquired=self.clock.value)
+        with contextlib.ExitStack() as stack:
+            for name in ('hotstate.talents.VALIDATED_SCOPES',
+                         'hotstate.talents.VALIDATED_LOCAL_SCOPES',
+                         'hotstate.cooldown_packet.VALIDATED_SCOPES'):
+                stack.enter_context(patch(name, (('DragonShire', 'ragnaros'),)))
+            stack.enter_context(patch.dict(cooldown_qualification.QUALIFIED_BINDINGS, {
+                (98348, 'DragonShire', 'ragnaros'): {'FixtureSpell': (9, 'unit', 'Abil/FixtureSpell', None, None, 0)}}))
+            stack.enter_context(patch.object(DragonObjective, '_observe', side_effect=objective))
+            stack.enter_context(patch.object(DragonBattlefield, '_observe',
+                side_effect=battlefield_fixture.DragonBattlefieldPipelineTests().sample))
+            yield probe
+
+    def test_four_family_dispatch_projections_and_discrete_key_matrix(self):
+        families = ('objective', 'battlefield', 'talents', 'local_cooldowns')
+        with self.dragon_options() as probe:
+            clean, seen = self.take(probe)
+        self.assertEqual(len(self.budgets), 1)
+        self.assertTrue(set(families).issubset(clean))
+        self.assertEqual(len(clean['battlefield']['camps']['entries']), 5)
+        self.assertEqual(len(clean['battlefield']['structures']['entries']), 90)
+        before = json.loads(seen['key'])
+        for family in families:
+            changed = copy.deepcopy(clean)
+            if family == 'objective':
+                shrine = changed[family]['shrines'][0]
+                shrine['owner'] = 1 if shrine['owner'] == 0 else 0
+            elif family == 'battlefield':
+                changed[family]['camps']['entries'][0].update(
+                    current_visible=True, state='available', owner='neutral')
+            elif family == 'talents':
+                changed[family]['players'][0]['tiers'][0].update(
+                    status='unselected', slot=None, catalog_id=None)
+            else:
+                changed[family]['abilities'][0].update(remaining_s=1, cooldown_ready=False)
+            after = json.loads(tactical_key(changed))
+            with self.subTest(family=family):
+                self.assertNotEqual(before[family], after[family])
+                self.assertTrue(all(before[peer] == after[peer] for peer in families if peer != family))
+
+    def test_four_family_closed_battlefield_does_not_remove_other_three(self):
+        with self.dragon_options() as probe, patch('hotstate.dragon_battlefield.VALIDATED_MAPS', ()):
+            clean, _ = self.take(probe)
+        self.assertNotIn('battlefield', clean)
+        self.assertTrue({'objective', 'talents', 'local_cooldowns'}.issubset(clean))
+
+    def test_four_family_stale_battlefield_receipt_drops_only_battlefield(self):
+        with self.dragon_options() as probe:
+            _, seen = self.take(probe)
+            raw = copy.deepcopy(seen['raw'])
+            issue(raw['battlefield']['structures'], self.clock.value - 2)
+            clean = snapshot(raw)
+        self.assertNotIn('battlefield', clean)
+        self.assertTrue({'objective', 'talents', 'local_cooldowns'}.issubset(clean))
 
 
 if __name__ == '__main__':

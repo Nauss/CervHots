@@ -26,6 +26,8 @@ class PositionMemo:
 
 
 def group_members(n, reader, index, local_id, helper):
+    defenders = getattr(reader, 'CAMP_DEFENDERS', DEFENDERS)
+    laners = getattr(reader, 'CAMP_LANERS', {3: ('MercSiegeTrooperLaner',), 4: ('MercSiegeTrooperLaner',)})
     ref = n.value(n.base+0x3D0C920+index*780+0xDF21E)
     slots = n.value(n.base+0x4020970,'Q')
     if slots != n.base+0x4020980 or ref>>16 == 0 or (ref & 65535) <= 1:
@@ -36,7 +38,7 @@ def group_members(n, reader, index, local_id, helper):
     reader._pointer(ptr)
     vt, owner = struct.unpack('<QI',n.read(ptr,12))
     count = n.value(ptr+0x18,'i')
-    if vt != n.base+40586608 or owner != ref or not 0 <= count <= len(DEFENDERS[index]):
+    if vt != n.base+40586608 or owner != ref or not 0 <= count <= len(defenders[index]):
         raise NativeUnavailable('objet_groupe_camp_invalide')
     array = n.value(ptr+0x28,'Q')
     tags = struct.unpack('<'+'I'*count,n.read(reader._pointer(array,alignment=4),count*4)) if count else ()
@@ -49,8 +51,8 @@ def group_members(n, reader, index, local_id, helper):
             result.append({'tag':tag,'role':'unknown','current_visible':None})
             continue
         name = reader._unit_type(n,unit)
-        role = ('defender' if name in DEFENDERS[index] else 'departed_laner'
-                if index in (3,4) and name == 'MercSiegeTrooperLaner' else 'unknown')
+        role = ('defender' if name in defenders[index] else 'departed_laner'
+                if name in laners.get(index, ()) else 'unknown')
         row = {'tag':tag,'role':role,'unit_type':name,'owner':n.value(unit+0x44,'B'),
                'alive':n.value(unit+0x39,'B') & 6 == 0,'current_visible':None}
         if role == 'defender' and row['alive']:
@@ -80,9 +82,9 @@ def camp_details(n, reader, rows, local_id, *, verify_visibility=True):
     return rows
 
 
-def camp_public(row):
+def camp_public(row, *, kinds=('turret','turret','siege_troopers','siege_troopers','support')):
     ident = row['index']
-    result = {'id':ident,'kind':('turret','turret','siege_troopers','siege_troopers','support')[ident-1],
+    result = {'id':ident,'kind':kinds[ident-1],
               'state':'unknown','owner':None,'current_visible':row.get('anchor_current_visible'),
               'cycle':None,'respawn_s':None,'respawn_timer':None}
     if result['current_visible'] is not True:
