@@ -51,6 +51,18 @@ class TalentSelectionTests(unittest.TestCase):
         self.assertEqual(row['selected'], [{'index': 0, 'tier': 1, 'slot': 2,
             'catalog_id': 'StitchesPatchworkCreation'}])
 
+    def test_required_level_comes_from_native_catalog_not_fixed_hero_schedule(self):
+        n, put = self.tree_fixture()
+        put(0x70518, 'I', 1)
+        put(0x70528, 'Q', 0xc0000)
+        put(0xc0000, 'I', 1)
+        put(0xc0004, 'I', 2)
+        put(0xc0008, 'I', 0)
+        self.assertEqual(talents.read_tier_levels(n, 0x70000), {1: 2})
+        put(0xc0004, 'I', 0)
+        with self.assertRaises(NativeUnavailable):
+            talents.read_tier_levels(n, 0x70000)
+
     def test_unbound_probe_cannot_read_any_memory(self):
         row = talents.diagnose(None, object())
         self.assertEqual(row['status'], 'rejected')

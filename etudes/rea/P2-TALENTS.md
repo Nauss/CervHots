@@ -1,6 +1,7 @@
 # Talents choisis — candidat natif 98348
 
-Statut : diagnostic privé NON produit, aucune couverture héros/carte acquise.
+Statut : candidat Full en recette, publication fermée ; diagnostic local Sonya/Dragon
+exercé, aucun support toushéros/cartes.
 
 ## Source sémantique
 
@@ -45,11 +46,39 @@ La trace privée archive les ticks monotones et les résolutions de carte du
 contexte pour le rejeu strict sans dépendre du cache local. Rejouer l'archive
 n'accorde jamais de fraîcheur live. Aucun PNG/OCR/GUI/son/API/coach.
 
+## Diagnostic réel et candidat Full
+
+Révision10871ff : troisfenêtres30s du pilote day001 Sonya/Dragon,177/177
+diagnostics acceptés et177/177 rejoués dans l'ordre sur sources exactes archivées
+(33sources hachées). Première acquisition sans historique : quatrechoix déjà
+présents ; transition niveau13/tier5/colonne1 vers BarbarianMysticalSpear,
+47samples avant puis12après, et59/59 dans un processus ultérieur froid.
+Le pilote a comparé « Lance mystique » au tableau visible ; les alternatives
+offertes n'ont pas été publiées comme choix. Référence replay indépendante
+du même match à vérifier séparément. Aucun nouveau paquet Full dans ce diagnostic.
+
+Le candidat actuel lit aussi HeroData+0x518/0x528, tableau stride12(tier,level,
+type) suivi par la garde native de sélection c80e6e0 et HeroesLib2022.
+Il n'utilise pas une séquence fixe1/4/7/10. Un palier connu sans options
+résolues reste unknown, pas « non choisi ». Niveau/ID/palier invalide refuse.
+
+NativeTalentChoices fournit un receipt enprocessus lié au match, héros,
+racinesession et génération locale du cœur. La projection cerveau/talents.py
+ne conserve que joueurs locaux anonymes, paliers/niveaux/statuts/colonnes et
+IDs sélectionnés ; aucun catalogue offert ni pointeur. La vraie clé tactique
+varie au choix/reset et pas à chaque lecture du même état. Le hook famille
+est dans NativeReader avant le dernierchrono (pas dans reader.py).
+
+capture_talents_pipeline.py exerce read_current→normaliseur→tactical_key
+avec le WHOLE8192/1MiB/125ms et recheckcontexte. Son gate candidat est ouvert
+seulement dans le processus diagnostic explicite ; VALIDATED_SCOPES reste fermé
+dans le produit jusqu'aux recettes exactes. Les sources du diagnostic10871ff
+sont figées séparément ; elles ne sont pas remplacées par le nouveau code.
+
 ## Limites avant intégration
 
-- Aucune nouvelle acquisition réelle encore exercée sur cette révision.
-- Niveau requis du palier encore inconnu : pas de déduction 1/4/7/10/etc.
-- Pas encore de normaliseur/clé/receipt talents ni de producteur consommable.
+- Acquisition Full actuelle et niveau requis encore à exercer réellement.
+- Normaliseur/clé/receipt exercés sur fixtures seulement à ce stade.
 - Alliés non implémentés ; local seulement. Aucune généralisation toushéros/cartes.
 - Une entrée non sélectionnée n'est pas un palier absent : unselected_tiers
   utilise les paliers réellement proposés ; erreur de lecture reste refus.

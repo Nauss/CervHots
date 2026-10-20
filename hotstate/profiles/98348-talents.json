@@ -39,6 +39,18 @@
       "rva": 11596128,
       "size": 128,
       "sha256": "c55984b2794e8427dac27ea88d3086b654323fd71d73774613a21f15999b0edc"
+    },
+    {
+      "name": "TierLevelGate",
+      "rva": 11593440,
+      "size": 400,
+      "sha256": "b33eca961c0ffd59cb71300ca95b48713012fa7e86ee1bb7dcc85a9800f156a2"
+    },
+    {
+      "name": "ClearSelectedTier",
+      "rva": 11594880,
+      "size": 144,
+      "sha256": "f7a26c91dbef96cba865c31790855f0858857f2107b4b3d9b3a7e22b2f002964"
     }
   ]
 }

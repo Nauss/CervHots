@@ -245,6 +245,10 @@ def snapshot(raw: dict, *, at: float | None = None, team: int | None = None,
             if battlefield is not None and (map_name is None or map_name == meta.get('map')):
                 result['battlefield'] = battlefield
             result["meta"]["native_status"] = "valide"
+            from .talents import project_talents
+            talents = project_talents(raw, local, team)
+            if talents is not None and (map_name is None or map_name == meta.get('map')):
+                result['talents'] = talents
             gameplay_clock = validated_gameplay_clock(meta)
             if gameplay_clock is not None:
                 result["meta"]["gameplay_clock"] = gameplay_clock

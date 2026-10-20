@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import struct
 import hashlib
+import copy
 import json
 import time
 from pathlib import Path
@@ -18,6 +19,7 @@ from .match import ActiveMatch
 from .local_experiments import pointer, text, _BudgetMemory, _clock
 
 PROFILE = json.loads((Path(__file__).parent/'profiles/98348-talents.json').read_text())
+VALIDATED_SCOPES = ()  # full recipe gate closed until this exact path is exercised
 
 
 def resolve_selections(indices, offered):
@@ -40,7 +42,7 @@ def resolve_selections(indices, offered):
     return result
 
 
-def read_tree(n, player, native_id):
+def read_tree(n, player, native_id, *, include_levels=False):
     """Private diagnostic: persisted indices plus the matching current Hero tree.
 
     Caller MUST bind player/hero/match/generation, fingerprint, budget and
@@ -77,10 +79,89 @@ def read_tree(n, player, native_id):
         offered.append({'index': index, 'tier': tier, 'slot': slot,
                         'catalog_id': text(n, pointer(n.value(desc+0x30, 'Q')))})
     indices = struct.unpack('<32I', n.read(n.base+0x3677a30+native_id*128, 128))
-    return {'selected': resolve_selections(indices, offered), 'offered': offered,
+    result = {'selected': resolve_selections(indices, offered), 'offered': offered,
             'unselected_tiers': sorted({r['tier'] for r in offered}
                 - {tier for tier, index in enumerate(indices) if index != 0xffffffff}),
             'level_requirement': 'unknown_NOT_YET_QUALIFIED'}
+    if include_levels:
+        result['tier_levels'] = read_tier_levels(n, data)
+        result.pop('level_requirement')
+        if any(row['tier'] not in result['tier_levels'] for row in offered):
+            raise NativeUnavailable('talent_tier_level_unknown')
+    return result
+
+
+def read_tier_levels(n, data):
+    """Hero.TalentTierArray: native selection level gate, not a fixed schedule."""
+    count = n.value(data+0x518)
+    if not 0 < count <= 31:
+        raise NativeUnavailable('talent_tier_levels_absent_or_invalid')
+    table = pointer(n.value(data+0x528, 'Q'))
+    result = {}
+    for i in range(count):
+        tier, level, _ = struct.unpack('<III', n.read(table+i*12, 12))
+        if not 1 <= tier <= 31 or not 1 <= level <= 30 or tier in result:
+            raise NativeUnavailable('talent_tier_level_unknown')
+        result[tier] = level
+    return result
+
+
+class NativeTalentChoices:
+    """Current local selection through a recipe-gated in-process receipt."""
+    def __init__(self, native):
+        self.native = native
+
+    def read(self, context, *, hero_ids=None):
+        from .acquisition import issue
+        expected = copy.deepcopy(context)
+        map_id, match_id, local, team, _ = AlliedPositions._context(expected)
+        ids = json.loads((Path(__file__).parent/'hero_ids.json').read_text()) if hero_ids is None else hero_ids
+        hero = ids.get(expected['local_player']['hero'], expected['local_player']['hero'])
+        if (map_id, hero) not in VALIDATED_SCOPES:
+            raise NativeUnavailable('talent_recipe_scope_unqualified')
+        budget = _BudgetMemory(self.native.memory, clock=time.monotonic)
+        recorded = _RecordedMemory(budget)
+        if budget.recorded_non_atomic:
+            raise NativeUnavailable('talent_non_atomic_dump')
+        n = NativeReader(recorded, profile=self.native.profile)
+        if PROFILE['build'] != n.profile['build'] or not PROFILE.get('signatures'):
+            raise NativeUnavailable('talent_profile_unsupported')
+        for s in PROFILE['signatures']:
+            if hashlib.sha256(n.read(n.base+s['rva'], s['size'])).hexdigest() != s['sha256']:
+                raise NativeUnavailable('talent_signature_mismatch')
+        if ActiveMatch().observe(n)['match_id'] != match_id:
+            raise NativeUnavailable('talent_match_mismatch')
+        first = _clock(n, recorded)
+        actual = AlliedPositions(n)._identity(n, ids)
+        if actual[:3] != (local, team, hero):
+            raise NativeUnavailable('talent_local_identity_mismatch')
+        player = pointer(n.player_pointer(local+1))
+        tag = n.value(player+0x58)
+        unit = n.unit_pointer(tag, local+1)
+        level = n.unit_level(unit)
+        tree = read_tree(n, player, local+1, include_levels=True)
+        selected = {row['tier']: row for row in tree['selected']}
+        offered_tiers = {row['tier'] for row in tree['offered']}
+        tiers = []
+        for tier, required in sorted(tree['tier_levels'].items()):
+            choice = selected.get(tier)
+            if choice is not None and required > level:
+                raise NativeUnavailable('talent_choice_above_current_level')
+            tiers.append({'tier': tier, 'required_level': required,
+                'status': 'selected' if choice else 'unselected' if tier in offered_tiers else 'unknown',
+                'slot': choice['slot'] if choice else None,
+                'catalog_id': choice['catalog_id'] if choice else None})
+        for address, data in recorded.coherence_reads('talent_torn'):
+            if budget.read_memory(address, len(data)) != data:
+                raise NativeUnavailable('talent_torn')
+        last = _clock(n, recorded)
+        elapsed = time.monotonic()-budget.started
+        if context != expected or not 0 <= elapsed <= 0.125 or not 0 <= last-first <= 0.125:
+            raise NativeUnavailable('talent_stale_or_context_changed')
+        return issue({'status': 'validated', 'map_id': map_id, 'match_id': match_id,
+            'local_id': local, 'team': team, 'local_hero': hero, 'generation': tag & 0x3fffff,
+            'native_session': actual[4], 'mission_t_s': last, 'read_window_s': elapsed,
+            'tiers': tiers, 'scope': 'local_selected_talents'}, budget.started)
 
 
 def diagnose(backend, probe, *, clock=None, native_profile=None):
@@ -99,7 +180,7 @@ def diagnose(backend, probe, *, clock=None, native_profile=None):
         if budget.recorded_non_atomic:
             raise NativeUnavailable('talent_non_atomic_dump')
         n = NativeReader(recorded, profile=native_profile)
-        if PROFILE['build'] != n.profile['build'] or len(PROFILE['signatures']) != 6:
+        if PROFILE['build'] != n.profile['build'] or not PROFILE.get('signatures'):
             raise NativeUnavailable('talent_profile_unsupported')
         for signature in PROFILE['signatures']:
             code = n.read(n.base+signature['rva'], signature['size'])

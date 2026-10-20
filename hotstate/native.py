@@ -194,6 +194,7 @@ class NativeReader:
         # Optional enrichments own their read-sets and rejection policy. An XY
         # read already refused as torn must not poison the independent core.
         result = n._read_state(expected, hero_ids=hero_ids, optional_native=self)
+        local_generation = n.value(n.player_pointer(local_id + 1) + 0x58) & 0x3FFFFF
         for address, data in memory.coherence_reads('lecture_native_dechiree'):
             if self.read(address, len(data)) != data:
                 raise NativeUnavailable('lecture_native_dechiree')
@@ -204,6 +205,7 @@ class NativeReader:
             result['perspective'] = issue({
                 'match_id': match_id, 'local_id': local_id, 'team': team,
                 'native_session': stamp, 'local_hero': hero,
+                'local_generation': local_generation,
                 'mission_t_s': result['meta']['t_s'], 'read_window_s': window,
                 'heroes': copy.deepcopy(result['heroes']),
             }, acquired)
@@ -283,6 +285,12 @@ class NativeReader:
                 objective = VolskayaObjective(optional_native).read(context, hero_ids=hero_ids)
         except NativeUnavailable:
             pass  # Unknown objective is not a cached event or a default zero.
+        from .talents import NativeTalentChoices
+        talents = None
+        try:
+            talents = NativeTalentChoices(optional_native).read(context, hero_ids=hero_ids)
+        except NativeUnavailable:
+            pass  # Unqualified/missing selection is unknown, never an offered choice.
         finished = self.read_clock()
         if not 0 <= finished - started <= 1:
             raise NativeUnavailable("observation_native_non_synchrone")
@@ -299,4 +307,6 @@ class NativeReader:
             result['visibility'] = visibility
         if objective is not None:
             result['objective'] = objective
+        if talents is not None:
+            result['talents'] = talents
         return result
