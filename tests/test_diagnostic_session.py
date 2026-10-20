@@ -64,7 +64,7 @@ class SessionTests(unittest.TestCase):
         calls = []
         def read():
             calls.append(None)
-            if len(calls) > 1:
+            if len(calls) > 2:
                 raise NativeUnavailable('lecture_native_dechiree')
             return {'meta': {}, 'stats': {}}
         self.assertEqual(self.run_fixture(read, gateway=gateway), 0)

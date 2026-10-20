@@ -76,7 +76,7 @@ def tactical_key(state: dict) -> str:
 class Pipeline:
     def __init__(self, coach: Coach, read_state, *, knowledge=knowledge_for,
                  synthesize=None, deliver=None, clock=time.monotonic,
-                 cooldown: float = 15.0, max_age: float = 20.0, journal=None):
+                 cooldown: float = 15.0, max_age: float = 20.0, journal=None, checkpoint=None):
         self.coach = coach
         self.read_state = read_state
         self.knowledge = knowledge
@@ -87,6 +87,7 @@ class Pipeline:
         self.max_age = max_age
         self.last_delivery = float("-inf")
         self.journal = journal
+        self.checkpoint = checkpoint
 
     def cycle(self) -> Decision:
         if self.clock() - self.last_delivery < self.cooldown:
@@ -116,6 +117,8 @@ class Pipeline:
         if self.journal is not None:
             self.journal.set_phase('api')
         decision = self.coach.decide(state, knowledge)
+        if self.checkpoint is not None:
+            self.checkpoint()
         if self.journal is not None:
             self.journal.proposal(decision)
         if not decision.parler:
@@ -127,6 +130,8 @@ class Pipeline:
             return Decision(raison="périmé")
         if not self.deliver(decision, speech, fresh):
             return Decision(raison="non_diffusé")
+        if self.checkpoint is not None:
+            self.checkpoint()
         self.coach.remember(decision)
         self.last_delivery = self.clock()
         return decision

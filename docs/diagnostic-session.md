@@ -24,8 +24,8 @@ jamais effacé par l'outil. Durée maximale 1800s, intervalle minimal15s, pas de
 rattrapage. Pas de GUI/audio, pas de collecte brute ni lecteur secondaire.
 
 Un backend est conservé entre les cycles réussis et fermé au refus, changement
-de partie, STOP ou limite. La prévalidation initiale est utilisée une fois dans
-le premier cycle, jamais réutilisée pour une relecture de fraîcheur. La source
+de partie, STOP ou limite. La prévalidation initiale n'est jamais réutilisée comme
+observation du cycle : le Pipeline acquiert après l'initialisation du coach. La source
 est réellement make_source -> read_current -> snapshot -> tactical_key -> Pipeline.
 Aucun gate remplacé, aucun reçu sérialisé/rechargé, aucune ouverture de scope.
 Le coach utilise les paramètres existants (confiance0.75, âge20s, cooldown15s).

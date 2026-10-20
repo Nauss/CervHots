@@ -27,6 +27,16 @@ class Boundary(Exception):
     pass
 
 
+def stop_requested(path):
+    # Path.exists suppresses OSError on Python3.14. Only an absent STOP allows
+    # continuation; permission/IO failures must propagate closed.
+    try:
+        path.stat()
+    except FileNotFoundError:
+        return False
+    return True
+
+
 def bounded(low, high):
     def parse(raw):
         value = float(raw)
@@ -95,7 +105,7 @@ def run_session(args, source_factory, coach_factory, emit, *, clock=time.monoton
     backend = read = pipeline = coach = binding = None
 
     def boundary():
-        if args.stop_file.exists():
+        if stop_requested(args.stop_file):
             raise Boundary('stop_file')
         if clock() >= deadline:
             raise Boundary('session_limit')
@@ -124,12 +134,9 @@ def run_session(args, source_factory, coach_factory, emit, *, clock=time.monoton
                     initial = read()
                     boundary()
                     binding = (initial.get('meta', {}).get('match_id'), initial.get('local_player'))
-                    # Reuse the validated first observation exactly once, avoiding a
-                    # redundant acquisition; every freshness call is still physical.
-                    pending = [initial]
                     def guarded_read():
                         boundary()
-                        current = pending.pop() if pending else read()
+                        current = read()
                         boundary()
                         if (current.get('meta', {}).get('match_id'), current.get('local_player')) != binding:
                             raise Boundary('session_changed')
@@ -144,7 +151,8 @@ def run_session(args, source_factory, coach_factory, emit, *, clock=time.monoton
                         coach.timeout = min(remaining, deadline - clock())
                         return result
                     pipeline = Pipeline(coach, guarded_read, knowledge=guarded_knowledge,
-                                        clock=clock, cooldown=15, max_age=20, journal=journal)
+                                        clock=clock, cooldown=15, max_age=20, journal=journal,
+                                        checkpoint=boundary)
                     journal.record('session_bound')
                 decision = pipeline.cycle()
                 journal.outcome(decision)
@@ -174,7 +182,7 @@ def run_session(args, source_factory, coach_factory, emit, *, clock=time.monoton
                     return 1
             wake = min(clock() + args.interval, deadline)
             while clock() < wake:
-                if args.stop_file.exists():
+                if stop_requested(args.stop_file):
                     journal.record('boundary', reason='stop_file')
                     return 0
                 sleep(min(0.2, wake - clock()))
@@ -216,7 +224,7 @@ def main(argv=None):
         parser().error('--live requires absolute --player-file, --output-dir and --stop-file')
     try:
         # STOP is checked before even reading the private identity.
-        if args.stop_file.exists():
+        if stop_requested(args.stop_file):
             print(json.dumps({'event': 'boundary', 'reason': 'stop_file'}))
             return 0
         player = args.player_file.read_text(encoding='utf-8').strip()
