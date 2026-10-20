@@ -44,6 +44,8 @@ def applicability(n, native_owner, flag, mode, value):
     """Reproduce c7acd30's condition and player opt-out, not cast legality."""
     _owner(native_owner)
     if not flag:
+        if mode > 6:
+            return False
         if mode == 2:
             eligible = ((value-65536) & 0xffffffff) > 15
         elif mode == 3:

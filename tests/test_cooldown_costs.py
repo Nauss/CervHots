@@ -85,6 +85,29 @@ class CurrentCostTests(unittest.TestCase):
         self.assertTrue(row['cooldown_ready'])
         self.assertEqual(row['cast_legality'], 'unknown')
 
+    def test_out_of_range_condition_rejects_before_globals_and_join_never_ready(self):
+        original = self.n.value
+        def guarded(address, fmt='I'):
+            if address in (self.n.base+PROFILE['cooldown_condition_index_rva'],
+                           self.n.base+PROFILE['condition_player_mask_rva']):
+                self.fail('invalid native mode read globals instead of returning false')
+            return original(address, fmt)
+        for mode in (7, 8, 255, 0xffffffff):
+            with self.subTest(mode=mode):
+                self.n.value = guarded
+                self.assertFalse(applicability(self.n, 1, 0, mode, 1))
+                self.values[0xb0060], self.values[0xb0064] = mode, 1
+                cost = current_cost(self.n, 0x10000, 1)
+                row = diagnostic_abilities([{'ability': 'Fixture', 'current_cost': cost}],
+                                           {'Abil/Fixture': 0}, {})[0]
+                self.assertEqual(row['cooldown_status'], 'unknown')
+                self.assertNotIn('cooldown_ready', row)
+        self.n.value = original
+        # Native flag!=0 intentionally bypasses the mode check, not player mask.
+        self.assertTrue(applicability(self.n, 1, 1, 0xffffffff, 1))
+        self.values[self.n.base+PROFILE['condition_player_mask_rva']] = 1 << 1
+        self.assertFalse(applicability(self.n, 1, 1, 0xffffffff, 1))
+
     def test_current_player_charge_max_is_not_catalogue_base_or_guessed_available(self):
         cost = current_cost(self.n, 0x10000, 1)
         cost.update(charges_max=3, charge_link='Charge/Fixture', charge_storage='player')
