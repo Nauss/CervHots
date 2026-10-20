@@ -27,9 +27,25 @@ def knowledge_for(state: dict) -> str:
     gameplay = validated_gameplay_clock(meta)
     clock = (gameplay["t_s"] if gameplay is not None and gameplay["phase"] == "playing"
              and gameplay["t_s"] >= 0 else None)
+    missing = set()
+    if meta.get('source') == 'live' and meta.get('native_status') == 'valide':
+        from contextlib import closing
+        import sqlite3
+        # A verified roster identity may be newer than the pinned static KB.
+        # Only exact canonical native IDs qualify; arbitrary/ambiguous names
+        # still go through the existing resolver and retain its refusal.
+        canonical = set(json.loads((ROOT / 'hotstate/hero_ids.json').read_text(encoding='utf-8')).values())
+        with closing(sqlite3.connect(Path(DB).resolve().as_uri() + '?mode=ro', uri=True)) as connection:
+            known = {row[0] for row in connection.execute('SELECT slug FROM heroes')}
+        missing = {h for h in composition['allies'] + composition['enemies']
+                   if h in canonical and h not in known}
     try:
-        return build(meta["map"], composition["allies"], composition["enemies"],
-                     None if clock is None else int(clock))
+        result = build(meta["map"], [h for h in composition['allies'] if h not in missing],
+                       [h for h in composition['enemies'] if h not in missing],
+                       None if clock is None else int(clock))
+        if missing:
+            result += '\nSavoir héros indisponible : ' + ', '.join(sorted(missing)) + '. Ne pas inventer de capacités, rôles, talents ou contres pour ces héros ; leur identité observée reste dans l’état.'
+        return result
     except SystemExit as exc:
         raise ValueError(f"Contexte KB invalide : {exc}") from None
 

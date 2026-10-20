@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "scope": "Incremental roster identity addition; not a complete requalification of all hero IDs",
+  "additions": {
+    "Xalatath": {
+      "slug": "xalatath",
+      "catalog": "CHero",
+      "attribute_id": "HXAL",
+      "installed_build": "2.57.0.98348",
+      "source": "mods/heromods/xalatath.stormmod/base.stormdata/gamedata/xalatathdata.xml",
+      "source_line": 3700,
+      "source_sha256": "1dada9326e5be7c6c52fc1afd3fd56cebc156c876be3ec80d4682e9582d3fef8",
+      "ckey": "1f00075cac71a37d9a55e939175050f1",
+      "ekey": "c4d1f588a253544d59ec0eccc4523d80",
+      "build_info_sha256": "b385866bcfd5c9a6c07281fc39788a4aedb794491eaa854d99e1ee6b04ae96a6",
+      "excerpt": "<CHero id=\"Xalatath\"><AttributeId value=\"HXAL\" />",
+      "corroboration": "Two preserved build98348 replay.initData rosters m_hero=Xalatath, decoded with explicit protocol91756 shim",
+      "kb_coverage": "Absent from pinned heroes-talents commit2dcbbf65f81bc3ce85926a5f90b6d8b44d1e4027; no static ability/role/talent facts added",
+      "qualification": "Exact catalog identity plus synthetic native CHero string lookup; not a historical refusal-cause proof and not a real CPlayer read",
+      "excluded_aliases": ["HeroXalatath", "HeroDVaPilot", "DVaPilot", "xalatath"],
+      "permission_changes": "None: core identity mapping only, no optional talent/cooldown/map scope"
+    }
+  }
+}
