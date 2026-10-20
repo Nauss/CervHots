@@ -10,6 +10,8 @@ from __future__ import annotations
 import argparse
 import contextlib
 import hashlib
+import importlib
+import importlib.metadata
 import json
 import os
 import sys
@@ -35,6 +37,20 @@ from cerveau.runner import tactical_key
 
 REAL_CLOCK = time.monotonic
 CANDIDATE_SCOPES = (('DragonShire','sonya'), ('DragonShire','stitches'), ('Volskaya','stitches'))
+
+
+def runtime_dependencies():
+    """Check the deferred cold map resolver import before opening a process.
+
+    This is only a dependency gate, not a live/cache availability qualification.
+    Importing MPQArchive does not open a map or read native process memory.
+    """
+    module = importlib.import_module('mpyq')
+    if not callable(getattr(module, 'MPQArchive', None)):
+        raise ValueError('mpyq.MPQArchive indisponible')
+    return {'python_executable': sys.executable, 'python_version': sys.version,
+            'mpyq': {'version': importlib.metadata.version('mpyq'),
+                     'source_sha256': hashlib.sha256(Path(module.__file__).read_bytes()).hexdigest()}}
 
 
 class PipelineMemory(ProcessBackend):
@@ -171,9 +187,13 @@ def main(argv=None):
     extra.extend(sorted((ROOT/'cerveau').glob('*.py')))
     extra.extend(sorted((ROOT/'grocoapi').glob('*.py')))
     commit, sources = frozen_sources(args.expected_commit, extra_paths=extra)
+    try:
+        runtime = runtime_dependencies()
+    except (ImportError, OSError, AttributeError, TypeError, ValueError) as exc:
+        parser.error('dependance map_from_cache mpyq invalide: '+type(exc).__name__)
     if args.preflight:
         print(json.dumps({'commit':commit, 'sources_sha256':sources,
-                          'live_opened':False, 'release':False, 'png':False}))
+                          'live_opened':False, 'release':False, 'png':False, 'runtime':runtime}))
         return 0
     if args.out is None:
         parser.error('--out requis')
@@ -190,7 +210,7 @@ def main(argv=None):
         try:
             stream.write(json.dumps({'kind':('qualified_full_talents_PRIVATE_VALIDATION_NOT_PUBLISH'
                 if args.qualified_talents else 'candidate_full_talents_NOT_RELEASE'),'commit':commit,
-                'sources_sha256':sources,'module_base':backend.module_base,'wall':utc(),
+                'sources_sha256':sources,'module_base':backend.module_base,'wall':utc(),'runtime':runtime,
                 'png':False,'coach_audio':False,'heap_scan':False,'candidate_allies':args.candidate_allies,
                 'qualified_talents':args.qualified_talents})+'\n')
             stream.flush()

@@ -1,7 +1,13 @@
 """Hermetic FULL candidate pipeline, no game/KB/network/coach."""
 import unittest
 import io
-from contextlib import redirect_stderr
+import hashlib
+import importlib.metadata
+import json
+import sys
+from pathlib import Path
+from types import SimpleNamespace
+from contextlib import redirect_stderr, redirect_stdout
 from unittest.mock import patch
 import test_talents_product as product
 import test_capture_talents as fixtures
@@ -10,6 +16,60 @@ from etudes.rea.scripts import capture_talents_pipeline as c
 
 
 class TalentFullPipelineTests(unittest.TestCase):
+    def test_missing_deferred_map_dependency_refuses_preflight_and_live_before_process(self):
+        for mode in ('--preflight', '--live'):
+            with self.subTest(mode=mode), \
+                    patch.object(c, 'frozen_sources', return_value=('a'*40, {})), \
+                    patch.dict(sys.modules, {'mpyq': None}), \
+                    patch.object(c, 'ProcessBackend') as backend, \
+                    redirect_stdout(io.StringIO()) as output, \
+                    redirect_stderr(io.StringIO()) as error, self.assertRaises(SystemExit) as stopped:
+                c.main([mode, '--qualified-talents', '--expected-commit', 'a'*40])
+            self.assertEqual(stopped.exception.code, 2)
+            self.assertIn('mpyq', error.getvalue())
+            self.assertEqual(output.getvalue(), '')
+            backend.assert_not_called()
+
+    def test_unusable_map_dependency_api_refuses_before_process(self):
+        for module in (SimpleNamespace(), SimpleNamespace(MPQArchive=None)):
+            with self.subTest(module=module), \
+                    patch.object(c, 'frozen_sources', return_value=('a'*40, {})), \
+                    patch.dict(sys.modules, {'mpyq': module}), \
+                    patch.object(c, 'ProcessBackend') as backend, \
+                    redirect_stdout(io.StringIO()), redirect_stderr(io.StringIO()), \
+                    self.assertRaises(SystemExit) as stopped:
+                c.main(['--preflight', '--qualified-talents', '--expected-commit', 'a'*40])
+            self.assertEqual(stopped.exception.code, 2)
+            backend.assert_not_called()
+
+    def test_preflight_fingerprints_imported_map_dependency_without_live_or_map_io(self):
+        module = SimpleNamespace(MPQArchive=lambda *args: self.fail('map opened'), __file__=__file__)
+        with patch.object(c, 'frozen_sources', return_value=('a'*40, {})), \
+                patch.dict(sys.modules, {'mpyq': module}), \
+                patch('importlib.metadata.version', return_value='fixture-not-installed'), \
+                patch.object(c, 'ProcessBackend') as backend, \
+                redirect_stdout(io.StringIO()) as output:
+            self.assertEqual(c.main(['--preflight', '--qualified-talents', '--expected-commit', 'a'*40]), 0)
+        report = json.loads(output.getvalue())
+        self.assertFalse(report['live_opened'])
+        self.assertEqual(report['runtime']['python_executable'], sys.executable)
+        self.assertEqual(report['runtime']['python_version'], sys.version)
+        self.assertEqual(report['runtime']['mpyq']['version'], 'fixture-not-installed')
+        self.assertEqual(report['runtime']['mpyq']['source_sha256'], hashlib.sha256(Path(__file__).read_bytes()).hexdigest())
+        backend.assert_not_called()
+
+    def test_unreadable_dependency_source_refuses_preflight(self):
+        module = SimpleNamespace(MPQArchive=object, __file__=str(Path(__file__) / 'absent'))
+        with patch.object(c, 'frozen_sources', return_value=('a'*40, {})), \
+                patch.dict(sys.modules, {'mpyq': module}), \
+                patch('importlib.metadata.version', return_value='fixture-not-installed'), \
+                patch.object(c, 'ProcessBackend') as backend, \
+                redirect_stdout(io.StringIO()), redirect_stderr(io.StringIO()), \
+                self.assertRaises(SystemExit) as stopped:
+            c.main(['--preflight', '--qualified-talents', '--expected-commit', 'a'*40])
+        self.assertEqual(stopped.exception.code, 2)
+        backend.assert_not_called()
+
     def test_qualified_cli_cannot_enable_research_allies(self):
         with patch.object(c,'frozen_sources',side_effect=AssertionError('freeze before invalid flags')), \
                 redirect_stderr(io.StringIO()), self.assertRaises(SystemExit):
