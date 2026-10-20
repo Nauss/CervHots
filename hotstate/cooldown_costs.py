@@ -1,4 +1,4 @@
-"""DIAGNOSTIC current LOCAL costs, native classes6/7 command0 only.
+"""DIAGNOSTIC current LOCAL costs, native classes6/7/8/9 command0 only.
 
 Reads current active data roots and the explicit owning player's overlay. No
 client call, base-loadout fallback, event countdown, HUD-slot or castability
@@ -14,10 +14,11 @@ from .local_experiments import pointer, text
 from .native import NativeUnavailable
 
 PROFILE = json.loads((Path(__file__).parent/'profiles/98348-cooldown-costs.json').read_text(encoding='utf-8'))
+_COST_OFFSETS = {6: 8, 7: 8, 8: 0x18, 9: 0x18}
 
 
 def verify(n):
-    if n.profile.get('build') != 98348 or PROFILE.get('build') != 98348 or len(PROFILE.get('signatures', ())) != 11:
+    if n.profile.get('build') != 98348 or PROFILE.get('build') != 98348 or len(PROFILE.get('signatures', ())) != 13:
         raise NativeUnavailable('cooldown_cost_profile_unsupported')
     for s in PROFILE['signatures']:
         if hashlib.sha256(n.read(n.base+s['rva'], s['size'])).hexdigest() != s['sha256']:
@@ -96,7 +97,7 @@ def current_cost(n, instance, native_owner):
         raise NativeUnavailable('cost_instance_root_not_current')
     classdesc = pointer(n.value(source+0x60, 'Q'))
     class_id = n.value(classdesc+0x24)
-    if class_id not in (6, 7):
+    if class_id not in _COST_OFFSETS:
         return {'status': 'unknown', 'native_class': class_id, 'reason': 'cost_native_class_unqualified'}
     membership = pointer(n.value(classdesc+0x100, 'Q'))
     if not n.value(membership+(class_id >> 3), 'B') & (1 << (class_id & 7)):
@@ -110,7 +111,9 @@ def current_cost(n, instance, native_owner):
     table = pointer(n.value(source+0x70, 'Q'))
     # dd1d410 explicitly overlays owner low5bits. Never choose default player16.
     overlay = pointer(n.value(table+native_owner*8, 'Q'))
-    cost = overlay+8  # classes6/7 command0, not command1's separate +90 block
+    # Distinct exported callbacks, not an allowlist copy of classes6/7's layout.
+    # Classes8/9 copy the current cost from overlay+18; command0 ONLY here.
+    cost = overlay+_COST_OFFSETS[class_id]
     maximum = n.value(cost+0x20, 'i')
     if not 0 <= maximum <= 1024*4096:
         raise NativeUnavailable('cost_charge_max_invalid')

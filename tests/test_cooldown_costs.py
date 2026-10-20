@@ -52,7 +52,7 @@ class CurrentCostTests(unittest.TestCase):
         with self.assertRaisesRegex(NativeUnavailable, 'callback'): current_cost(self.n, 0x10000, 1)
 
     def test_unknown_class_owner_and_storage_fail_closed(self):
-        self.values[0x80024] = 8
+        self.values[0x80024] = 10
         self.assertEqual(current_cost(self.n, 0x10000, 1)['reason'], 'cost_native_class_unqualified')
         for value in (0, 11, True, None):
             with self.assertRaises(NativeUnavailable): current_cost(self.n, 0x10000, value)
@@ -61,6 +61,25 @@ class CurrentCostTests(unittest.TestCase):
         row = current_cost(self.n, 0x10000, 1)
         self.assertEqual(row['cooldown_storage'], 'unqualified')
         self.assertIsNone(row['cooldown_applies'])
+
+    def test_live_observed_classes8_9_use_distinct_current_cost_overlay_offset(self):
+        for cls, callback in ((8, 12209904), (9, 12213248)):
+            with self.subTest(native_class=cls):
+                self.setUp()
+                fields = (0x20, 0x50, 0x38, 0x48, 0x30, 0x54, 0x58, 0x5c)
+                old = {offset:self.values[0xb0008+offset] for offset in fields}
+                for offset, value in old.items(): self.values[0xb0018+offset] = value
+                self.values[0xb0018+0x20] = 2*4096
+                self.values[0x80024] = cls
+                self.values[0x90000+(cls >> 3)] = 1 << (cls & 7)
+                self.values[self.n.base+PROFILE['registry_flags_rva']+(cls >> 3)] = 1 << (cls & 7)
+                registry = self.n.base+PROFILE['registry_rva']+cls*0x2a48
+                self.values.update({registry:1, registry+8:1, registry+0x60:self.n.base+callback})
+                row = current_cost(self.n, 0x10000, 1)
+                self.assertEqual(row['status'], 'diagnostic_current_cost')
+                self.assertEqual(row['charges_max'], 2)
+                self.assertEqual(row['cooldown_link'], 'Abil/Fixture')
+                self.assertTrue(row['cooldown_applies'])
 
     def test_applicability_native_conditions_and_player_mask(self):
         for mode, value, expected in ((0,0,False),(0,1,True),(2,65536,False),
