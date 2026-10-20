@@ -49,6 +49,8 @@ def bounded(low, high):
 def parser():
     result = argparse.ArgumentParser(description=__doc__)
     result.add_argument('--live', action='store_true')
+    result.add_argument('--coach-env-file', type=Path,
+                        help='explicit absolute runtime config; values are never logged')
     result.add_argument('--player-file', type=Path, help='private local identity; never logged')
     result.add_argument('--output-dir', type=Path, help='private, unique absolute session directory')
     result.add_argument('--stop-file', type=Path, help='absolute STOP file; never removed by this tool')
@@ -82,16 +84,20 @@ def preflight():
             'cache_contents_qualified': False}
 
 
-def configured_coach():
+def configured_coach(env_file=None):
     from .brain import Coach
     from grocoapi import GrocoClient
     from grocoapi.client import _load_env_file
-    env = _load_env_file()
+    if env_file is not None and (not env_file.is_absolute() or not env_file.is_file()):
+        raise ValueError('runtime_config_unavailable')
+    env = _load_env_file() if env_file is None else _load_env_file(env_file)
     model = os.environ.get('GROCO_MODEL', env.get('GROCO_MODEL'))
     effort = os.environ.get('GROCO_REASONING_EFFORT', env.get('GROCO_REASONING_EFFORT'))
     if not model:
         raise ValueError('model_not_configured')
-    return Coach(GrocoClient(), model, timeout=20, min_confidence=0.75, reasoning_effort=effort)
+    client = GrocoClient(base_url=os.environ.get('GROCO_API_URL', env.get('GROCO_API_URL')),
+                        token=os.environ.get('GROCO_API_TOKEN', env.get('GROCO_API_TOKEN')))
+    return Coach(client, model, timeout=20, min_confidence=0.75, reasoning_effort=effort)
 
 
 def run_session(args, source_factory, coach_factory, emit, *, clock=time.monotonic,
@@ -217,6 +223,15 @@ def main(argv=None):
         print(json.dumps({'event': 'preflight', 'ready': False, 'code': 'dependency_unavailable',
                           'memory_opened': False, 'chat_called': False, 'audio_enabled': False}))
         return 1
+    try:
+        # Constructor only: detect missing ignored worktree configuration before
+        # any process acquisition. No health/models/chat request is made here.
+        configured_coach(args.coach_env_file)
+    except Exception:
+        print(json.dumps({'event': 'preflight', 'ready': False, 'code': 'coach_configuration_unavailable',
+                          'memory_opened': False, 'chat_called': False, 'audio_enabled': False}))
+        return 1
+    result['coach_configured'] = True
     if not args.live:
         print(json.dumps(result, allow_nan=False))
         return 0
@@ -243,7 +258,8 @@ def main(argv=None):
                 def source(observe):
                     source_args.observe = observe
                     return make_source(source_args)
-                return run_session(args, source, configured_coach, emit, private_labels=(player,))
+                return run_session(args, source, lambda: configured_coach(args.coach_env_file),
+                                   emit, private_labels=(player,))
     except Exception:
         print(json.dumps({'event': 'error', 'code': 'session_initialization_or_io'}))
         return 1

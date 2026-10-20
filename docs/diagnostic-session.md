@@ -3,19 +3,27 @@
 Outil : `python -m cerveau.diagnostic_session --help`. Sans `--live`, uniquement
 précontrôle local : dépendance mpyq (même runtime_dependencies que les collecteurs),
 KB SQLite ouverte en lecture seule et explicitement fermée, profils JSON,
-protocole installé et map_timings. Pas de processus, compte, chat ou audio.
+protocole installé et map_timings, puis construction du coach sans requête réseau.
+Pas de processus, appel compte/chat ou audio. Une configuration coach absente
+produit `ready=false/coach_configuration_unavailable` avant toute acquisition.
 Ce contrôle ne qualifie ni les archives de carte ni une acquisition.
 
 Le worktree doit disposer de `kb/data/kb.db` (fichier ignoré, copie du runtime
 principal), de ses profils versionnés et des dépendances installées dans
 l'interpréteur absolu du coach. Ne pas présumer un `tts/.venv` local au worktree.
 Le cache Battle.net est vérifié comme dossier uniquement, pas comme observation.
+La configuration ignorée n'est pas copiée dans le worktree : fournir explicitement
+`--coach-env-file <chemin-absolu-config-runtime>` au précontrôle ET au live, ou les
+variables d'environnement existantes. Les valeurs ne sont jamais journalisées.
+Le fichier est lu par le client normal, sans affichage ni copie de ses secrets ;
+les variables d'environnement gardent leur priorité. Sans option, le comportement
+de configuration du dépôt courant reste inchangé.
 
 En recette privée autorisée, l'opérateur fournit --live et trois chemins absolus :
 --player-file (identité locale privée jamais exportée), --output-dir (session
 inédite), --stop-file. Exemple :
 
-    C:/root/dev/AI/CervHots/tts/.venv/Scripts/python.exe -m cerveau.diagnostic_session --live --player-file <privé> --output-dir <session-absolue-inédite> --stop-file <STOP-absolu> --max-seconds 300 --interval 30
+    C:/root/dev/AI/CervHots/tts/.venv/Scripts/python.exe -m cerveau.diagnostic_session --coach-env-file <config-runtime-absolue> --live --player-file <privé> --output-dir <session-absolue-inédite> --stop-file <STOP-absolu> --max-seconds 300 --interval 30
 
 Un verrou exclusif `diagnostic-session.lock` dans le parent du dossier de session
 empêche deux collecteurs partageant ce répertoire. Un crash laisse le verrou :

@@ -4,6 +4,7 @@ from pathlib import Path
 import tempfile
 from types import SimpleNamespace
 import unittest
+from unittest.mock import patch
 
 from cerveau.brain import Coach
 from hotstate.native import NativeUnavailable
@@ -11,6 +12,47 @@ from test_cerveau import Gateway
 
 
 class SessionTests(unittest.TestCase):
+    def test_native_reader_normalizer_key_and_configured_coach_reach_journal(self):
+        # Synthetic process bytes only: the real acquisition/normalizer/key,
+        # configuration constructor, Pipeline and journal all run unchanged.
+        import os
+        from cerveau.diagnostic_session import configured_coach, run_session
+        from cerveau.runner import tactical_key
+        from cerveau.state import snapshot as normalize
+        from hotstate.reader import snapshot as acquire
+        from hotstate.live import read_current
+        from test_native_context import TypedContextMemory
+        from test_capture_visibility_pipeline import FixtureProcess, PipelineCollectorTests
+        m = TypedContextMemory()
+        a, b, c = PipelineCollectorTests().options(m)
+        backend = FixtureProcess(m)
+        closed, records, now = [], [], [0.0]
+        backend.close = lambda: closed.append(True)
+        gateway = Gateway()
+        with tempfile.TemporaryDirectory() as tmp:
+            config = Path(tmp) / 'runtime.conf'
+            config.write_text('GROCO_MODEL=fixture-model\nGROCO_API_TOKEN=fixture-token\n', encoding='utf-8')
+            args = SimpleNamespace(stop_file=Path(tmp)/'STOP', max_seconds=1, interval=15)
+            probe = m.probe()
+            def source(observe):
+                return lambda: read_current(backend, {'triggers': {}}, context=probe,
+                                            project=normalize, key=tactical_key, observe=observe), backend
+            def acquire_fixture(memory, mapping, **kwargs):
+                return acquire(memory, mapping, native_profile=m.profile, **kwargs)
+            with a, b, c, patch.dict(os.environ, {}, clear=True), \
+                    patch('hotstate.live.memory_snapshot', side_effect=acquire_fixture), \
+                    patch('grocoapi.GrocoClient.chat', side_effect=gateway.chat):
+                result = run_session(args, source, lambda: configured_coach(config), records.append,
+                                     clock=lambda: now[0], sleep=lambda d: now.__setitem__(0, now[0]+d),
+                                     knowledge=lambda s: '')
+        self.assertEqual(result, 0)
+        self.assertTrue(gateway.calls, records)
+        self.assertEqual(len(closed), 1)
+        self.assertTrue(any(r['event'] == 'observation' and len(r['heroes']) == 10 for r in records))
+        self.assertTrue(any(r['event'] == 'acquisition' and r['outcome'] == 'accepted' for r in records))
+        self.assertTrue(any(r['event'] == 'outcome' for r in records))
+        self.assertNotIn('OWNER_TEST', json.dumps(records))
+
     def run_fixture(self, read, *, stop=False, gateway=None, seconds=1):
         from cerveau.diagnostic_session import run_session
         self.now = 0.0
