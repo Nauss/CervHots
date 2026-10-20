@@ -126,5 +126,57 @@ class AcquisitionTests(unittest.TestCase):
                 patch.object(cli, 'ProcessBackend', side_effect=AssertionError('game opened')):
             self.assertEqual(cli.main(['--preflight', '--expected-commit', 'fixture']), 0)
 
+    def test_extended_sources_are_local_independent_and_budgeted(self):
+        from hotstate import cooldown_sources
+        def instances(n, unit):
+            self.assertEqual(unit, 0x20000)
+            n.read(0x61000, 8)
+            return [{'ability': 'CurrentAbility', 'cost_binding': 'unproven'}]
+        def store(n, owner, *, storage, charges=False):
+            self.assertEqual(owner, 0x10000 if storage == 'player' else 0x20000)
+            n.read(0x62000, 8)
+            if charges:
+                raise NativeUnavailable('fixture_charge_unknown')
+            return {'Abil/CurrentAbility': {'remaining_s': 1, 'ability_binding': 'unproven'}}
+        with patch.object(cooldown_sources, 'verify'), \
+                patch.object(cooldown_sources, 'active_instances', instances), \
+                patch.object(cooldown_sources, 'stored_links', store):
+            row = cli.take_sample(self.backend, self.probe, extended_sources=True)
+            actual = cli.replay_sample(row, self.backend.module_base, self.probe)
+        sources = actual['native_sources']
+        self.assertEqual(sources['active_instances']['status'], 'diagnostic_observed')
+        self.assertEqual(sources['unit_charges']['status'], 'unknown')
+        self.assertEqual(sources['player_charges']['status'], 'unknown')
+        self.assertEqual(actual['ability_binding'], 'unproven')
+        self.assertEqual(row['observation']['read_count'], len(self.calls))
+
+    def test_extended_budget_failure_cannot_be_hidden_as_optional_unknown(self):
+        from hotstate import cooldown_sources
+        with patch.object(cooldown_sources, 'verify'), \
+                patch.object(cooldown_sources, 'active_instances', side_effect=NativeUnavailable('prototype_budget_exceeded')):
+            row = cd.observe(self.backend, self.probe, clock=lambda: self.now, extended_sources=True)
+        self.assertEqual(row['status'], 'rejected')
+        self.assertEqual(row['reason'], 'prototype_budget_exceeded')
+        self.assertNotIn('links', row)
+
+    def test_map_replay_roundtrip_cold_warm_and_original_probe_unchanged(self):
+        import json
+        handles = (b's2ma'+bytes(36),)
+        def context(probe, budget, **options):
+            data = budget.read_memory(0x50000, 4)
+            probe.read_set = [(0x50000, data)]
+            probe.result = copy.deepcopy(self.context)
+            if handles not in probe.map_cache:
+                probe.map_cache[handles] = probe.map_resolver(handles)
+        self.probe.map_resolver = lambda h: {'map_id': 'DragonShire'}
+        with patch.object(NativeContextProbe, 'observe_native', context):
+            for warm in (False, True):
+                row = json.loads(json.dumps(cli.take_sample(self.backend, self.probe)))
+                self.assertEqual(bool(row['map_cache_before']), warm)
+                saved = copy.deepcopy(self.probe.map_cache)
+                self.probe.map_resolver = lambda _: self.fail('external resolution during replay')
+                self.assertEqual(cli.replay_sample(row, self.backend.module_base, self.probe), row['observation'])
+                self.assertEqual(self.probe.map_cache, saved)
+
 
 if __name__ == '__main__': unittest.main()

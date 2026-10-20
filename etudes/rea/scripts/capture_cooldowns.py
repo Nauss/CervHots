@@ -31,15 +31,16 @@ class Clock:
         return value
 
 
-def take_sample(backend, probe):
+def take_sample(backend, probe, *, extended_sources=False):
     trace, clock = TraceMemory(backend), Clock()
     before = utc()
     cache_before = encode_cache(probe.map_cache)
-    result = observe(trace, probe, clock=clock)
+    result = observe(trace, probe, clock=clock, extended_sources=extended_sources)
     return {'kind': 'local_unit_cooldown_diagnostic_NOT_PRODUCT', 'wall_before': before,
             'wall_after': utc(), 'observation': result, 'reads': trace.reads,
             'clock_values': clock.values, 'bytes_requested': trace.bytes_requested,
             'recorded_non_atomic': trace.recorded_non_atomic,
+            'extended_sources': extended_sources,
             'map_cache_before': cache_before, 'map_cache_after': encode_cache(probe.map_cache)}
 
 
@@ -64,7 +65,7 @@ def replay_sample(row, module_base, probe):
         return copy.deepcopy(after[tuple(handles)])
     isolated = NativeContextProbe(probe.player_name, profile=probe.profile, map_resolver=resolve)
     isolated.map_cache = decode_cache(row['map_cache_before'])
-    actual = observe(trace, isolated, clock=clock)
+    actual = observe(trace, isolated, clock=clock, extended_sources=row.get('extended_sources', False))
     trace.finish()
     if (clock.values != row['clock_values'] or actual != row['observation']
             or encode_cache(isolated.map_cache) != row['map_cache_after']):
@@ -82,6 +83,7 @@ def main(argv=None):
     parser.add_argument('--duration', type=float, default=25)
     parser.add_argument('--interval', type=float, default=0.25)
     parser.add_argument('--private-player-env', default='HOTS_PLAYER')
+    parser.add_argument('--active-storage-diagnostic', action='store_true')
     args = parser.parse_args(argv)
     if not 0 < args.duration <= 120 or not 0.25 <= args.interval <= 10:
         parser.error('duration/interval hors bornes')
@@ -106,11 +108,12 @@ def main(argv=None):
         try:
             stream.write(json.dumps({'kind': 'local_unit_cooldown_diagnostic_NOT_PRODUCT',
                 'commit': commit, 'sources_sha256': sources, 'module_base': backend.module_base,
+                'extended_sources': args.active_storage_diagnostic,
                 'wall': utc(), 'png': False, 'coach_audio': False, 'heap_scan': False})+'\n')
             stream.flush()
             deadline = time.monotonic()+args.duration
             while time.monotonic() < deadline:
-                stream.write(json.dumps(take_sample(backend, probe), allow_nan=False)+'\n')
+                stream.write(json.dumps(take_sample(backend, probe, extended_sources=args.active_storage_diagnostic), allow_nan=False)+'\n')
                 stream.flush()
                 remaining = min(args.interval, deadline-time.monotonic())
                 if remaining > 0:
