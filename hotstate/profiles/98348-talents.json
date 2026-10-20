@@ -1,0 +1,44 @@
+{
+  "build": 98348,
+  "release": false,
+  "source": "native_selected_hero_talent_tree_NOT_POSSESSIONS",
+  "selection_rva": 57113136,
+  "signatures": [
+    {
+      "name": "SelectedTreeIndex",
+      "rva": 11597600,
+      "size": 32,
+      "sha256": "f55cefbde1d9f36b9e01d0927f6163250bcda35188c8281630220ff1fe5a164b"
+    },
+    {
+      "name": "SelectedTreeColumn",
+      "rva": 11597376,
+      "size": 128,
+      "sha256": "7a4a4afa2779a313f4758b2a0e845ab9ae6159d9ffe276b84b58c609a4202afc"
+    },
+    {
+      "name": "SetSelectedHeroTalent",
+      "rva": 11601408,
+      "size": 288,
+      "sha256": "a86213a132fb1f8d88fc9943509379766c6c8c6f30ccc22825e46443d798b11c"
+    },
+    {
+      "name": "SetSelectedTreeIndex",
+      "rva": 11601696,
+      "size": 512,
+      "sha256": "c50d95838a875f6b3e6b57507937b2772b995706c7b2ffae4ee54291d424983b"
+    },
+    {
+      "name": "HeroDataResolver",
+      "rva": 33678720,
+      "size": 128,
+      "sha256": "749d29906fcb316b7e1141a532ab49abf87d1bb6f0db2321d706d00f16e96972"
+    },
+    {
+      "name": "HeroTalentRecord",
+      "rva": 11596128,
+      "size": 128,
+      "sha256": "c55984b2794e8427dac27ea88d3086b654323fd71d73774613a21f15999b0edc"
+    }
+  ]
+}
