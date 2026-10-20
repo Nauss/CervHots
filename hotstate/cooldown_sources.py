@@ -26,7 +26,7 @@ def verify(n):
             raise NativeUnavailable('cooldown_sources_signature_mismatch')
 
 
-def active_instances(n, unit):
+def active_instances(n, unit, *, native_owner=None):
     """Native UnitAbilityCount/Get active ordinals; names resolved via instances.
 
     A missing instance/descriptor is unknown/refused, NOT absent or ready.
@@ -65,9 +65,18 @@ def active_instances(n, unit):
             raise NativeUnavailable('ability_catalogue_index_invalid')
         descriptor = pointer(n.value(table+index*8, 'Q'))
         name = text(n, pointer(n.value(descriptor+0x30, 'Q')))
-        rows.append({'ordinal': len(rows)+1, 'instance_slot': slot,
+        row = {'ordinal': len(rows)+1, 'instance_slot': slot,
                      'ability': name, 'slot_kind': 'native_instance_NOT_HUD_button',
-                     'cost_binding': 'unproven', 'ability_type': 'unqualified'})
+                     'cost_binding': 'unproven', 'ability_type': 'unqualified'}
+        if native_owner is not None:
+            from .cooldown_costs import current_cost
+            try:
+                row['current_cost'] = current_cost(n, instance, native_owner)
+            except NativeUnavailable as exc:
+                if str(exc) in ('prototype_window_expired', 'prototype_budget_exceeded'):
+                    raise
+                row['current_cost'] = {'status': 'unknown', 'reason': str(exc)}
+        rows.append(row)
     return rows
 
 

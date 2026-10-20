@@ -159,6 +159,31 @@ class AcquisitionTests(unittest.TestCase):
         self.assertEqual(row['reason'], 'prototype_budget_exceeded')
         self.assertNotIn('links', row)
 
+    def test_current_cost_mode_is_explicit_and_includes_join_in_window(self):
+        from hotstate import cooldown_sources, cooldown_costs
+        self.assertEqual(cd.observe(self.backend, self.probe, clock=lambda: self.now,
+            current_costs=True)['reason'], 'cooldown_diagnostic_mode_invalid')
+        def instances(n, unit, *, native_owner):
+            self.assertEqual(native_owner, 1)
+            n.read(0x61000, 8)
+            return [{'ability': 'CurrentAbility', 'current_cost': {'status': 'diagnostic_current_cost',
+                'cooldown_applies': True, 'cooldown_storage': 'unit', 'cooldown_link': 'Abil/StitchesSlam',
+                'charges_max': 0}}]
+        with patch.object(cooldown_sources, 'verify'), patch.object(cooldown_costs, 'verify'), \
+                patch.object(cooldown_sources, 'active_instances', instances), \
+                patch.object(cooldown_sources, 'stored_links', return_value={}):
+            row = cli.take_sample(self.backend, self.probe, extended_sources=True, current_costs=True)
+            actual = cli.replay_sample(row, self.backend.module_base, self.probe)
+            self.assertTrue(actual['ability_diagnostics'][0]['cooldown_ready'])
+            def slow(*args):
+                self.now += 0.126
+                return []
+            with patch.object(cooldown_costs, 'diagnostic_abilities', slow):
+                late = cd.observe(self.backend, self.probe, clock=lambda: self.now,
+                    extended_sources=True, current_costs=True)
+            self.assertEqual(late['status'], 'rejected')
+            self.assertNotIn('ability_diagnostics', late)
+
     def test_map_replay_roundtrip_cold_warm_and_original_probe_unchanged(self):
         import json
         handles = (b's2ma'+bytes(36),)

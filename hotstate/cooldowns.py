@@ -55,7 +55,7 @@ def select_link(links, name):
                 cooldown_ready=remaining == 0)
 
 
-def observe(backend, probe, *, clock=None, extended_sources=False):
+def observe(backend, probe, *, clock=None, extended_sources=False, current_costs=False):
     """One diagnostic acquisition, WHOLE context/identity/rechecks included.
 
     Raw readsets are owned by the caller, never emitted here. No receipt for
@@ -77,11 +77,15 @@ def observe(backend, probe, *, clock=None, extended_sources=False):
         for signature in SIGNATURES:
             if hashlib.sha256(n.read(n.base+signature['rva'], signature['size'])).hexdigest() != signature['sha256']:
                 raise NativeUnavailable('cooldown_signature_mismatch')
-        if type(extended_sources) is not bool:
+        if (type(extended_sources) is not bool or type(current_costs) is not bool
+                or (current_costs and not extended_sources)):
             raise NativeUnavailable('cooldown_diagnostic_mode_invalid')
         if extended_sources:
             from . import cooldown_sources
             cooldown_sources.verify(n)
+        if current_costs:
+            from . import cooldown_costs
+            cooldown_costs.verify(n)
         initial = ActiveMatch().observe(n)
         first = _clock(n, recorded)
         probe.begin()
@@ -103,10 +107,11 @@ def observe(backend, probe, *, clock=None, extended_sources=False):
         alive = n.value(unit+0x39, 'B') & 6 == 0
         # Dead/corpse list is not a live ability source. Still recheck identity.
         links = read_unit_links(n, unit) if alive else None
-        sources = None
+        sources, diagnostics = None, None
         if alive and extended_sources:
             sources = {}
-            getters = {'active_instances': lambda: cooldown_sources.active_instances(n, unit),
+            getters = {'active_instances': lambda: (cooldown_sources.active_instances(n, unit, native_owner=local+1)
+                        if current_costs else cooldown_sources.active_instances(n, unit)),
                        'unit_charges': lambda: cooldown_sources.stored_links(n, unit, storage='unit', charges=True),
                        'player_cooldowns': lambda: cooldown_sources.stored_links(n, player, storage='player'),
                        'player_charges': lambda: cooldown_sources.stored_links(n, player, storage='player', charges=True)}
@@ -117,6 +122,10 @@ def observe(backend, probe, *, clock=None, extended_sources=False):
                     if str(exc) in ('prototype_window_expired', 'prototype_budget_exceeded'):
                         raise
                     sources[name] = {'status': 'unknown', 'reason': str(exc)}
+            if current_costs:
+                active = sources['active_instances']
+                diagnostics = (cooldown_costs.diagnostic_abilities(active['value'], links, sources)
+                    if active['status'] == 'diagnostic_observed' else [])
         for address, data in recorded.coherence_reads('cooldown_torn'):
             if budget.read_memory(address, len(data)) != data:
                 raise NativeUnavailable('cooldown_torn')
@@ -135,6 +144,8 @@ def observe(backend, probe, *, clock=None, extended_sources=False):
             row['links'] = links
             if extended_sources:
                 row['native_sources'] = sources
+            if current_costs:
+                row['ability_diagnostics'] = diagnostics
         else:
             row['reason'] = 'local_dead_no_ability_observation'
     except NativeUnavailable as exc:

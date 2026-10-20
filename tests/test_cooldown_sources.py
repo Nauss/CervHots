@@ -53,13 +53,13 @@ class SourceTests(unittest.TestCase):
         self.values[0x30028] = 0x10
         with self.assertRaises(NativeUnavailable): active_instances(self.n, 0x10000)
 
-    def list_fixture(self, charges):
+    def list_fixture(self, charges, storage=None):
         self.blobs[0x40020] = struct.pack('<ii', 65536, -32768)
-        self.values.update({0x10008: 0x20000, 0x20000: 0x30000, 0x30008: 0x40000,
+        self.values.update({0x10008: 0x20000, 0x20000: 0x30000, 0x20008: 0x30000, 0x30008: 0x40000,
                             0x101f8: 0x40000, 0x101e8: 0x40000,
                             0x40008: 0, 0x40010: 0x90000, 0x40018: 65536,
                             0x4001c: 6144, 0x40020: 65536, 0x40024: -32768})
-        return stored_links(self.n, 0x10000, storage='player' if not charges else 'unit', charges=charges)
+        return stored_links(self.n, 0x10000, storage=storage or ('player' if not charges else 'unit'), charges=charges)
 
     def test_player_cd_and_unit_charge_have_different_native_heads(self):
         self.assertEqual(self.list_fixture(False)['StitchesSlam']['remaining_s'], 1)
@@ -74,6 +74,13 @@ class SourceTests(unittest.TestCase):
         self.values[0x101f8] = 1
         self.assertEqual(stored_links(self.n, 0x10000, storage='player'), {})
         with self.assertRaises(ValueError): stored_links(self.n, 0x10000, storage='enemy')
+
+    def test_all_four_storage_paths_have_positive_fixtures(self):
+        for storage in ('unit', 'player'):
+            for charges in (False, True):
+                row = self.list_fixture(charges, storage)['StitchesSlam']
+                self.assertEqual(row['regen_s'] if charges else row['remaining_s'], 1)
+                if charges: self.assertEqual(row['charges_used'], 1.5)
 
 
 if __name__ == '__main__': unittest.main()
