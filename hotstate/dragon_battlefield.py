@@ -1,8 +1,9 @@
-"""Unreleased RO Dragon Shire camps/structures diagnostic, build98348 only.
+"""RO Dragon Shire camps/structures, fingerprinted build98348 only.
 
-No public receipt or coach integration. An observed census is NOT a complete
-initial catalogue; missing references never imply destruction. Recipes remain
-required for capture/respawn, destruction/morph and real consumer qualification.
+Fixed native initial geometry and same-match tracker recipes are independent
+of permission. Public reads require native identity, CURRENT, coherent sources
+and the whole physical budget; missing references never imply destruction.
+Branch qualification is not integration/main/product publication.
 """
 from __future__ import annotations
 
@@ -21,7 +22,7 @@ from .native_context import NativeContextProbe
 from .positions import AlliedPositions
 
 PROFILE = json.loads((Path(__file__).parent/'profiles/98348-dragon-battlefield.json').read_text(encoding='utf-8'))
-VALIDATED_MAPS = ()  # Candidate consumer only; no live Full recipe yet.
+VALIDATED_MAPS = ('DragonShire',)  # Independent recipe and exact source review required before activation.
 GIANTS = ('MercDefenderSiegeGiant',)*2
 KNIGHTS = ('MercDefenderMeleeKnight',)*3+('MercDefenderRangedMage',)
 DEFENDERS = {1: GIANTS, 2: KNIGHTS, 3: GIANTS, 4: KNIGHTS, 5: KNIGHTS}

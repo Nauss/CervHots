@@ -47,10 +47,11 @@ class PipelineMemory(ProcessBackend):
         return self.trace.positions_clock()
 
 
-def take_sample(backend, probe, *, clock=None, native_profile=None):
+def take_sample(backend, probe, *, clock=None, native_profile=None, candidate_permission=True):
     memory = PipelineMemory(backend)
     recorded = RecordedClock(REAL_CLOCK if clock is None else clock)
-    row = {'status':'rejected', 'kind':'candidate_full_dragon_NOT_RELEASE', 'wall_before':utc(),
+    row = {'status':'rejected', 'kind':('candidate_full_dragon_NOT_RELEASE' if candidate_permission else 'qualified_full_dragon_NOT_RELEASE'),
+           'candidate_override':candidate_permission, 'wall_before':utc(),
            'recorded_non_atomic':memory.recorded_non_atomic,
            'execution_kind':('fixture_or_historical_NOT_LIVE' if clock is not None or native_profile is not None
                              else 'real_monotonic_record_only')}
@@ -80,7 +81,8 @@ def take_sample(backend, probe, *, clock=None, native_profile=None):
             raise NativeUnavailable('contexte_natif_dragon_pipeline_requis')
         with contextlib.ExitStack() as stack:
             stack.enter_context(patch('time.monotonic', recorded))
-            stack.enter_context(patch('hotstate.dragon.VALIDATED_MAPS', ('DragonShire',)))
+            if candidate_permission:
+                stack.enter_context(patch('hotstate.dragon.VALIDATED_MAPS', ('DragonShire',)))
             stack.enter_context(patch.object(DragonObjective, 'read', observed))
             stack.enter_context(patch.object(probe, 'map_resolver', resolver))
             if native_profile is not None:
@@ -123,7 +125,8 @@ def replay_sample(row, module_base, probe, *, native_profile=None):
     times = iter(row['wall_clock_calls'])
     with patch.object(probe,'map_resolver',lambda _:dict(row.get('map_metadata_observed',{}))), \
          patch.object(probe,'map_cache',{}):
-        actual = take_sample(shadow,probe,clock=lambda:next(times),native_profile=native_profile)
+        actual = take_sample(shadow,probe,clock=lambda:next(times),native_profile=native_profile,
+                             candidate_permission=row.get('candidate_override',True))
     replay.finish()
     sentinel = object()
     if next(times,sentinel) is not sentinel:

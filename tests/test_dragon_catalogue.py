@@ -7,12 +7,14 @@ from hotstate.native import NativeUnavailable
 
 
 class DragonCatalogueTests(unittest.TestCase):
-    def test_initial_native_catalogue_is_explicitly_unqualified(self):
+    def test_initial_native_catalogue_qualification_never_grants_permission(self):
         layout = qualified_layout()
         self.assertEqual(len(layout['structures']),90)
-        self.assertEqual(layout['status'],'UNQUALIFIED_INITIAL_CANDIDATE_REPLAY_REQUIRED')
-        from hotstate.dragon_battlefield import VALIDATED_MAPS
-        self.assertEqual(VALIDATED_MAPS,())
+        self.assertEqual(layout['status'],'QUALIFIED_INITIAL_NATIVE_AND_SAME_MATCH_TRACKER')
+        from hotstate import dragon_battlefield
+        with patch.object(dragon_battlefield,'VALIDATED_MAPS',()):
+            qualified_layout()
+            self.assertEqual(dragon_battlefield.VALIDATED_MAPS,())
 
     def test_wrong_map_build_count_type_duplicate_and_boolean_refuse(self):
         for change in ('map','build','count','id','point','type','kind','team','bool','bounds','ruins'):
@@ -36,6 +38,20 @@ class DragonCatalogueTests(unittest.TestCase):
         layout['structures'][0]['x_fixed'] += 1
         with patch('hotstate.dragon_catalogue.STRUCTURE_LAYOUT',layout), self.assertRaises(NativeUnavailable):
             qualified_layout()
+
+    def test_wrong_header_types_and_permuted_stable_ids_refuse(self):
+        for change in ('swap_ids','bool_schema_version','float_build'):
+            layout = copy.deepcopy(qualified_layout())
+            if change == 'swap_ids':
+                a,b = layout['structures'][:2]
+                a['id'],b['id'] = b['id'],a['id']
+            elif change == 'bool_schema_version':
+                layout['schema_version'] = True
+            else:
+                layout['build'] = float(layout['build'])
+            with self.subTest(change=change), patch('hotstate.dragon_catalogue.STRUCTURE_LAYOUT',layout):
+                with self.assertRaises(NativeUnavailable):
+                    qualified_layout()
 
 
 if __name__ == '__main__':

@@ -2,7 +2,17 @@
   "schema_version": 1,
   "build": 98348,
   "map": "DragonShire",
-  "status": "UNQUALIFIED_INITIAL_CANDIDATE_REPLAY_REQUIRED",
+  "status": "QUALIFIED_INITIAL_NATIVE_AND_SAME_MATCH_TRACKER",
+  "qualification": {
+    "scope": "initial_fixed_geometry_only_NOT_product_permission",
+    "initial_native_samples": 30,
+    "tracker_matched_structures": 90,
+    "tracker_exact_xy": 48,
+    "tracker_floor_xy": 42,
+    "tracker_index_generation_pairs": 90,
+    "initial_replay_sha256": "f5a3480978a83a8ac4429e238429afa285cbca63519145d1ed8cca484573d327",
+    "protocol_decoder": "91756_explicit_shim_for_98348"
+  },
   "raw_sha256": "91d45de629c22ac49ffa448ad5c5e303b4291e93f5d4bf5496366a81307e215c",
   "catalogue_sha256": "31a1e755f7914c2d1ebd58ba55849e3cc485b550ce36dee76c9c008af332ff8a",
   "structures": [

@@ -1,16 +1,30 @@
-# Dragon Shire — camps et structures, candidat natif NON livré
+# Dragon Shire — camps et structures natifs qualifiés, proposition de branche
 
-## Périmètre et fermeture
+## Périmètre et frontière de livraison — 20 octobre 2026
 
-Build98348 exclusivement. `DragonBattlefield.read()` refuse inconditionnellement
-avec `recette_champ_bataille_dragon_absente`. Aucun branchement à `read_current`,
-au normaliseur, au coach ou à l'audio ; les allowlists publiques Volskaya ne
-changent pas. Le succès d'un diagnostic ne qualifie pas le consommateur produit.
+Build98348/DragonShire exclusivement. Le vrai chemin est désormais
+`NativeContextProbe → read_current → NativeReader → DragonBattlefield.read →
+cerveau.state.snapshot → cerveau.battlefield.project → tactical_key`.
+Une acceptation Full exige l'objectif Dragon typé, cinq camps et 90structures,
+dans le même budget WHOLE. Un diagnostic seul, une famille absente ou une clé
+calculée après expiration du budget ne sont jamais des acceptations Full.
 
-Le collecteur privé `etudes/rea/scripts/capture_dragon_battlefield.py` accepte
-uniquement des fenêtres de 30s maximum, sans PNG/OCR ni pilotage GUI. Les données
-brutes/readsets restent dans `out/`, jamais dans Git ni dans un prompt modèle.
-Le libellé du joueur est fourni par variable locale privée, pas par argument.
+La proposition autorise uniquement DragonShire dans le scope de cette famille.
+Le catalogue ne donne aucune permission par lui-même ; une allowlist vide ferme
+toujours le lecteur et le normaliseur. Aucun scope Volskaya n'est élargi.
+La proposition doit être revue exactement puis commitée avant le préflight et
+la courte recette finale `--qualified-battlefield`, sans override de permission.
+Ni cette branche ni ses preuves ne valent intégration/push ou livraison produit.
+
+Le collecteur `etudes/rea/scripts/capture_dragon_battlefield_pipeline.py` distingue
+explicitement `--candidate-battlefield` (permission locale forcée, NOT_RELEASE)
+et `--qualified-battlefield` (deux portes réellement ouvertes, aucun override,
+NOT_RELEASE également). Le mode qualifié n'override pas non plus l'objectif
+dans le sampler partagé. Préflight sans processus ; live exige opt-in, HEAD
+propre exact, sources gelées, nouvelle sortie privée et ACK de l'opérateur.
+Fenêtres habituelles12s/0.25s, maximum30s. Aucun coach/audio/GUI/PNG/OCR ni heap
+scan dans le collecteur. Libellé privé en environnement enfant uniquement ;
+readsets/pointeurs/identité/replays demeurent dans `out/` privé, hors Git/prompts.
 
 ## Implémentation exercée
 
@@ -32,58 +46,76 @@ Le libellé du joueur est fourni par variable locale privée, pas par argument.
 - La porte `TownGateL3VerticalRightVisionBlocked` est désormais reconnue comme
   type exact. Cela n'ajoute aucune entrée au catalogue public Volskaya.
 
-## Preuve historique, PAS recette live
+## Catalogue et recette réelle du consommateur
 
-L'ancien ensemble privé `out/recon-live/live-a.{bin,heap.bin,heap.json}` a été
-réexécuté avec le nouveau lecteur sans mock des getters : 5camps, 85entrées du
-registre de villes et 58structures encore présentes. Le catalogue initial
-indépendant du même replay contient90structures et5balises de camps : le dump
-est tardif et nonatomique, il ne permet pas de reconstruire les coordonnées
-fixes des structures absentes. Ne pas remplacer ces coordonnées par des floors
-tracker, ni leur absence par une destruction.
+Le diagnostic initial neuf `01` comporte40tentatives/30acceptations, PAS30Full.
+Il établit90structures fixes natives cohérentes sur30observations. Le même replay
+NORMAL recoupe90/90types/équipes/floorXY, dont48XY exacts et42comparaisons au
+floor uniquement ; les coordonnées fractionnelles proviennent du natif, jamais
+d'un floor inventé. Les90indices/générations concordent aussi avec le tracker.
+L'ancien dump tardif/nonatomique (85entrées/58corps présents) demeure historique,
+pas une preuve fraîche ni un substitut au catalogue initial de cette recette.
 
-Les58structures observées correspondent chacune à une naissance initiale unique
-par type exact, équipe et floorXY dans le replay du même seed/cache. Le parcours
-privé détaillé s'exécute également : 21structures CURRENT au snapshot, camp3
-projeté available et les4autres unknown. Ces valeurs sont des références
-historiques, jamais une nouvelle acquisition fraîche. Le décodeur replay utilise
-le repli91756 signalé pour build98348, pas une garantie de schéma exact98348.
+Le profil `98348-dragon-structures.json` contient uniquement les90repères Dragon.
+Son SHA géométrique canonique est conservé, comme le SHA de la capture initiale.
+Les IDs `dragon-NNN` sont liés explicitement au rang trié XY/type ; permuter deux
+IDs ne passe plus sous le seul digest géométrique. Build/version exigent de vrais
+entiers, pas bool/float. Cette qualification géométrique ne qualifie pas à elle
+seule les transitions, l'identité native, les reçus ou le budget d'une lecture.
 
-Les scripts/rapports d'exécution et données restent privés dans
-`out/research/{inspect_dragon_battlefield.py,exercise_dragon_battlefield.py,
-dragon-battlefield-offline-summary.json}` du worktree de la carte.
+Le consommateur candidat `0d17a08` a réellement produit250Full sur863tentatives
+dans22fenêtres de quatre matchs privés Sonya locale+9IA/0observateur. Les863
+tentatives, y compris613refus, ont été rejouées strictement sur Python3.12 et3.14
+(ordre/tailles/octets des reads, horloges, statut, normalisation et clé).
+Maximum observé7015lectures/211557octets ; WHOLE accepté maximum94ms.
+Ce sont les nouvelles preuves camps/structures, pas l'ancienne recette objectifs.
 
-## Ce qui manque pour livrer le lot7
+## Captures, disponibilité et structures : contrôles indépendants
 
-1. Catalogue initial90 avec coordonnées natives fixes, recoupé au replay du même
-   match ; le recensement observé privé ne vaut jamais catalogue complet.
-2. Capture et nouveau cycle/respawn des DEUX classes de camps Dragon, avec
-   borne dernière lecture CURRENT nonavailable → première CURRENT available.
-   Birth/preload, timer natif (fraction/pause) et disponibilité restent distincts.
-3. DécroissancePV/destruction/morph/remplacement applicables Dragon, tag et
-   génération recoupés au tracker ; la disparition d'un corps n'est pas sa mort
-   tactique. La qualification Volskaya ne remplit pas ces critères.
-4. Branche candidate du vrai consommateur, coût WHOLE réel, confidentialité,
-   revue indépendante exacte puis intégration/push vérifiés seulement si PASS.
+Chaque contrôle utilise le replay NORMAL du MÊME match, seed+cache identiques.
+Le protocole91756 est un repli explicitement déclaré pour98348, pas un schéma
+exact98348 garanti. Le tracker n'est jamais un producteur live ni une permission
+de rafraîchir une archive. Les preuves des classes sont séparées par match ;
+aucun intervalle/cycle n'est construit en fusionnant deux matchs.
 
-L'opérateurGUI exclusif désigné t_d6e15259 est clos ; son successeur opérationnel
-Dragon t_7d4211b0 est également clos. Aucun auteur ne reprend la GUI, aucun match
-ni nouvelle allocation n'est inventé. Le compteur transmis est22/24parties ; la
-borne22:08:26Europe/Paris reste inchangée. Une affectation opérationnelle explicite
-est nécessaire avant une nouvelle recette, sans demander au propriétaire de
-jouer ni rouvrir les anciennes cartes. Aucun doublon de carte n'est créé ici.
+- Day002 : captures Siege1 à218.875 et Knights2 à358.125, owner0, recoupées tracker.
+  Quatre destructions au TAG ENTIER/génération dont deux morphs de tours, une
+  porte et un fort ;16IDs avec dégâts.3675observations CURRENT compatibles avec
+  le tracker (3561alive/114destroyed), une observation ambiguë125ms écartée,
+  zéro conflit. Absence, fog, unknown et remplacement ne valent pas destruction.
+- Day003/Knights2 : capture tracker364.625owner0 ; quatre défenseurs initiaux et
+  quatre retournés, types et DEUX hashes de groupes complets concordants natif/
+  tracker. Dernier nonavailable[377.75,377.75], premier available[659.375,659.375].
+  Borne[377.75,659.375], largeur281.625s, volontairement large. Naissance601.75
+  du groupe retourné : PAS un instant de disponibilité.
+- Day004/Siege1 : première observation CURRENT à123.0 déjà fighting, pas Idle.
+  Capture tracker133.4375owner0 ; deux défenseurs dans chacun des groupes initiaux
+  et retournés, types et DEUX hashes complets concordants. Dernier captured
+  [312.375,312.4375], premier available[326.5,326.5] : borne[312.375,326.5],
+  largeur14.125s. La naissance310.5625 n'est PAS la disponibilité. L'Idle initial
+  de cette instance n'a pas été observé dans ce match et n'est jamais inventé.
 
-Scénario ciblé proposé pour l'opérateur : une partie privée Dragon local+9IA,
-fenêtre initiale12s avant toute destruction pour le catalogue ; fenêtres courtes
-sur capture Giants puis Knights, autour du respawn calculé natif et sur une
-structure attaquée. Préserver le même replay/seed-cache, terminer et restituer
-menu/audio avant la borne. Ce scénario n'est pas une autorisation d'exécuter un
-collecteur non revu ; le diagnostic doit d'abord mesurer son taux utile et coût.
+Les bornes utilisent les DEUX vraies horloges `_observe`, pas seulement le temps
+core ou la fin de paquet. La signature `cycle` décrit les défenseurs vivants
+CURRENT et peut changer quand un membre meurt ; son changement seul ne prouve
+donc jamais un respawn. Le retour exige captured puis réellement available,
+nouvelle signature visible, et groupes complets recoupés indépendamment.
+Préchargement, hibernation code4, timer0 ou nouvelle signature unavailable ne
+sont PAS ready. Fraction native/paused=false ont été observés ; paused=true
+n'a pas été provoqué par la recette live. Une échéance ne sert qu'à viser une
+fenêtre, jamais à fabriquer un instant exact ou la disponibilité.
 
 ## Vérifications
 
-358tests PASS sur Python3.12 et3.14, dont16nouveaux tests synthétiques. Tests de
-lecture/horloges strictement ordonnés, mutation d'une source consommée et des
-racines finales, incohérences carte/match/héros/équipe/roster, budgets, groupes
-recyclés, laners, données cachées, absence de reçu et refusPNG/préflight sans
-processus. Les mocks d'orchestration ne sont pas une preuve de coût live.
+Suites hermétiques Python3.12.12 et3.14.7 sans `.env` ni KB ignorée : contexte,
+carte/match/héros/équipe/roster, budgets physiques/WHOLE, sources et racines
+mutées, fog, génération/type/owner incohérents, laners, reçus absents/forgés ou
+périmés, couverture normaliseur/clé, refusPNG/préflight sans processus et
+absence d'override des DEUX portes dans le mode qualifié. Les fixtures servent
+aux régressions, jamais au comptage Full ou à une preuve de coût live.
+
+Les références privées immuables, logs et revue exacte doivent être consolidés
+dans `out/day-fleet/2026-10-20/handoffs/t_de084111/ready-for-integration.json`
+SEULEMENT après PASS et recette finale sans override. La composition avec
+talents/CD doit ensuite revalider WHOLE, confidentialité et revue sur le delta
+composé avant main/push. La clôture de cette phase n'est pas la livraison maître.

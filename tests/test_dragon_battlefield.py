@@ -38,7 +38,8 @@ class DragonBattlefieldTests(unittest.TestCase):
 
     def test_public_read_closed_even_with_forged_context(self):
         _, reader = self.camp_memory()
-        with patch.object(reader, 'diagnose', side_effect=AssertionError('acquisition attempted')):
+        with patch('hotstate.dragon_battlefield.VALIDATED_MAPS',()), \
+             patch.object(reader, '_observe', side_effect=AssertionError('acquisition attempted')):
             with self.assertRaisesRegex(NativeUnavailable, 'recette_champ_bataille_dragon_absente'):
                 reader.read({'map_id': 'DragonShire'})
 

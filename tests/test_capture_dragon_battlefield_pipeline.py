@@ -7,6 +7,7 @@ import test_capture_dragon_pipeline as objective_tests
 from test_dragon_contract import public_fixture
 from test_native_context import TypedContextMemory
 from hotstate.dragon_battlefield import DragonBattlefield, qualified_layout
+from hotstate.native import NativeUnavailable
 from etudes.rea.scripts import capture_dragon_battlefield_pipeline as capture
 
 
@@ -41,6 +42,34 @@ class DragonBattlefieldPipelineTests(unittest.TestCase):
             row = capture.take_sample(memory, harness.probe(memory), clock=lambda:100.0, native_profile=memory.profile)
         self.assertEqual(row['status'],'rejected')
         self.assertEqual(row['rejected'],'champ_bataille_dragon_pipeline_absent')
+
+    def test_qualified_path_never_overrides_either_public_gate(self):
+        harness = objective_tests.DragonPipelineTests(); memory = TypedContextMemory(); probe = harness.probe(memory)
+        with harness.options(memory, public_fixture()), \
+             patch('hotstate.dragon_battlefield.VALIDATED_MAPS',('DragonShire',)), \
+             patch('hotstate.dragon.VALIDATED_MAPS',('DragonShire',)), \
+             patch.object(DragonBattlefield,'_observe',side_effect=self.sample), \
+             patch.object(capture,'patch',wraps=patch) as battlefield_spy, \
+             patch.object(capture.objective_capture,'patch',wraps=patch) as objective_spy:
+            row = capture.take_sample(memory,probe,clock=lambda:100.0,native_profile=memory.profile,qualified=True)
+            self.assertEqual(row['status'],'accepted',row.get('rejected'))
+            self.assertIs(row['candidate_override'],False)
+            self.assertEqual(row['kind'],'qualified_full_dragon_battlefield_NOT_RELEASE')
+            capture.replay_sample(row,memory.module_base,probe,native_profile=memory.profile)
+            for spy in (battlefield_spy,objective_spy):
+                self.assertFalse(any('VALIDATED_MAPS' in str(call.args[0]) for call in spy.call_args_list))
+                self.assertFalse(any(len(call.args)>1 and call.args[1]=='VALIDATED_MAPS'
+                                     for call in spy.object.call_args_list))
+
+    def test_qualified_path_requires_both_real_gates_before_any_read(self):
+        for battlefield,objective in (((),('DragonShire',)),(('DragonShire',),())):
+            with self.subTest(battlefield=battlefield,objective=objective), \
+                 patch('hotstate.dragon_battlefield.VALIDATED_MAPS',battlefield), \
+                 patch('hotstate.dragon.VALIDATED_MAPS',objective), \
+                 patch.object(capture,'BASE_SAMPLE') as base:
+                with self.assertRaisesRegex(NativeUnavailable,'portes_qualifiees_dragon_absentes'):
+                    capture.take_sample(None,None,qualified=True)
+                base.assert_not_called()
 
     def test_one_missing_family_rejects_even_with_objective_and_key(self):
         harness = objective_tests.DragonPipelineTests(); memory = TypedContextMemory()

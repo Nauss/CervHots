@@ -1,7 +1,7 @@
 """Dragon fixed-coordinate catalogue shape/integrity, not release permission.
 
-The initial native catalogue remains candidate until independent same-match
-replay qualification. Publication is separately closed in dragon_battlefield.
+The initial native geometry is independently qualified against its same-match
+replay. This module never grants permission: dragon_battlefield owns that scope.
 """
 import hashlib
 import json
@@ -14,8 +14,9 @@ STRUCTURE_LAYOUT = json.loads((Path(__file__).parent/'profiles/98348-dragon-stru
 
 
 def validate_layout(layout):
-    if (not isinstance(layout, dict) or layout.get('build') != 98348
-            or layout.get('map') != 'DragonShire' or layout.get('schema_version') != 1):
+    if (not isinstance(layout, dict) or type(layout.get('build')) is not int or layout.get('build') != 98348
+            or layout.get('map') != 'DragonShire' or type(layout.get('schema_version')) is not int
+            or layout.get('schema_version') != 1):
         raise NativeUnavailable('catalogue_structures_dragon_invalide')
     rows = layout.get('structures')
     if not isinstance(rows, list) or len(rows) != 90:
@@ -37,6 +38,9 @@ def validate_layout(layout):
         points.add((x, y))
     if ids != {f'dragon-{i:03d}' for i in range(1, 91)}:
         raise NativeUnavailable('identifiants_catalogue_dragon_incomplets')
+    ordered = sorted(rows, key=lambda row:(row['x_fixed'], row['y_fixed'], row['unit_type']))
+    if any(row['id'] != f'dragon-{i:03d}' for i,row in enumerate(ordered, 1)):
+        raise NativeUnavailable('liaison_identifiants_catalogue_dragon_invalide')
     return layout
 
 

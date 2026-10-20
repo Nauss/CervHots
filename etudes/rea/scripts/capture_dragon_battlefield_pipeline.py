@@ -1,11 +1,13 @@
 #!/usr/bin/env python
-"""Private Dragon battlefield candidate through read_current→normalizer→key.
+"""Private Dragon battlefield through read_current→normalizer→key.
 
-No diagnostic trace is promoted. Candidate permission is local to this bounded
-process, public gates stay closed on disk. No coach/GUI/audio/PNG or heap scan.
+No diagnostic trace is promoted. Candidate mode overrides permission only in
+this process; qualified mode requires real gates and NEVER overrides them.
+No coach/GUI/audio/PNG or heap scan. This does not publish main or a product.
 """
 from __future__ import annotations
 import argparse
+from contextlib import ExitStack
 import json
 import os
 import sys
@@ -19,6 +21,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from etudes.rea.scripts import capture_dragon_pipeline as objective_capture
+from hotstate import dragon as objective_module, dragon_battlefield as battlefield_module
 from hotstate.dragon_battlefield import DragonBattlefield
 from hotstate.native import NativeUnavailable
 from hotstate.native_context import NativeContextProbe
@@ -29,7 +32,14 @@ BASE_SAMPLE = objective_capture.take_sample
 REAL_CLOCK = objective_capture.REAL_CLOCK
 
 
-def take_sample(backend, probe, *, clock=None, native_profile=None):
+def qualified_read_enabled():
+    return ('DragonShire' in battlefield_module.VALIDATED_MAPS
+            and 'DragonShire' in objective_module.VALIDATED_MAPS)
+
+
+def take_sample(backend, probe, *, clock=None, native_profile=None, qualified=False):
+    if qualified and not qualified_read_enabled():
+        raise NativeUnavailable('portes_qualifiees_dragon_absentes')
     refusals = []
     original_read = DragonBattlefield.read
 
@@ -49,11 +59,16 @@ def take_sample(backend, probe, *, clock=None, native_profile=None):
         # Runs INSIDE read_current's whole attempt, never posthoc acceptance.
         return tactical_key(clean)
 
-    with patch('hotstate.dragon_battlefield.VALIDATED_MAPS', ('DragonShire',)), \
-         patch.object(DragonBattlefield, 'read', observed), \
-         patch.object(objective_capture, 'tactical_key', require_battlefield):
-        result = BASE_SAMPLE(backend, probe, clock=clock, native_profile=native_profile)
-    result['kind'] = 'candidate_full_dragon_battlefield_NOT_RELEASE'
+    with ExitStack() as stack:
+        if not qualified:
+            stack.enter_context(patch('hotstate.dragon_battlefield.VALIDATED_MAPS', ('DragonShire',)))
+        stack.enter_context(patch.object(DragonBattlefield, 'read', observed))
+        stack.enter_context(patch.object(objective_capture, 'tactical_key', require_battlefield))
+        result = BASE_SAMPLE(backend, probe, clock=clock, native_profile=native_profile,
+                             candidate_permission=not qualified)
+    result['kind'] = ('qualified_full_dragon_battlefield_NOT_RELEASE' if qualified
+                      else 'candidate_full_dragon_battlefield_NOT_RELEASE')
+    result['candidate_override'] = not qualified
     result['optional_battlefield_refusals'] = refusals
     return result
 
@@ -65,7 +80,8 @@ def replay_sample(row, module_base, probe, *, native_profile=None):
     times = iter(row['wall_clock_calls'])
     with patch.object(probe, 'map_resolver', lambda _:dict(row.get('map_metadata_observed', {}))), \
          patch.object(probe, 'map_cache', {}):
-        actual = take_sample(shadow, probe, clock=lambda:next(times), native_profile=native_profile)
+        actual = take_sample(shadow, probe, clock=lambda:next(times), native_profile=native_profile,
+                             qualified=row.get('candidate_override',True) is False)
     replay.finish()
     sentinel = object()
     if next(times, sentinel) is not sentinel:
@@ -82,7 +98,9 @@ def main(argv=None):
     mode = parser.add_mutually_exclusive_group(required=True)
     mode.add_argument('--preflight', action='store_true')
     mode.add_argument('--live', action='store_true')
-    parser.add_argument('--candidate-battlefield', action='store_true')
+    permission = parser.add_mutually_exclusive_group()
+    permission.add_argument('--candidate-battlefield', action='store_true')
+    permission.add_argument('--qualified-battlefield', action='store_true')
     parser.add_argument('--expected-commit', required=True)
     parser.add_argument('--out', type=Path)
     parser.add_argument('--pid', type=int)
@@ -92,15 +110,19 @@ def main(argv=None):
     args = parser.parse_args(argv)
     if not 0 < args.duration <= 30 or not 0.25 <= args.interval <= 10:
         parser.error('duration/interval hors bornes')
-    if args.live and not args.candidate_battlefield:
-        parser.error('--candidate-battlefield explicite requis')
+    if args.live and not (args.candidate_battlefield or args.qualified_battlefield):
+        parser.error('--candidate-battlefield ou --qualified-battlefield explicite requis')
+    if args.qualified_battlefield and not qualified_read_enabled():
+        parser.error('portes_qualifiees_dragon_absentes')
     extras = [Path(__file__).resolve(), Path(objective_capture.__file__).resolve(),
               ROOT/'etudes/rea/scripts/capture_visibility_pipeline.py', ROOT/'kb/data/map_timings.json']
     extras.extend(ROOT/'cerveau'/name for name in ('state.py', 'runner.py', 'objectives.py', 'dragon.py', 'battlefield.py'))
     commit, sources = objective_capture.frozen_sources(args.expected_commit, extra_paths=extras)
     if args.preflight:
         print(json.dumps({'commit':commit, 'sources_sha256':sources, 'live_opened':False,
-                          'release':False, 'png':False, 'mode':'candidate_full_battlefield'}))
+                          'release':False, 'png':False,
+                          'candidate_override':not args.qualified_battlefield,
+                          'mode':'qualified_full_battlefield' if args.qualified_battlefield else 'candidate_full_battlefield'}))
         return 0
     if args.out is None:
         parser.error('--out requis')
@@ -117,20 +139,22 @@ def main(argv=None):
     with out.open('x', encoding='utf-8') as stream:
         backend = ProcessBackend(args.pid)
         try:
-            stream.write(json.dumps({'kind':'candidate_full_dragon_battlefield_NOT_RELEASE',
+            stream.write(json.dumps({'kind':('qualified_full_dragon_battlefield_NOT_RELEASE' if args.qualified_battlefield
+                                            else 'candidate_full_dragon_battlefield_NOT_RELEASE'),
+                'candidate_override':not args.qualified_battlefield,
                 'commit':commit, 'sources_sha256':sources, 'module_base':backend.module_base,
                 'wall':objective_capture.utc(), 'png':False, 'coach_audio':False, 'heap_scan':False})+'\n')
             stream.flush()
             deadline = REAL_CLOCK()+args.duration
             while REAL_CLOCK() < deadline:
-                stream.write(json.dumps(take_sample(backend, probe), allow_nan=False)+'\n')
+                stream.write(json.dumps(take_sample(backend, probe, qualified=args.qualified_battlefield), allow_nan=False)+'\n')
                 stream.flush()
                 remaining = min(args.interval, deadline-REAL_CLOCK())
                 if remaining > 0:
                     time.sleep(remaining)
         finally:
             backend.close()
-    print('Recette candidate camps/structures Dragon terminée ; publication fermée.')
+    print('Recette privée camps/structures Dragon terminée ; aucune publication main.')
     return 0
 
 

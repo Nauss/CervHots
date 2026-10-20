@@ -27,12 +27,19 @@ class DragonBattlefieldConsumerTests(unittest.TestCase):
             issue(packet, time.monotonic())
         return raw
 
-    def test_default_publication_closed_even_with_inprocess_receipts(self):
-        self.assertNotIn('battlefield', snapshot(self.raw()))
-        with self.assertRaisesRegex(NativeUnavailable,'recette_champ_bataille_dragon_absente'):
+    def test_explicitly_closed_scope_refuses_even_with_inprocess_receipts(self):
+        with patch('hotstate.dragon_battlefield.VALIDATED_MAPS',()):
+            self.assertNotIn('battlefield', snapshot(self.raw()))
+            with self.assertRaisesRegex(NativeUnavailable,'recette_champ_bataille_dragon_absente'):
+                DragonBattlefield(None).read({'map_id':'DragonShire'})
+
+    def test_default_branch_scope_is_dragon_only_not_forged_context_permission(self):
+        from hotstate.dragon_battlefield import VALIDATED_MAPS
+        self.assertEqual(VALIDATED_MAPS,('DragonShire',))
+        with self.assertRaises(NativeUnavailable):
             DragonBattlefield(None).read({'map_id':'DragonShire'})
 
-    def test_candidate_map_contract_uses_dragon_types_ids_and_key(self):
+    def test_qualified_map_contract_uses_dragon_types_ids_and_key(self):
         with patch('hotstate.dragon_battlefield.VALIDATED_MAPS', ('DragonShire',)):
             clean = snapshot(self.raw())
             camps = clean['battlefield']['camps']['entries']
