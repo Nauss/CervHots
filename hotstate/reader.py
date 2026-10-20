@@ -300,7 +300,11 @@ def snapshot(backend, mapping: dict, debug: bool = False, *, context=None,
                 # camps/structures and the earlier hero core are atomic.
                 from .battlefield import VolskayaBattlefield
                 try:
-                    state['battlefield'] = VolskayaBattlefield(reader).read(state)
+                    if state['meta'].get('map_id') == 'DragonShire':
+                        from .dragon_battlefield import DragonBattlefield
+                        state['battlefield'] = DragonBattlefield(reader).read(state)
+                    else:
+                        state['battlefield'] = VolskayaBattlefield(reader).read(state)
                 except NativeUnavailable:
                     pass
     return state
