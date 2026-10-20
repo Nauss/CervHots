@@ -20,7 +20,7 @@ from .match import ActiveMatch
 from .cooldowns import read_unit_links, SIGNATURES
 from . import cooldown_sources, cooldown_costs
 from .acquisition import issue
-from .cooldown_qualification import qualify
+from .cooldown_qualification import QUALIFIED_BINDINGS, qualify
 
 ROOT = Path(__file__).resolve().parents[1]
 VALIDATED_SCOPES = (('DragonShire', 'sonya'),)
@@ -82,12 +82,25 @@ class LocalCooldowns:
         abilities = []
         if alive:
             links = read_unit_links(n, unit)
-            instances = cooldown_sources.active_instances(n, unit, native_owner=local+1)
+            scope = (n.profile['build'], map_id, actual[2])
+            bindings = QUALIFIED_BINDINGS.get(scope, {})
+            instances = cooldown_sources.active_instances(n, unit, native_owner=local+1,
+                                                          allowed_abilities=frozenset(bindings))
+            # Permission selects acquisitions, not values. CURRENT instance
+            # class/command/link/max still have to pass qualify() below.
+            required_stores = set()
+            for case in bindings.values():
+                if case[1] == 'player':
+                    required_stores.add('player_cooldowns')
+                if case[5] > 0 and case[3] in ('unit', 'player'):
+                    required_stores.add(case[3] + '_charges')
             stores = {}
             for name, owner, storage, charges in (
                     ('unit_charges', unit, 'unit', True),
                     ('player_cooldowns', player, 'player', False),
                     ('player_charges', player, 'player', True)):
+                if name not in required_stores:
+                    continue
                 try:
                     stores[name] = {'status': 'diagnostic_observed',
                         'value': cooldown_sources.stored_links(n, owner, storage=storage, charges=charges)}
@@ -97,7 +110,7 @@ class LocalCooldowns:
                     stores[name] = {'status': 'unknown', 'reason': str(exc)}
             rows = cooldown_costs.diagnostic_abilities(instances, links, stores)
             for instance, row in zip(instances, rows):
-                row = qualify((n.profile['build'], map_id, actual[2]), instance, row)
+                row = qualify(scope, instance, row)
                 if row is None:
                     continue  # An attached internal/peer ability is not a HUD grant.
                 value = {k:v for k,v in row.items() if k in (

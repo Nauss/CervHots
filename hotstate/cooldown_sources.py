@@ -26,12 +26,19 @@ def verify(n):
             raise NativeUnavailable('cooldown_sources_signature_mismatch')
 
 
-def active_instances(n, unit, *, native_owner=None):
+def active_instances(n, unit, *, native_owner=None, allowed_abilities=None):
     """Native UnitAbilityCount/Get active ordinals; names resolved via instances.
 
     A missing instance/descriptor is unknown/refused, NOT absent or ready.
     Unit generation, owner and all traversed fields require caller rechecks.
+    An explicit set narrows CURRENT instance costs, never constructs a loadout.
+    None preserves exhaustive diagnostics; native active ordinals stay intact.
     """
+    if allowed_abilities is not None:
+        if (not isinstance(allowed_abilities, (set, frozenset))
+                or not all(type(name) is str for name in allowed_abilities)):
+            raise ValueError('ability_filter_requires_explicit_names')
+        allowed_abilities = frozenset(allowed_abilities)
     root = n.value(pointer(unit)+0x140, 'Q') & ~3
     if not root:
         raise NativeUnavailable('ability_instance_root_absent')
@@ -48,10 +55,11 @@ def active_instances(n, unit, *, native_owner=None):
     if not 0 < count <= 65536:
         raise NativeUnavailable('ability_catalogue_count_invalid')
     table = pointer(n.value(database+0xa0, 'Q'))
-    rows, seen = [], set()
+    rows, seen, ordinal = [], set(), 0
     for slot in range(extent):
         if not bitmap & (1 << slot):
             continue
+        ordinal += 1
         instance = pointer(n.value(root+0x68+slot*8, 'Q'))
         if instance in seen:
             raise NativeUnavailable('ability_duplicate_instance')
@@ -65,7 +73,9 @@ def active_instances(n, unit, *, native_owner=None):
             raise NativeUnavailable('ability_catalogue_index_invalid')
         descriptor = pointer(n.value(table+index*8, 'Q'))
         name = text(n, pointer(n.value(descriptor+0x30, 'Q')))
-        row = {'ordinal': len(rows)+1, 'instance_slot': slot,
+        if allowed_abilities is not None and name not in allowed_abilities:
+            continue  # No cost/overlay acquisition for an unqualified peer.
+        row = {'ordinal': ordinal, 'instance_slot': slot,
                      'ability': name, 'slot_kind': 'native_instance_NOT_HUD_button',
                      'cost_binding': 'unproven', 'ability_type': 'unqualified'}
         if native_owner is not None:
