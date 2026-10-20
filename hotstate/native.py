@@ -283,6 +283,12 @@ class NativeReader:
                 objective = VolskayaObjective(optional_native).read(context, hero_ids=hero_ids)
         except NativeUnavailable:
             pass  # Unknown objective is not a cached event or a default zero.
+        from .cooldown_packet import LocalCooldowns
+        local_cooldowns = None
+        try:
+            local_cooldowns = LocalCooldowns(optional_native).read(context, hero_ids=hero_ids)
+        except NativeUnavailable:
+            pass  # Unqualified/changed local source never supplies ready defaults.
         finished = self.read_clock()
         if not 0 <= finished - started <= 1:
             raise NativeUnavailable("observation_native_non_synchrone")
@@ -299,4 +305,6 @@ class NativeReader:
             result['visibility'] = visibility
         if objective is not None:
             result['objective'] = objective
+        if local_cooldowns is not None:
+            result['local_cooldowns'] = local_cooldowns
         return result

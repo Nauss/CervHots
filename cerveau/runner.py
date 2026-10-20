@@ -9,6 +9,7 @@ from .brain import Coach, Decision
 from .state import validated_gameplay_clock
 from .objectives import objective_key
 from .battlefield import battlefield_key
+from .cooldowns import cooldown_key
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -66,6 +67,7 @@ def tactical_key(state: dict) -> str:
         "events": state.get("events"), "positions": positions, 'visibility': visibility,
         'objective': objective_key(state.get('objective')),
         'battlefield': battlefield_key(state.get('battlefield')),
+        'local_cooldowns': cooldown_key(state.get('local_cooldowns')),
     }, sort_keys=True, ensure_ascii=False)
 
 
