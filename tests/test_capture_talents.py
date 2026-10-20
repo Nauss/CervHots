@@ -35,6 +35,7 @@ class TalentCollectorTests(unittest.TestCase):
                 dict(talents.PROFILE, signatures=m.profile['signatures']*6)))
             stack.enter_context(patch('hotstate.positions.PROFILE', m.position_profile))
             stack.enter_context(patch('hotstate.match.PROFILE', m.match_profile))
+            stack.enter_context(patch('hotstate.talents.VALIDATED_LOCAL_SCOPES', None))
             yield
 
     def test_full_bound_acquisition_strict_replay_with_no_map_cache_dependency(self):

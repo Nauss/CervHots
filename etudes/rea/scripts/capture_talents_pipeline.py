@@ -1,8 +1,9 @@
 #!/usr/bin/env python
-"""Finite private talents candidate through read_current/normalizer/tactical_key.
+"""Finite private talents validation through read_current/normalizer/tactical_key.
 
-No GUI/images/OCR/coach/audio. The release gate opens in THIS diagnostic
-process only. Full acceptance requires nonempty typed talents and whole budget.
+No GUI/images/OCR/coach/audio. Qualified mode uses the actual default profile;
+research mode only widens scopes in this process, never the product policy.
+Full acceptance requires nonempty typed talents and whole budget.
 """
 from __future__ import annotations
 
@@ -49,11 +50,14 @@ class PipelineMemory(ProcessBackend):
         return self.trace.positions_clock()
 
 
-def take_sample(backend, probe, *, clock=None, native_profile=None, include_allied_candidates=False):
+def take_sample(backend, probe, *, clock=None, native_profile=None, include_allied_candidates=False,
+                use_product_scopes=False):
     memory = PipelineMemory(backend)
     recorded = RecordedClock(REAL_CLOCK if clock is None else clock)
-    row = {'status':'rejected', 'kind':'candidate_full_talents_NOT_RELEASE',
+    row = {'status':'rejected', 'kind':('qualified_full_talents_PRIVATE_VALIDATION_NOT_PUBLISH'
+           if use_product_scopes else 'candidate_full_talents_NOT_RELEASE'),
            'include_allied_candidates':include_allied_candidates,
+           'use_product_scopes':use_product_scopes,
            'recorded_non_atomic':memory.recorded_non_atomic,
            'execution_kind':'fixture_or_historical_NOT_LIVE' if clock is not None or native_profile is not None
                             else 'real_monotonic_record_only'}
@@ -61,6 +65,8 @@ def take_sample(backend, probe, *, clock=None, native_profile=None, include_alli
         return dict(row, rejected='talent_context_source_unsupported')
     before = _cache_rows(probe.map_cache)
     scopes = CANDIDATE_SCOPES
+    if include_allied_candidates and use_product_scopes:
+        raise ValueError('qualified policy cannot open allied research candidates')
     if include_allied_candidates:
         # Research opt-in only: attempt current ALLIES through the common source,
         # not a claim that every catalog hero is supported. Enemies remain unread.
@@ -85,7 +91,9 @@ def take_sample(backend, probe, *, clock=None, native_profile=None, include_alli
     try:
         with contextlib.ExitStack() as stack:
             stack.enter_context(patch('time.monotonic', recorded))
-            stack.enter_context(patch('hotstate.talents.VALIDATED_SCOPES', scopes))
+            if not use_product_scopes:
+                stack.enter_context(patch('hotstate.talents.VALIDATED_SCOPES', scopes))
+                stack.enter_context(patch('hotstate.talents.VALIDATED_LOCAL_SCOPES', CANDIDATE_SCOPES))
             stack.enter_context(patch.object(NativeTalentChoices, 'read', observed))
             if native_profile is not None:
                 from hotstate import live
@@ -123,7 +131,8 @@ def replay_sample(row, module_base, probe, *, native_profile=None):
         map_resolver=lambda handles: dict(after[tuple(handles)]))
     replay_probe.map_cache = _cache(row['context_map_cache_before'])
     actual = take_sample(shadow, replay_probe, clock=lambda:next(times), native_profile=native_profile,
-                         include_allied_candidates=row.get('include_allied_candidates',False))
+                         include_allied_candidates=row.get('include_allied_candidates',False),
+                         use_product_scopes=row.get('use_product_scopes',False))
     replay.finish()
     sentinel = object()
     if next(times, sentinel) is not sentinel:
@@ -140,7 +149,9 @@ def main(argv=None):
     mode = parser.add_mutually_exclusive_group(required=True)
     mode.add_argument('--preflight', action='store_true')
     mode.add_argument('--live', action='store_true')
-    parser.add_argument('--candidate-talents', action='store_true')
+    scopes = parser.add_mutually_exclusive_group()
+    scopes.add_argument('--candidate-talents', action='store_true')
+    scopes.add_argument('--qualified-talents', action='store_true')
     parser.add_argument('--candidate-allies', action='store_true')
     parser.add_argument('--expected-commit', required=True)
     parser.add_argument('--out', type=Path)
@@ -151,8 +162,8 @@ def main(argv=None):
     args = parser.parse_args(argv)
     if not 0 < args.duration <= 30 or not 0.25 <= args.interval <= 10:
         parser.error('duration/interval hors bornes')
-    if args.live and not args.candidate_talents:
-        parser.error('--candidate-talents explicite requis')
+    if args.live and not (args.candidate_talents or args.qualified_talents):
+        parser.error('--candidate-talents ou --qualified-talents explicite requis')
     if args.candidate_allies and not args.candidate_talents:
         parser.error('--candidate-allies requiert --candidate-talents')
     extra = [Path(__file__).resolve(), ROOT/'etudes/rea/scripts/capture_talents.py',
@@ -177,13 +188,16 @@ def main(argv=None):
     with out.open('x', encoding='utf-8') as stream:
         backend = ProcessBackend(args.pid)
         try:
-            stream.write(json.dumps({'kind':'candidate_full_talents_NOT_RELEASE','commit':commit,
+            stream.write(json.dumps({'kind':('qualified_full_talents_PRIVATE_VALIDATION_NOT_PUBLISH'
+                if args.qualified_talents else 'candidate_full_talents_NOT_RELEASE'),'commit':commit,
                 'sources_sha256':sources,'module_base':backend.module_base,'wall':utc(),
-                'png':False,'coach_audio':False,'heap_scan':False,'candidate_allies':args.candidate_allies})+'\n')
+                'png':False,'coach_audio':False,'heap_scan':False,'candidate_allies':args.candidate_allies,
+                'qualified_talents':args.qualified_talents})+'\n')
             stream.flush()
             deadline = REAL_CLOCK()+args.duration
             while REAL_CLOCK() < deadline:
-                stream.write(json.dumps(take_sample(backend,probe,include_allied_candidates=args.candidate_allies),allow_nan=False)+'\n')
+                stream.write(json.dumps(take_sample(backend,probe,include_allied_candidates=args.candidate_allies,
+                    use_product_scopes=args.qualified_talents),allow_nan=False)+'\n')
                 stream.flush()
                 remaining = min(args.interval,deadline-REAL_CLOCK())
                 if remaining > 0:
@@ -193,7 +207,7 @@ def main(argv=None):
     with out.with_suffix('.manifest.json').open('x',encoding='utf-8') as stream:
         json.dump({'file':out.name,'size':out.stat().st_size,'commit':commit,
             'sha256':hashlib.sha256(out.read_bytes()).hexdigest()},stream,indent=2)
-    print('Recette candidate talents privee terminee ; aucune activation produit.')
+    print('Validation talents privee terminee ; aucune publication ni activation coach.')
     return 0
 
 

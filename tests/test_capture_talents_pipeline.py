@@ -1,5 +1,7 @@
 """Hermetic FULL candidate pipeline, no game/KB/network/coach."""
 import unittest
+import io
+from contextlib import redirect_stderr
 from unittest.mock import patch
 import test_talents_product as product
 import test_capture_talents as fixtures
@@ -8,6 +10,22 @@ from etudes.rea.scripts import capture_talents_pipeline as c
 
 
 class TalentFullPipelineTests(unittest.TestCase):
+    def test_qualified_cli_cannot_enable_research_allies(self):
+        with patch.object(c,'frozen_sources',side_effect=AssertionError('freeze before invalid flags')), \
+                redirect_stderr(io.StringIO()), self.assertRaises(SystemExit):
+            c.main(['--preflight','--qualified-talents','--candidate-allies','--expected-commit','a'*40])
+
+    def test_qualified_path_uses_default_policy_without_candidate_override(self):
+        m = product.TalentProductTests().allied_fixture()
+        with fixtures.TalentCollectorTests().options(m), \
+                patch('hotstate.talents.VALIDATED_SCOPES', (('Volskaya','ragnaros'),('Volskaya','liming'))), \
+                patch('hotstate.talents.VALIDATED_LOCAL_SCOPES', (('Volskaya','ragnaros'),)):
+            row = c.take_sample(m,m.probe(),clock=FixtureClock(),native_profile=m.profile,use_product_scopes=True)
+            self.assertEqual(row['status'],'accepted',row.get('rejected'))
+            self.assertEqual(row['kind'],'qualified_full_talents_PRIVATE_VALIDATION_NOT_PUBLISH')
+            again = c.replay_sample(row,m.module_base,m.probe(),native_profile=m.profile)
+            self.assertEqual(again['normalized'],row['normalized'])
+
     def test_explicit_allied_candidate_flag_and_strict_replay(self):
         m = product.TalentProductTests().allied_fixture()
         with fixtures.TalentCollectorTests().options(m), patch.object(c, 'CANDIDATE_SCOPES', (('Volskaya','ragnaros'),)):

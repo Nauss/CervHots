@@ -1,4 +1,4 @@
-"""Build98348 selected talent tree research (NOT yet a coach producer).
+"""Build98348 selected talent choices, limited by proved hero/map/role scopes.
 
 Persistent native selection is distinct from PlayerHasTalent membership and
 from the offered Hero catalog. No calls into the client, writes or GUI.
@@ -19,7 +19,20 @@ from .match import ActiveMatch
 from .local_experiments import pointer, text, _BudgetMemory, _clock
 
 PROFILE = json.loads((Path(__file__).parent/'profiles/98348-talents.json').read_text())
-VALIDATED_SCOPES = ()  # full recipe gate closed until this exact path is exercised
+VALIDATED_SCOPES = tuple((c['map_id'], c['hero']) for c in PROFILE.get('qualified_cases', [])
+                         if c['role'] == 'ally') if PROFILE.get('release') is True else ()
+VALIDATED_LOCAL_SCOPES = tuple((c['map_id'], c['hero']) for c in PROFILE.get('qualified_cases', [])
+                               if c['role'] == 'local') if PROFILE.get('release') is True else ()
+
+
+def qualified_for(map_id, hero, *, local=False):
+    scopes = VALIDATED_LOCAL_SCOPES if local and VALIDATED_LOCAL_SCOPES is not None else VALIDATED_SCOPES
+    return (map_id, hero) in scopes
+
+
+def qualified_map(map_id):
+    return (any(m == map_id for m, _ in VALIDATED_SCOPES)
+            or any(m == map_id for m, _ in (VALIDATED_LOCAL_SCOPES or ())))
 
 
 def resolve_selections(indices, offered):
@@ -117,7 +130,7 @@ class NativeTalentChoices:
         map_id, match_id, local, team, _ = AlliedPositions._context(expected)
         ids = json.loads((Path(__file__).parent/'hero_ids.json').read_text()) if hero_ids is None else hero_ids
         hero = ids.get(expected['local_player']['hero'], expected['local_player']['hero'])
-        if not any(scope_map == map_id for scope_map, _ in VALIDATED_SCOPES):
+        if not qualified_map(map_id):
             raise NativeUnavailable('talent_recipe_scope_unqualified')
         budget = _BudgetMemory(self.native.memory, clock=time.monotonic)
         recorded = _RecordedMemory(budget)
@@ -146,7 +159,7 @@ class NativeTalentChoices:
             tag = n.value(player+0x58)
             sample = {'id': ident, 'hero': member_hero, 'generation': tag & 0x3fffff,
                       'status': 'unknown', 'tiers': None, 'reason': 'unqualified_scope'}
-            if (map_id, member_hero) in VALIDATED_SCOPES:
+            if qualified_for(map_id, member_hero, local=ident == local):
                 try:
                     unit = n.unit_pointer(tag, ident+1)
                     level = n.unit_level(unit)

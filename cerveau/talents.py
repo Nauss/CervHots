@@ -10,7 +10,7 @@ def _number(value):
 
 
 def project_talents(raw, local, team):
-    from hotstate.talents import VALIDATED_SCOPES
+    from hotstate.talents import qualified_map, qualified_for
     p, meta, perspective = raw.get('talents'), raw.get('meta', {}), raw.get('perspective')
     if (not isinstance(local, dict) or type(team) is not int or team != local.get('team')
             or not isinstance(p, dict) or not isinstance(perspective, dict)
@@ -18,7 +18,7 @@ def project_talents(raw, local, team):
             or meta.get('context_source') != 'initdata_native_fields'
             or p.get('status') != 'validated' or p.get('scope') != 'allied_selected_talents'
             or not fresh(p) or not fresh(perspective)
-            or not any(m == p.get('map_id') for m, _ in VALIDATED_SCOPES)
+            or not qualified_map(p.get('map_id'))
             or p.get('map_id') != meta.get('map_id')
             or not isinstance(meta.get('match_id'), str)
             or not re.fullmatch('[0-9a-f]{64}', meta['match_id'])
@@ -54,6 +54,8 @@ def project_talents(raw, local, team):
         ident = row['id']
         member = roster.get(ident)
         if (member is None or ident in seen or row.get('hero') != member.get('hero')
+                or not isinstance(row.get('hero'), str)
+                or not re.fullmatch('[a-z][a-z0-9_-]{0,79}', row['hero'])
                 or type(row.get('generation')) is not int or not 0 <= row['generation'] <= 0x3fffff
                 or type(generations.get(str(ident))) is not int
                 or row['generation'] != generations[str(ident)]):
@@ -67,7 +69,7 @@ def project_talents(raw, local, team):
                 return None
             tiers = None
         elif status == 'observed':
-            if (p['map_id'], row['hero']) not in VALIDATED_SCOPES:
+            if not qualified_for(p['map_id'], row['hero'], local=ident == local['id']):
                 return None
             tiers = _project_tiers(row.get('tiers'), member.get('level'))
             if tiers is None:

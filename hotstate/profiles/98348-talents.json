@@ -1,6 +1,14 @@
 {
   "build": 98348,
-  "release": false,
+  "release": true,
+  "qualification": "Branch qualified by private Dragon day002/day003 live readsets and independent same-match trackers; NOT all heroes/maps/roles or a remote publication receipt.",
+  "qualified_cases": [
+    {"map_id":"DragonShire","hero":"sonya","role":"local"},
+    {"map_id":"DragonShire","hero":"arthas","role":"ally"},
+    {"map_id":"DragonShire","hero":"dehaka","role":"ally"},
+    {"map_id":"DragonShire","hero":"ltmorales","role":"ally"},
+    {"map_id":"DragonShire","hero":"tassadar","role":"ally"}
+  ],
   "source": "native_selected_hero_talent_tree_NOT_POSSESSIONS",
   "selection_rva": 57113136,
   "signatures": [

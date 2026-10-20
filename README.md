@@ -37,6 +37,10 @@ Chaque brique a son propre projet, ses propres dépendances.
   alliées vivantes sur Volskaya (build98348, joueur local prouvé, fraîcheur1s).
   Recette/limites : `etudes/rea/P2-POSITIONS-RECETTE.md`. Objectifs, camps,
   structures, visibilité/positions ennemies restent hors collecte live.
+  Talents natifs choisis : sélection persistée, pas possessions/options offertes.
+  Portée build98348/DragonShire : Sonya locale ; alliés Arthas, Dehaka,
+  LtMorales et Tassadar. Autres héros/rôles/cartes inconnus, aucune généralisation.
+  Contrat, recettes et limites : `etudes/rea/P2-TALENTS.md`.
 - `kb/` — **la couche savoir** : ce qui interprète l'état de jeu (cartes,
   timings, talents, synergies, counters). Base SQLite de faits (gamedata
   gratuite, commit épinglé) + 106 fiches curatées (16 cartes + 90 héros,

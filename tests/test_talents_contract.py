@@ -10,6 +10,7 @@ from hotstate.native import NativeReader
 from hotstate.acquisition import issue
 from cerveau.state import snapshot
 from cerveau.runner import tactical_key
+from cerveau.talents import project_talents
 
 
 class TalentContractTests(unittest.TestCase):
@@ -78,6 +79,38 @@ class TalentContractTests(unittest.TestCase):
             clean = snapshot(self.raw(m))
             self.assertEqual(clean['talents']['players'][1],
                 {'id':6,'hero':'liming','status':'unknown','tiers':None})
+
+    def test_allied_case_does_not_grant_untested_local_role(self):
+        m = product.TalentProductTests().allied_fixture()
+        with fixtures.TalentCollectorTests().options(m), patch('time.monotonic', return_value=100), \
+                patch('hotstate.talents.VALIDATED_SCOPES', (('Volskaya','ragnaros'),('Volskaya','liming'))), \
+                patch('hotstate.talents.VALIDATED_LOCAL_SCOPES', ()):
+            clean = snapshot(self.raw(m))
+            self.assertEqual(clean['talents']['players'][0]['status'], 'unknown')
+            self.assertEqual(clean['talents']['players'][1]['status'], 'observed')
+
+
+    def test_unknown_actor_cannot_forward_nested_hero_identity(self):
+        m = product.TalentProductTests().allied_fixture()
+        with fixtures.TalentCollectorTests().options(m), patch('time.monotonic', return_value=100), \
+                patch('hotstate.talents.VALIDATED_SCOPES', (('Volskaya','ragnaros'),)):
+            raw = self.raw(m)
+            raw['heroes'][6]['hero'] = ['PRIVATE_SENTINEL']
+            raw['perspective']['heroes'] = copy.deepcopy(raw['heroes'])
+            raw['talents']['players'][1]['hero'] = ['PRIVATE_SENTINEL']
+            issue(raw['perspective'],100)
+            issue(raw['talents'],100)
+            self.assertIsNone(project_talents(raw, raw['local_player'], 1))
+
+
+    def test_local_qualified_map_does_not_require_any_ally_qualified(self):
+        m = product.TalentProductTests().fixture()
+        with fixtures.TalentCollectorTests().options(m), patch('time.monotonic', return_value=100), \
+                patch('hotstate.talents.VALIDATED_SCOPES', ()), \
+                patch('hotstate.talents.VALIDATED_LOCAL_SCOPES', (('Volskaya','ragnaros'),)):
+            clean = snapshot(self.raw(m))
+            self.assertEqual(clean['talents']['players'][0]['status'], 'observed')
+            self.assertEqual(clean['talents']['players'][1]['status'], 'unknown')
 
 
 if __name__ == '__main__':

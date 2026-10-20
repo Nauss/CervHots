@@ -8,6 +8,17 @@ from hotstate.acquisition import fresh
 
 
 class TalentProductTests(unittest.TestCase):
+    def test_release_policy_is_exactly_qualified_hero_map_roles(self):
+        cases = {(c['map_id'],c['hero'],c['role']) for c in talents.PROFILE.get('qualified_cases',[])}
+        self.assertEqual(cases, {('DragonShire','sonya','local'),
+            ('DragonShire','arthas','ally'),('DragonShire','dehaka','ally'),
+            ('DragonShire','ltmorales','ally'),('DragonShire','tassadar','ally')})
+        self.assertTrue(talents.qualified_for('DragonShire','sonya',local=True))
+        self.assertFalse(talents.qualified_for('DragonShire','sonya'))
+        self.assertFalse(talents.qualified_for('DragonShire','arthas',local=True))
+        self.assertTrue(talents.qualified_for('DragonShire','arthas'))
+        self.assertFalse(talents.qualified_for('Volskaya','stitches',local=True))
+
     def fixture(self):
         m = fixtures.TalentCollectorTests().fixture()
         m.pack(0x70518, 'I', 2)
