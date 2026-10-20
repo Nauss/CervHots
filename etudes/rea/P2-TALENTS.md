@@ -77,9 +77,22 @@ sont figées séparément ; elles ne sont pas remplacées par le nouveau code.
 
 ## Limites avant intégration
 
-- Acquisition Full actuelle et niveau requis encore à exercer réellement.
-- Normaliseur/clé/receipt exercés sur fixtures seulement à ce stade.
-- Alliés non implémentés ; local seulement. Aucune généralisation toushéros/cartes.
+- V2 local1d9f27d réellement exercée day002 :68Full/103acquisitions,
+  103rejeux stricts sur50sources exactes ;35refus déchirés conservés,
+  aucun refus budget. Max2930lectures/93400octets/47msquantifiés.
+  Baseline15FullN1sanschoix, puis choix BarbarianWarPaint tier1/colonne2,
+  puis12Fulldansunprocessusfroid. Niveaux natifs1/4/7/10/13/16/20 lus.
+- V3 étend la même source aux cinq alliés, après filtrage équipe AVANT
+  toute lecture de talents. Le cœur scelle allied_generations ; chaque
+  ligne est liée au héros/niveau/génération de ce roster courant.
+  Un héros non qualifié ou une branche non normale est unknown/tiers=null,
+  jamais une liste « aucun talent ». Un paquet entièrement unknown est refusé.
+  Ces champs alliés sont encore candidats, pas une recette déjà validée.
+- --candidate-allies est un opt-in de recherche explicite : il tente la source
+  commune sur les héros ALLIÉS du match, jamais les ennemis. Il ne qualifie
+  pas tout le catalogue : la promotion future restera limitée aux cas exercés.
+- Référence replayday002 et recette alliés encore nécessaires à ce stade.
+- Aucune généralisation toushéros/cartes.
 - Une entrée non sélectionnée n'est pas un palier absent : unselected_tiers
   utilise les paliers réellement proposés ; erreur de lecture reste refus.
 - L'indice zéro est une entrée valide ; 0xffffffff est la sentinelle native

@@ -8,6 +8,18 @@ from etudes.rea.scripts import capture_talents_pipeline as c
 
 
 class TalentFullPipelineTests(unittest.TestCase):
+    def test_explicit_allied_candidate_flag_and_strict_replay(self):
+        m = product.TalentProductTests().allied_fixture()
+        with fixtures.TalentCollectorTests().options(m), patch.object(c, 'CANDIDATE_SCOPES', (('Volskaya','ragnaros'),)):
+            narrow = c.take_sample(m,m.probe(),clock=FixtureClock(),native_profile=m.profile)
+            self.assertEqual(narrow['normalized']['talents']['players'][1]['status'], 'unknown')
+            row = c.take_sample(m,m.probe(),clock=FixtureClock(),native_profile=m.profile,
+                                include_allied_candidates=True)
+            self.assertEqual(row['status'], 'accepted', row.get('rejected'))
+            self.assertTrue(all(p['status']=='observed' for p in row['normalized']['talents']['players']))
+            again = c.replay_sample(row,m.module_base,m.probe(),native_profile=m.profile)
+            self.assertEqual(row['normalized'],again['normalized'])
+
     def test_actual_consumer_normalizer_key_and_ordered_replay(self):
         m = product.TalentProductTests().fixture()
         with fixtures.TalentCollectorTests().options(m), \

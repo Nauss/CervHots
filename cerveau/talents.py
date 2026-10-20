@@ -1,4 +1,4 @@
-"""Local selected talent allowlist boundary, never possessions or offered options."""
+"""Allied selected talent boundary, never enemy/possessions/offered options."""
 from __future__ import annotations
 
 import re
@@ -16,9 +16,9 @@ def project_talents(raw, local, team):
             or not isinstance(p, dict) or not isinstance(perspective, dict)
             or meta.get('source') != 'live' or meta.get('native_build') != 98348
             or meta.get('context_source') != 'initdata_native_fields'
-            or p.get('status') != 'validated' or p.get('scope') != 'local_selected_talents'
+            or p.get('status') != 'validated' or p.get('scope') != 'allied_selected_talents'
             or not fresh(p) or not fresh(perspective)
-            or (p.get('map_id'), p.get('local_hero')) not in VALIDATED_SCOPES
+            or not any(m == p.get('map_id') for m, _ in VALIDATED_SCOPES)
             or p.get('map_id') != meta.get('map_id')
             or not isinstance(meta.get('match_id'), str)
             or not re.fullmatch('[0-9a-f]{64}', meta['match_id'])
@@ -41,11 +41,50 @@ def project_talents(raw, local, team):
                 or not 0 <= meta['t_s']-packet['mission_t_s'] <= 1
                 or not _number(packet.get('read_window_s')) or not 0 <= packet['read_window_s'] <= 0.125):
             return None
-    rows = p.get('tiers')
+    rows, generations = p.get('players'), perspective.get('allied_generations')
+    if not isinstance(rows, list) or len(rows) != 5 or not isinstance(generations, dict):
+        return None
+    roster = {h['id']:h for h in raw.get('heroes', []) if h.get('team') == team}
+    if len(roster) != 5 or set(generations) != {str(i) for i in roster}:
+        return None
+    players, seen, observed = [], set(), False
+    for row in rows:
+        if not isinstance(row, dict) or type(row.get('id')) is not int:
+            return None
+        ident = row['id']
+        member = roster.get(ident)
+        if (member is None or ident in seen or row.get('hero') != member.get('hero')
+                or type(row.get('generation')) is not int or not 0 <= row['generation'] <= 0x3fffff
+                or type(generations.get(str(ident))) is not int
+                or row['generation'] != generations[str(ident)]):
+            return None
+        if ident == local['id'] and row['generation'] != p['generation']:
+            return None
+        seen.add(ident)
+        status = row.get('status')
+        if status == 'unknown':
+            if row.get('tiers') is not None:
+                return None
+            tiers = None
+        elif status == 'observed':
+            if (p['map_id'], row['hero']) not in VALIDATED_SCOPES:
+                return None
+            tiers = _project_tiers(row.get('tiers'), member.get('level'))
+            if tiers is None:
+                return None
+            observed = True
+        else:
+            return None
+        players.append({'id':ident, 'hero':row['hero'], 'status':status, 'tiers':tiers})
+    if not observed:
+        return None
+    return {'t':p['mission_t_s'], 'map_id':p['map_id'], 'players':sorted(players, key=lambda r:r['id'])}
+
+
+def _project_tiers(rows, hero_level):
     if not isinstance(rows, list) or not 1 <= len(rows) <= 31:
         return None
-    local_heroes = [h for h in raw.get('heroes', []) if h.get('id') == local['id']]
-    if len(local_heroes) != 1 or type(local_heroes[0].get('level')) is not int:
+    if type(hero_level) is not int or not 1 <= hero_level <= 30:
         return None
     tiers, seen, ids = [], set(), set()
     for row in rows:
@@ -61,15 +100,14 @@ def project_talents(raw, local, team):
         if status == 'selected':
             if (type(slot) is not int or not 1 <= slot <= 32 or not isinstance(identifier, str)
                     or not re.fullmatch('[A-Za-z][A-Za-z0-9_]{0,127}', identifier)
-                    or identifier in ids or level > local_heroes[0]['level']):
+                    or identifier in ids or level > hero_level):
                 return None
             ids.add(identifier)
         elif slot is not None or identifier is not None:
             return None
         tiers.append({'tier':tier, 'required_level':level, 'status':status,
                       'slot':slot, 'catalog_id':identifier})
-    return {'t':p['mission_t_s'], 'map_id':p['map_id'],
-            'players':[{'id':local['id'], 'hero':local['hero'], 'tiers':sorted(tiers, key=lambda r:r['tier'])}]}
+    return sorted(tiers, key=lambda r:r['tier'])
 
 
 def talents_key(packet):

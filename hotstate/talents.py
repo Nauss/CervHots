@@ -107,7 +107,7 @@ def read_tier_levels(n, data):
 
 
 class NativeTalentChoices:
-    """Current local selection through a recipe-gated in-process receipt."""
+    """Current local/allied selections; never read enemy talent fields."""
     def __init__(self, native):
         self.native = native
 
@@ -117,7 +117,7 @@ class NativeTalentChoices:
         map_id, match_id, local, team, _ = AlliedPositions._context(expected)
         ids = json.loads((Path(__file__).parent/'hero_ids.json').read_text()) if hero_ids is None else hero_ids
         hero = ids.get(expected['local_player']['hero'], expected['local_player']['hero'])
-        if (map_id, hero) not in VALIDATED_SCOPES:
+        if not any(scope_map == map_id for scope_map, _ in VALIDATED_SCOPES):
             raise NativeUnavailable('talent_recipe_scope_unqualified')
         budget = _BudgetMemory(self.native.memory, clock=time.monotonic)
         recorded = _RecordedMemory(budget)
@@ -135,22 +135,31 @@ class NativeTalentChoices:
         actual = AlliedPositions(n)._identity(n, ids)
         if actual[:3] != (local, team, hero):
             raise NativeUnavailable('talent_local_identity_mismatch')
-        player = pointer(n.player_pointer(local+1))
-        tag = n.value(player+0x58)
-        unit = n.unit_pointer(tag, local+1)
-        level = n.unit_level(unit)
-        tree = read_tree(n, player, local+1, include_levels=True)
-        selected = {row['tier']: row for row in tree['selected']}
-        offered_tiers = {row['tier'] for row in tree['offered']}
-        tiers = []
-        for tier, required in sorted(tree['tier_levels'].items()):
-            choice = selected.get(tier)
-            if choice is not None and required > level:
-                raise NativeUnavailable('talent_choice_above_current_level')
-            tiers.append({'tier': tier, 'required_level': required,
-                'status': 'selected' if choice else 'unselected' if tier in offered_tiers else 'unknown',
-                'slot': choice['slot'] if choice else None,
-                'catalog_id': choice['catalog_id'] if choice else None})
+        players = []
+        for member in actual[3]:
+            # Permission is decided BEFORE touching a player's talent table or Hero data.
+            if member['team'] != team:
+                continue
+            ident = member['id']
+            player = pointer(n.player_pointer(ident+1))
+            member_hero = n.hero_id(player, ids)
+            tag = n.value(player+0x58)
+            sample = {'id': ident, 'hero': member_hero, 'generation': tag & 0x3fffff,
+                      'status': 'unknown', 'tiers': None, 'reason': 'unqualified_scope'}
+            if (map_id, member_hero) in VALIDATED_SCOPES:
+                try:
+                    unit = n.unit_pointer(tag, ident+1)
+                    level = n.unit_level(unit)
+                    tree = read_tree(n, player, ident+1, include_levels=True)
+                    tiers = selection_tiers(tree, level)
+                    sample.update(status='observed', tiers=tiers)
+                    sample.pop('reason')
+                except NativeUnavailable as exc:
+                    sample['reason'] = str(exc)
+            players.append(sample)
+        if not any(p['status'] == 'observed' for p in players):
+            raise NativeUnavailable('talent_no_qualified_player')
+        local_sample = next(p for p in players if p['id'] == local)
         for address, data in recorded.coherence_reads('talent_torn'):
             if budget.read_memory(address, len(data)) != data:
                 raise NativeUnavailable('talent_torn')
@@ -159,9 +168,24 @@ class NativeTalentChoices:
         if context != expected or not 0 <= elapsed <= 0.125 or not 0 <= last-first <= 0.125:
             raise NativeUnavailable('talent_stale_or_context_changed')
         return issue({'status': 'validated', 'map_id': map_id, 'match_id': match_id,
-            'local_id': local, 'team': team, 'local_hero': hero, 'generation': tag & 0x3fffff,
+            'local_id': local, 'team': team, 'local_hero': hero, 'generation': local_sample['generation'],
             'native_session': actual[4], 'mission_t_s': last, 'read_window_s': elapsed,
-            'tiers': tiers, 'scope': 'local_selected_talents'}, budget.started)
+            'tiers': local_sample['tiers'], 'players': players, 'scope': 'allied_selected_talents'}, budget.started)
+
+
+def selection_tiers(tree, level):
+    selected = {row['tier']: row for row in tree['selected']}
+    offered_tiers = {row['tier'] for row in tree['offered']}
+    tiers = []
+    for tier, required in sorted(tree['tier_levels'].items()):
+        choice = selected.get(tier)
+        if choice is not None and required > level:
+            raise NativeUnavailable('talent_choice_above_current_level')
+        tiers.append({'tier': tier, 'required_level': required,
+            'status': 'selected' if choice else 'unselected' if tier in offered_tiers else 'unknown',
+            'slot': choice['slot'] if choice else None,
+            'catalog_id': choice['catalog_id'] if choice else None})
+    return tiers
 
 
 def diagnose(backend, probe, *, clock=None, native_profile=None):

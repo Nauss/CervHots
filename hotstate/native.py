@@ -195,6 +195,8 @@ class NativeReader:
         # read already refused as torn must not poison the independent core.
         result = n._read_state(expected, hero_ids=hero_ids, optional_native=self)
         local_generation = n.value(n.player_pointer(local_id + 1) + 0x58) & 0x3FFFFF
+        allied_generations = {str(p['id']): n.value(n.player_pointer(p['id'] + 1) + 0x58) & 0x3FFFFF
+                              for p in members if p['team'] == team}
         for address, data in memory.coherence_reads('lecture_native_dechiree'):
             if self.read(address, len(data)) != data:
                 raise NativeUnavailable('lecture_native_dechiree')
@@ -206,6 +208,7 @@ class NativeReader:
                 'match_id': match_id, 'local_id': local_id, 'team': team,
                 'native_session': stamp, 'local_hero': hero,
                 'local_generation': local_generation,
+                'allied_generations': allied_generations,
                 'mission_t_s': result['meta']['t_s'], 'read_window_s': window,
                 'heroes': copy.deepcopy(result['heroes']),
             }, acquired)

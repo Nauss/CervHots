@@ -49,16 +49,23 @@ class PipelineMemory(ProcessBackend):
         return self.trace.positions_clock()
 
 
-def take_sample(backend, probe, *, clock=None, native_profile=None):
+def take_sample(backend, probe, *, clock=None, native_profile=None, include_allied_candidates=False):
     memory = PipelineMemory(backend)
     recorded = RecordedClock(REAL_CLOCK if clock is None else clock)
     row = {'status':'rejected', 'kind':'candidate_full_talents_NOT_RELEASE',
+           'include_allied_candidates':include_allied_candidates,
            'recorded_non_atomic':memory.recorded_non_atomic,
            'execution_kind':'fixture_or_historical_NOT_LIVE' if clock is not None or native_profile is not None
                             else 'real_monotonic_record_only'}
     if not isinstance(probe, NativeContextProbe):
         return dict(row, rejected='talent_context_source_unsupported')
     before = _cache_rows(probe.map_cache)
+    scopes = CANDIDATE_SCOPES
+    if include_allied_candidates:
+        # Research opt-in only: attempt current ALLIES through the common source,
+        # not a claim that every catalog hero is supported. Enemies remain unread.
+        heroes = set(json.loads((ROOT/'hotstate/hero_ids.json').read_text()).values())
+        scopes = tuple((m,h) for m in sorted({m for m,_ in CANDIDATE_SCOPES}) for h in sorted(heroes))
     refusals = []
     original = NativeTalentChoices.read
     def observed(reader, context, **options):
@@ -78,7 +85,7 @@ def take_sample(backend, probe, *, clock=None, native_profile=None):
     try:
         with contextlib.ExitStack() as stack:
             stack.enter_context(patch('time.monotonic', recorded))
-            stack.enter_context(patch('hotstate.talents.VALIDATED_SCOPES', CANDIDATE_SCOPES))
+            stack.enter_context(patch('hotstate.talents.VALIDATED_SCOPES', scopes))
             stack.enter_context(patch.object(NativeTalentChoices, 'read', observed))
             if native_profile is not None:
                 from hotstate import live
@@ -89,7 +96,7 @@ def take_sample(backend, probe, *, clock=None, native_profile=None):
             start = time.monotonic()
             clean = read_current(memory, {'triggers':{}}, context=probe, project=project, key=key)
             elapsed = time.monotonic()-start
-            if not clean.get('talents', {}).get('players'):
+            if not any(p.get('status') == 'observed' for p in clean.get('talents', {}).get('players', [])):
                 raise NativeUnavailable('talents_full_pipeline_absent')
             if not 0 <= elapsed <= 0.125:
                 raise NativeUnavailable('fenetre_pipeline_globale_depassee')
@@ -115,7 +122,8 @@ def replay_sample(row, module_base, probe, *, native_profile=None):
     replay_probe = NativeContextProbe(probe.player_name, profile=probe.profile,
         map_resolver=lambda handles: dict(after[tuple(handles)]))
     replay_probe.map_cache = _cache(row['context_map_cache_before'])
-    actual = take_sample(shadow, replay_probe, clock=lambda:next(times), native_profile=native_profile)
+    actual = take_sample(shadow, replay_probe, clock=lambda:next(times), native_profile=native_profile,
+                         include_allied_candidates=row.get('include_allied_candidates',False))
     replay.finish()
     sentinel = object()
     if next(times, sentinel) is not sentinel:
@@ -133,6 +141,7 @@ def main(argv=None):
     mode.add_argument('--preflight', action='store_true')
     mode.add_argument('--live', action='store_true')
     parser.add_argument('--candidate-talents', action='store_true')
+    parser.add_argument('--candidate-allies', action='store_true')
     parser.add_argument('--expected-commit', required=True)
     parser.add_argument('--out', type=Path)
     parser.add_argument('--pid', type=int)
@@ -144,6 +153,8 @@ def main(argv=None):
         parser.error('duration/interval hors bornes')
     if args.live and not args.candidate_talents:
         parser.error('--candidate-talents explicite requis')
+    if args.candidate_allies and not args.candidate_talents:
+        parser.error('--candidate-allies requiert --candidate-talents')
     extra = [Path(__file__).resolve(), ROOT/'etudes/rea/scripts/capture_talents.py',
              ROOT/'etudes/rea/scripts/capture_visibility_pipeline.py', ROOT/'kb/data/map_timings.json']
     extra.extend(sorted((ROOT/'cerveau').glob('*.py')))
@@ -168,11 +179,11 @@ def main(argv=None):
         try:
             stream.write(json.dumps({'kind':'candidate_full_talents_NOT_RELEASE','commit':commit,
                 'sources_sha256':sources,'module_base':backend.module_base,'wall':utc(),
-                'png':False,'coach_audio':False,'heap_scan':False})+'\n')
+                'png':False,'coach_audio':False,'heap_scan':False,'candidate_allies':args.candidate_allies})+'\n')
             stream.flush()
             deadline = REAL_CLOCK()+args.duration
             while REAL_CLOCK() < deadline:
-                stream.write(json.dumps(take_sample(backend,probe),allow_nan=False)+'\n')
+                stream.write(json.dumps(take_sample(backend,probe,include_allied_candidates=args.candidate_allies),allow_nan=False)+'\n')
                 stream.flush()
                 remaining = min(args.interval,deadline-REAL_CLOCK())
                 if remaining > 0:
