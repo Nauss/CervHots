@@ -51,7 +51,8 @@ def make_source(args):
     if not args.dump:
         from hotstate.live import read_current
         return lambda: read_current(backend, mapping, context=context,
-            project=lambda raw: snapshot(raw, **options), key=tactical_key), backend
+            project=lambda raw: snapshot(raw, **options), key=tactical_key,
+            observe=getattr(args, 'observe', None)), backend
     return lambda: snapshot(memory_snapshot(backend, mapping, context=context), **options), backend
 
 

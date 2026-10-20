@@ -305,8 +305,9 @@ def snapshot(backend, mapping: dict, debug: bool = False, *, context=None,
                         state['battlefield'] = DragonBattlefield(reader).read(state)
                     else:
                         state['battlefield'] = VolskayaBattlefield(reader).read(state)
-                except NativeUnavailable:
-                    pass
+                except NativeUnavailable as exc:
+                    from .diagnostics import exception_refusal
+                    state['meta'].setdefault('optional_refusals', {})['battlefield'] = exception_refusal(exc)['code']
     return state
 
 

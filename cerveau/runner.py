@@ -76,7 +76,7 @@ def tactical_key(state: dict) -> str:
 class Pipeline:
     def __init__(self, coach: Coach, read_state, *, knowledge=knowledge_for,
                  synthesize=None, deliver=None, clock=time.monotonic,
-                 cooldown: float = 15.0, max_age: float = 20.0):
+                 cooldown: float = 15.0, max_age: float = 20.0, journal=None):
         self.coach = coach
         self.read_state = read_state
         self.knowledge = knowledge
@@ -86,19 +86,38 @@ class Pipeline:
         self.cooldown = cooldown
         self.max_age = max_age
         self.last_delivery = float("-inf")
+        self.journal = journal
 
     def cycle(self) -> Decision:
         if self.clock() - self.last_delivery < self.cooldown:
             return Decision(raison="cooldown")
         started = self.clock()
+        if self.journal is not None:
+            self.journal.set_phase('cycle_acquisition')
         state = self.read_state()
         key = tactical_key(state)
+        if self.journal is not None:
+            self.journal.observation(state)
 
         def fresh():
+            if self.journal is not None:
+                self.journal.set_phase('freshness')
             current = self.read_state()
-            return self.clock() - started <= self.max_age and tactical_key(current) == key
+            age = self.clock() - started
+            current_key = tactical_key(current)
+            if self.journal is not None:
+                self.journal.observation(current)
+                self.journal.freshness(key, current_key, age, self.max_age)
+            return age <= self.max_age and current_key == key
 
-        decision = self.coach.decide(state, self.knowledge(state))
+        if self.journal is not None:
+            self.journal.set_phase('knowledge')
+        knowledge = self.knowledge(state)
+        if self.journal is not None:
+            self.journal.set_phase('api')
+        decision = self.coach.decide(state, knowledge)
+        if self.journal is not None:
+            self.journal.proposal(decision)
         if not decision.parler:
             return decision
         if not fresh():

@@ -272,23 +272,25 @@ class NativeReader:
             raise NativeUnavailable("identite_locale_native_incoherente")
         from .gameplay import GameplayClock
         optional_native = self if optional_native is None else optional_native
+        from .diagnostics import exception_refusal
+        optional_refusals = {}
         gameplay_clock = None
         try:
             gameplay_clock = GameplayClock(optional_native).read()
-        except NativeUnavailable:
-            pass  # HUD unknown does not invalidate the independent P0/P1 fields.
+        except NativeUnavailable as exc:
+            optional_refusals['gameplay_clock'] = exception_refusal(exc)['code']
         from .positions import AlliedPositions
         positions = None
         try:
             positions = AlliedPositions(optional_native).read(context, hero_ids=hero_ids)
-        except NativeUnavailable:
-            pass  # No recipe/identity/consistent read => no coordinates, not zeros.
+        except NativeUnavailable as exc:
+            optional_refusals['positions'] = exception_refusal(exc)['code']
         from .visibility import CurrentVisibility
         visibility = None
         try:
             visibility = CurrentVisibility(optional_native).read(context, hero_ids=hero_ids)
-        except NativeUnavailable:
-            pass  # Unknown current sight never grants enemy tactical permissions.
+        except NativeUnavailable as exc:
+            optional_refusals['visibility'] = exception_refusal(exc)['code']
         from .objectives import VolskayaObjective
         objective = None
         try:
@@ -297,25 +299,25 @@ class NativeReader:
                 objective = DragonObjective(optional_native).read(context, hero_ids=hero_ids)
             else:
                 objective = VolskayaObjective(optional_native).read(context, hero_ids=hero_ids)
-        except NativeUnavailable:
-            pass  # Unknown objective is not a cached event or a default zero.
+        except NativeUnavailable as exc:
+            optional_refusals['objective'] = exception_refusal(exc)['code']
         from .talents import NativeTalentChoices
         talents = None
         try:
             talents = NativeTalentChoices(optional_native).read(context, hero_ids=hero_ids)
-        except NativeUnavailable:
-            pass  # Unqualified/missing selection is unknown, never an offered choice.
+        except NativeUnavailable as exc:
+            optional_refusals['talents'] = exception_refusal(exc)['code']
         from .cooldown_packet import LocalCooldowns
         local_cooldowns = None
         try:
             local_cooldowns = LocalCooldowns(optional_native).read(context, hero_ids=hero_ids)
-        except NativeUnavailable:
-            pass  # Unqualified/changed local source never supplies ready defaults.
+        except NativeUnavailable as exc:
+            optional_refusals['local_cooldowns'] = exception_refusal(exc)['code']
         finished = self.read_clock()
         if not 0 <= finished - started <= 1:
             raise NativeUnavailable("observation_native_non_synchrone")
         meta = {"t_s": finished, "clock_kind": "mission", "native_status": "valide",
-                "native_build": self.profile["build"]}
+                "native_build": self.profile["build"], 'optional_refusals': optional_refusals}
         if gameplay_clock is not None:
             meta["gameplay_clock"] = gameplay_clock
         result = {"meta": meta,

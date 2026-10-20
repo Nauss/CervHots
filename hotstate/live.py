@@ -55,7 +55,7 @@ class LiveBudget(ProcessBackend):
         raise NativeUnavailable('scan_pipeline_natif_interdit')
 
 
-def read_current(backend, mapping, *, context, project=None, key=None, clock=None):
+def read_current(backend, mapping, *, context, project=None, key=None, clock=None, observe=None):
     """Acquire, recheck context, normalize and build the key inside 125ms.
 
     Projection/key callbacks are the real consumer functions, not mocks in the
@@ -65,13 +65,37 @@ def read_current(backend, mapping, *, context, project=None, key=None, clock=Non
     if not isinstance(context, NativeContextProbe) or getattr(backend, 'recorded_non_atomic', False):
         raise NativeUnavailable('pipeline_live_contexte_natif_requis')
     memory = LiveBudget(backend, clock=clock)
-    raw = memory_snapshot(memory, mapping, context=context)
-    memory.check()
-    if raw['meta'].get('native_status') != 'valide':
-        raise NativeUnavailable(raw['meta'].get('native_status', 'coeur_pipeline_absent'))
-    context.recheck(memory)
-    result = raw if project is None else project(raw)
-    if key is not None:
-        key(result)
-    memory.check()
-    return result
+    stage, outcome, optional = 'snapshot', 'error', {}
+    code = None
+    try:
+        raw = memory_snapshot(memory, mapping, context=context)
+        memory.check()
+        if raw['meta'].get('native_status') != 'valide':
+            raise NativeUnavailable(raw['meta'].get('native_status', 'coeur_pipeline_absent'))
+        optional = raw['meta'].get('optional_refusals', {})
+        stage = 'context_recheck'
+        context.recheck(memory)
+        stage = 'normalize'
+        result = raw if project is None else project(raw)
+        stage = 'key'
+        if key is not None:
+            key(result)
+        memory.check()
+        outcome = 'accepted'
+        return result
+    except NativeUnavailable as exc:
+        from .diagnostics import exception_refusal
+        outcome, code = 'refused', exception_refusal(exc)
+        raise
+    finally:
+        if observe is not None:
+            from .diagnostics import refusal
+            # Emission is outside the WHOLE measurement and cannot grant a receipt.
+            # Failure to persist the journal propagates (no silently blind recipe).
+            observe({'event': 'acquisition', 'stage': stage, 'outcome': outcome,
+                     'elapsed_ms': round((memory.clock() - memory.started) * 1000, 3),
+                     'reads': memory.reads, 'bytes_requested': memory.bytes_requested,
+                     'refusal': code,
+                     'optional_refusals': {name: refusal(optional[name]) for name in
+                         ('gameplay_clock', 'positions', 'visibility', 'objective',
+                          'talents', 'local_cooldowns', 'battlefield') if name in optional}})
