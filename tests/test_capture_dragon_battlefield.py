@@ -1,14 +1,22 @@
 """Synthetic orchestration tests. Mocked identity/sample is NOT live evidence."""
 import copy
+import hashlib
+import importlib.metadata
+import io
+import json
+import sys
 import unittest
-from contextlib import ExitStack, contextmanager
-from unittest.mock import patch
+from pathlib import Path
+from types import SimpleNamespace
+from contextlib import ExitStack, contextmanager, redirect_stdout, redirect_stderr
+from unittest.mock import patch, Mock, mock_open
 
 from test_objectives import ObjectiveMemory
 from hotstate.dragon_battlefield import DragonBattlefield
 from hotstate.native import NativeReader, NativeUnavailable
 from hotstate.native_context import NativeContextProbe
 from etudes.rea.scripts.capture_dragon_battlefield import attempt, replay_attempt, main
+from etudes.rea.scripts import capture_dragon_battlefield as capture
 from hotstate.battlefield_details import group_members, camp_public
 
 
@@ -140,12 +148,114 @@ class CaptureDragonBattlefieldTests(unittest.TestCase):
 
     def test_preflight_never_opens_process_and_png_rejected(self):
         with patch('etudes.rea.scripts.capture_dragon_battlefield.frozen_sources', return_value=('a'*40, {})), \
+             patch.dict(sys.modules, {'mpyq': SimpleNamespace(MPQArchive=object, __file__=__file__)}), \
+             patch('importlib.metadata.version', return_value='fixture-not-installed'), \
              patch('etudes.rea.scripts.capture_dragon_battlefield.ProcessBackend') as process:
             self.assertEqual(main(['--preflight', '--expected-commit', 'a'*40]), 0)
             for flags in (['--png'], ['--duration', '31'], ['--interval', 'nan']):
                 with self.assertRaises(SystemExit):
                     main(['--live', '--expected-commit', 'a'*40, *flags])
             process.assert_not_called()
+
+
+@contextmanager
+def mocked_output():
+    # Leave dependency fingerprint reads real; intercept only output creation.
+    real_open = Path.open
+    opened = mock_open()
+    def open_path(path, mode='r', *args, **kwargs):
+        if mode == 'x':
+            return opened(path, mode, *args, **kwargs)
+        return real_open(path, mode, *args, **kwargs)
+    with patch.object(Path, 'open', open_path):
+        yield opened
+
+
+class DragonBattlefieldDependencyTests(unittest.TestCase):
+    collector = capture
+    freezer = capture
+    clock_owner = capture.time
+    clock_name = 'monotonic'
+    extra_args = ()
+
+    def test_dependency_failures_stop_preflight_and_live_before_output_or_process(self):
+        capture = self.collector
+        for mode in ('--preflight', '--live'):
+            for failure in ('missing_mpyq', 'uncallable_api', 'missing_metadata', 'unreadable_source'):
+                archive = Mock(side_effect=AssertionError('map opened'))
+                module = SimpleNamespace(MPQArchive=archive, __file__=__file__)
+                if failure == 'missing_mpyq':
+                    module = None
+                elif failure == 'uncallable_api':
+                    module.MPQArchive = None
+                elif failure == 'unreadable_source':
+                    module.__file__ = str(Path(__file__) / 'absent')
+                with self.subTest(mode=mode, failure=failure), \
+                     patch.object(self.freezer, 'frozen_sources', return_value=('a'*40, {})), \
+                     patch.dict(sys.modules, {'mpyq': module}), \
+                     patch('importlib.metadata.version', side_effect=importlib.metadata.PackageNotFoundError('mpyq')
+                           if failure == 'missing_metadata' else None, return_value='fixture-not-installed'), \
+                     patch.object(capture, 'ProcessBackend', side_effect=AssertionError('process opened')) as backend, \
+                     patch.object(Path, 'mkdir') as mkdir, mocked_output() as opened, \
+                     patch.dict('os.environ', {'DRAGON_TEST_PLAYER': 'PRIVATE_FIXTURE'}), \
+                     redirect_stdout(io.StringIO()) as output, redirect_stderr(io.StringIO()) as error:
+                    with self.assertRaises(SystemExit) as stopped:
+                        capture.main([mode, '--expected-commit', 'a'*40, '--duration', '1',
+                                      '--private-player-env', 'DRAGON_TEST_PLAYER',
+                                      '--out', str(capture.ROOT/'out/run402-never-created/capture.jsonl'), *self.extra_args])
+                    self.assertEqual(stopped.exception.code, 2)
+                    self.assertIn('mpyq', error.getvalue())
+                    self.assertEqual(output.getvalue(), '')
+                    backend.assert_not_called()
+                    mkdir.assert_not_called()
+                    opened.assert_not_called()
+                    archive.assert_not_called()
+
+    def test_success_fingerprints_dependency_and_freezes_helper_imports(self):
+        capture = self.collector
+        expected_hash = hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
+        archive = Mock(side_effect=AssertionError('map opened'))
+        module = SimpleNamespace(MPQArchive=archive, __file__=__file__)
+        with patch.object(self.freezer, 'frozen_sources', return_value=('a'*40, {})) as freeze, \
+             patch.dict(sys.modules, {'mpyq': module}), \
+             patch('importlib.metadata.version', return_value='fixture-not-installed'), \
+             patch.object(capture, 'ProcessBackend') as backend, \
+             patch.object(capture, 'NativeContextProbe') as probe, \
+             redirect_stdout(io.StringIO()) as output:
+            self.assertEqual(capture.main(['--preflight', '--expected-commit', 'a'*40]), 0)
+        report = json.loads(output.getvalue())
+        self.assertFalse(report['live_opened'])
+        self.assertEqual(report['runtime']['python_executable'], sys.executable)
+        self.assertEqual(report['runtime']['python_version'], sys.version)
+        self.assertEqual(report['runtime']['mpyq'], {'version': 'fixture-not-installed', 'source_sha256': expected_hash})
+        extras = set(freeze.call_args.kwargs['extra_paths'])
+        for name in ('capture_talents_pipeline.py', 'capture_talents.py', 'capture_visibility_pipeline.py'):
+            self.assertIn(capture.ROOT/'etudes/rea/scripts'/name, extras)
+        backend.assert_not_called()
+        probe.assert_not_called()
+        archive.assert_not_called()
+
+    def test_live_header_includes_checked_runtime_without_map_io(self):
+        capture = self.collector
+        archive = Mock(side_effect=AssertionError('map opened'))
+        module = SimpleNamespace(MPQArchive=archive, __file__=__file__)
+        with patch.object(self.freezer, 'frozen_sources', return_value=('a'*40, {})), \
+             patch.dict(sys.modules, {'mpyq': module}), \
+             patch('importlib.metadata.version', return_value='fixture-not-installed'), \
+             patch.object(capture, 'ProcessBackend') as backend, \
+             patch.object(capture, 'NativeContextProbe'), \
+             patch.dict('os.environ', {'DRAGON_TEST_PLAYER': 'PRIVATE_FIXTURE'}), \
+             patch.object(Path, 'mkdir'), mocked_output() as opened, \
+             patch.object(self.clock_owner, self.clock_name, side_effect=[0, 2]), \
+             redirect_stdout(io.StringIO()):
+            backend.return_value.module_base = 123
+            self.assertEqual(capture.main(['--live', '--expected-commit', 'a'*40, '--duration', '1',
+                '--private-player-env', 'DRAGON_TEST_PLAYER', '--out', str(capture.ROOT/'out/run402-mocked.jsonl'), *self.extra_args]), 0)
+        header = json.loads(opened().write.call_args.args[0])
+        self.assertEqual(header['runtime']['mpyq']['version'], 'fixture-not-installed')
+        self.assertEqual(header['runtime']['mpyq']['source_sha256'], hashlib.sha256(Path(__file__).read_bytes()).hexdigest())
+        backend.return_value.close.assert_called_once_with()
+        archive.assert_not_called()
 
 
 if __name__ == '__main__':

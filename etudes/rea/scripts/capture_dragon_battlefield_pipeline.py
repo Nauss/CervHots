@@ -21,6 +21,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from etudes.rea.scripts import capture_dragon_pipeline as objective_capture
+from etudes.rea.scripts.capture_talents_pipeline import runtime_dependencies
 from hotstate import dragon as objective_module, dragon_battlefield as battlefield_module
 from hotstate.dragon_battlefield import DragonBattlefield
 from hotstate.native import NativeUnavailable
@@ -115,12 +116,18 @@ def main(argv=None):
     if args.qualified_battlefield and not qualified_read_enabled():
         parser.error('portes_qualifiees_dragon_absentes')
     extras = [Path(__file__).resolve(), Path(objective_capture.__file__).resolve(),
+              ROOT/'etudes/rea/scripts/capture_talents_pipeline.py',
+              ROOT/'etudes/rea/scripts/capture_talents.py',
               ROOT/'etudes/rea/scripts/capture_visibility_pipeline.py', ROOT/'kb/data/map_timings.json']
-    extras.extend(ROOT/'cerveau'/name for name in ('state.py', 'runner.py', 'objectives.py', 'dragon.py', 'battlefield.py'))
+    extras.extend(sorted((ROOT/'cerveau').glob('*.py')))
     commit, sources = objective_capture.frozen_sources(args.expected_commit, extra_paths=extras)
+    try:
+        runtime = runtime_dependencies()
+    except (ImportError, OSError, AttributeError, TypeError, ValueError) as exc:
+        parser.error('dependance map_from_cache mpyq invalide: '+type(exc).__name__)
     if args.preflight:
         print(json.dumps({'commit':commit, 'sources_sha256':sources, 'live_opened':False,
-                          'release':False, 'png':False,
+                          'release':False, 'png':False, 'runtime':runtime,
                           'candidate_override':not args.qualified_battlefield,
                           'mode':'qualified_full_battlefield' if args.qualified_battlefield else 'candidate_full_battlefield'}))
         return 0
@@ -142,7 +149,7 @@ def main(argv=None):
             stream.write(json.dumps({'kind':('qualified_full_dragon_battlefield_NOT_RELEASE' if args.qualified_battlefield
                                             else 'candidate_full_dragon_battlefield_NOT_RELEASE'),
                 'candidate_override':not args.qualified_battlefield,
-                'commit':commit, 'sources_sha256':sources, 'module_base':backend.module_base,
+                'commit':commit, 'sources_sha256':sources, 'runtime':runtime, 'module_base':backend.module_base,
                 'wall':objective_capture.utc(), 'png':False, 'coach_audio':False, 'heap_scan':False})+'\n')
             stream.flush()
             deadline = REAL_CLOCK()+args.duration

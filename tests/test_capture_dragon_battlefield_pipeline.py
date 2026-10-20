@@ -1,8 +1,11 @@
 """Real consumer composition using literal fixtures, NOT live recipe evidence."""
 import copy
+import sys
 import time
 import unittest
+from types import SimpleNamespace
 from unittest.mock import patch
+import test_capture_dragon_battlefield as battlefield_tests
 import test_capture_dragon_pipeline as objective_tests
 from test_dragon_contract import public_fixture
 from test_native_context import TypedContextMemory
@@ -87,12 +90,22 @@ class DragonBattlefieldPipelineTests(unittest.TestCase):
 
     def test_preflight_never_opens_process_and_cli_explicit_optin(self):
         with patch.object(capture.objective_capture,'frozen_sources',return_value=('a'*40,{})), \
+             patch.dict(sys.modules, {'mpyq': SimpleNamespace(MPQArchive=object, __file__=__file__)}), \
+             patch('importlib.metadata.version', return_value='fixture-not-installed'), \
              patch.object(capture,'ProcessBackend') as process:
             self.assertEqual(capture.main(['--preflight','--expected-commit','a'*40]),0)
             for extra in ([], ['--candidate-battlefield','--duration','31'], ['--candidate-battlefield','--png']):
                 with self.assertRaises(SystemExit):
                     capture.main(['--live','--expected-commit','a'*40,*extra])
             process.assert_not_called()
+
+
+class DragonBattlefieldPipelineDependencyTests(battlefield_tests.DragonBattlefieldDependencyTests):
+    collector = capture
+    freezer = capture.objective_capture
+    clock_owner = capture
+    clock_name = 'REAL_CLOCK'
+    extra_args = ('--candidate-battlefield',)
 
 
 if __name__ == '__main__':

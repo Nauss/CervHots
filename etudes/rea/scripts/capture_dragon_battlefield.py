@@ -18,6 +18,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from etudes.rea.scripts.capture_positions import TraceMemory, ReplayTrace, frozen_sources, utc
+from etudes.rea.scripts.capture_talents_pipeline import runtime_dependencies
 from hotstate.dragon_battlefield import DragonBattlefield
 from hotstate.live import LiveBudget
 from hotstate.native import NativeReader, NativeUnavailable
@@ -65,10 +66,18 @@ def main(argv=None):
     args = parser.parse_args(argv)
     if not 0 < args.duration <= 30 or not 0.25 <= args.interval <= 10:
         parser.error('duration/interval hors bornes')
-    commit, sources = frozen_sources(args.expected_commit, extra_paths=(Path(__file__).resolve(),))
+    extras = [Path(__file__).resolve(), ROOT/'etudes/rea/scripts/capture_talents_pipeline.py',
+              ROOT/'etudes/rea/scripts/capture_talents.py',
+              ROOT/'etudes/rea/scripts/capture_visibility_pipeline.py']
+    extras.extend(sorted((ROOT/'cerveau').glob('*.py')))
+    commit, sources = frozen_sources(args.expected_commit, extra_paths=extras)
+    try:
+        runtime = runtime_dependencies()
+    except (ImportError, OSError, AttributeError, TypeError, ValueError) as exc:
+        parser.error('dependance map_from_cache mpyq invalide: '+type(exc).__name__)
     if args.preflight:
         print(json.dumps({'commit': commit, 'sources_sha256': sources,
-                          'live_opened': False, 'release': False, 'png': False}))
+                          'live_opened': False, 'release': False, 'png': False, 'runtime': runtime}))
         return 0
     if args.out is None:
         parser.error('--out requis')
@@ -84,7 +93,7 @@ def main(argv=None):
         backend = ProcessBackend(args.pid)
         try:
             stream.write(json.dumps({'kind': 'native_dragon_battlefield_diagnostic_NOT_PRODUCT',
-                'commit': commit, 'sources_sha256': sources, 'module_base': backend.module_base,
+                'commit': commit, 'sources_sha256': sources, 'runtime': runtime, 'module_base': backend.module_base,
                 'wall': utc(), 'png': False, 'coach_audio': False, 'heap_scan': False})+'\n')
             stream.flush()
             deadline = time.monotonic()+args.duration
