@@ -119,3 +119,53 @@ dans `out/day-fleet/2026-10-20/handoffs/t_de084111/ready-for-integration.json`
 SEULEMENT après PASS et recette finale sans override. La composition avec
 talents/CD doit ensuite revalider WHOLE, confidentialité et revue sur le delta
 composé avant main/push. La clôture de cette phase n'est pas la livraison maître.
+
+## Changement de méthode après les deux échecs composés (20 octobre)
+
+Les acquisitions composées sur `731a0d9` puis `23b6cec` n'ont produit aucun
+Full quatre familles. Elles restent des échecs, même quand le collecteur
+talents accepte sa propre famille. Le diagnostic RO `t_00e66e95`, portant sur
+les sources et traces v3 figées, distingue la surcomparaison de bits non
+consommés, un vrai recyclage de tag et l'épuisement WHOLE pendant le recheck
+final du contexte. Aucun ancien readset n'est réinterprété avec le nouveau
+graphe et aucune projection postérieure ne constitue une observation live.
+
+La correction choisie est C+D, uniquement pour le chemin public Dragon :
+
+- Le consommateur déclare son masque : `+0x39 & 0x20` pour le choix catalogue,
+  union `0x26` pour les structures dont les bits vie sont consommés, et
+  `+0x3c & 0x10` pour ce prédicat CURRENT. Un backend ordinaire ou diagnostique
+  conserve sa lecture/égalité pleine. Aucun masque n'est déduit d'une adresse.
+- Une observation possède ses propres sélections. Leur union est vérifiée
+  physiquement dans les fenêtres header déjà autorisées. Toute consommation
+  pleine, même chevauchante/d'une autre taille, conserve la garde pleine ;
+  une contradiction sur un bit consommé pendant l'acquisition reste refusée.
+  Tags, générations, pointeurs, owner, signatures, racines et contexte ne sont
+  ni masqués ni omis. Le recyclage réel du tag v3 n'est pas un faux positif.
+- Les boucliers `+0x224/+0x230`, privés et absents de `health_percent` public,
+  sont acquis seulement dans les diagnostics. Le chemin public conserve les
+  deux sources vie/dégâts, acquises uniquement après CURRENT. Il ne crée pas
+  un `visible_vitals` vide ni de valeurs inventées.
+- Le budget global de `read_current`, le recheck final `NativeContextProbe`,
+  les limites 8192 lectures/1 MiB/125 ms et les refus latched restent inchangés.
+  Pas de cache intertentative, index structurel persistant, scan supplémentaire,
+  permission candidate ou omission de famille pour produire un Full nominal.
+
+Les régressions hermétiques comprennent l'union des masques, chaque bit
+consommé, les voisins non consommés, la promotion full/chevauchements, les
+contradictions initiales, les lectures incomplètes, les mutations de tag,
+owner et catalogue, CURRENT avant vitaux et la séparation diagnostic/public.
+Le sous-graphe isolé de 90 structures toutes CURRENT demande réellement
+720 lectures/2880 octets avec les boucliers contre 360/1440 sans eux, rechecks
+inclus, à projections publiques identiques. Ce delta n'est PAS une mesure
+WHOLE ni une preuve qu'une tentative historique aurait réussi. Les nouvelles
+sélections ne rajoutent pas une lecture finale par bit de header.
+
+Avant une nouvelle recette, revue indépendante exacte et préflight figé sont
+requis. Une huitième partie requiert l'autorisation explicite du contrôleur,
+pas une simple notification ready. Le vrai point consommateur doit ensuite
+conserver simultanément objective, battlefield (5 camps/90 structures),
+talents et CD dans raw/normaliseur/clé, avec le recheck final et toutes les
+lectures physiques comptés. Tout nouveau budget/timing/refus est rapporté,
+sans hausse de garde ni prolongation automatique. Jusque-là cette correction
+est une préparation NON qualifiée en composé, jamais une livraison main.

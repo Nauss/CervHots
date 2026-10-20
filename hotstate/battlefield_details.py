@@ -120,7 +120,8 @@ def camp_public(row, *, kinds=('turret','turret','siege_troopers','siege_trooper
     return result
 
 
-def structure_details(n, reader, census, units, local_id, layout, *, verify_visibility=True):
+def structure_details(n, reader, census, units, local_id, layout, *, verify_visibility=True,
+                      diagnostic_vitals=True):
     if verify_visibility:CurrentVisibility(n)._verify(n)
     helper = PositionMemo(AlliedPositions(n,profile=reader.position_profile))
     by_point = {(s['x_fixed'],s['y_fixed']):s for s in layout['structures']}
@@ -149,14 +150,14 @@ def structure_details(n, reader, census, units, local_id, layout, *, verify_visi
             if not 0 < maximum <= 1000000*4096 or not 0 <= damage <= maximum:
                 raise NativeUnavailable('vie_structure_visible_invalide')
             item['health_percent'] = 100*(maximum-damage)/maximum
-            # Private diagnostic components, NOT a claim that the selected
-            # target's combined HUD numerator is life alone. Current property
-            # cases0/2 and8/10 in getter2050820 use these four offsets.
-            shields,shield_damage = n.value(unit+0x224,'i'),n.value(unit+0x230,'i')
-            if not 0 <= shields <= 1000000*4096 or not 0 <= shield_damage <= shields:
-                raise NativeUnavailable('bouclier_structure_visible_invalide')
-            item['visible_vitals'] = {'life':(maximum-damage)/4096,'life_max':maximum/4096,
-                'shields':(shields-shield_damage)/4096,'shields_max':shields/4096}
+            if diagnostic_vitals:
+                # Diagnostic-only components never affect public life percent.
+                # Do not acquire them in the bounded public Dragon graph.
+                shields,shield_damage = n.value(unit+0x224,'i'),n.value(unit+0x230,'i')
+                if not 0 <= shields <= 1000000*4096 or not 0 <= shield_damage <= shields:
+                    raise NativeUnavailable('bouclier_structure_visible_invalide')
+                item['visible_vitals'] = {'life':(maximum-damage)/4096,'life_max':maximum/4096,
+                    'shields':(shields-shield_damage)/4096,'shields_max':shields/4096}
         matched[ident] = item
     return [{'id':spec['id'],'spec':spec,'observation':None if spec['id'] in ambiguous else matched.get(spec['id'])}
             for spec in layout['structures']]

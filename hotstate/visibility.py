@@ -111,7 +111,7 @@ class CurrentVisibility:
 
     def _current(self, n, unit, player, helper):
         # Native visibility status4 is the visible filter. Flags are exactly 0xf.
-        if (n.value(unit + 0x4c, 'b') > 0 or n.value(unit + 0x3c, 'B') & 0x10
+        if (n.value(unit + 0x4c, 'b') > 0 or n.masked_byte(unit + 0x3c, 0x10)
                 or n.value(unit + 0x41, 'B') & 0x10):
             return False
         owner = n.value(unit + 0x44, 'B')

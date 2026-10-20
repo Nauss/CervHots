@@ -141,7 +141,7 @@ class DragonBattlefield(VolskayaBattlefield):
         layout = qualified_layout()
         clock = getattr(self.native.memory, 'positions_clock', time.monotonic)
         budget = LiveBudget(self.native.memory, clock=clock)
-        memory = _SelectedCensusMemory(budget)
+        memory = _SelectedCensusMemory(budget, semantic_selection=True)
         n = NativeReader(memory, profile=self.native.profile)
         before = self._clock(n, memory)
         self._verify(n)
@@ -167,14 +167,12 @@ class DragonBattlefield(VolskayaBattlefield):
         camp_details(n, self, camps, local, verify_visibility=False)
         units = {}
         census = self._census(n, unit_pointers=units)
-        structures = structure_details(n, self, census, units, local, layout, verify_visibility=False)
+        structures = structure_details(n, self, census, units, local, layout, verify_visibility=False,
+                                       diagnostic_vitals=False)
         self._camp_timers(n, camps)
         after = self._clock(n, memory)
-        for address, size, slices in memory.coherence_checks(self._coherence_reads(memory.read_set)):
-            data = budget.read_memory(address, size)
-            if data is None or len(data) != size or any(data[off:off+len(value)] != value for off, value in slices):
-                raise NativeUnavailable('lecture_champ_bataille_dragon_dechiree')
-        memory.verify_bits(NativeReader(budget, profile=self.native.profile))
+        memory.verify_sources(NativeReader(budget, profile=self.native.profile),
+                              'lecture_champ_bataille_dragon_dechiree')
         budget.check()
         window = clock()-budget.started
         if not 0 <= after-before <= 0.125 or not 0 <= window <= 0.125 or context != expected:

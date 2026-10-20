@@ -30,8 +30,10 @@ class _SelectedCensusMemory(_RecordedMemory):
     TraceMemory still records every raw requested byte. The transient header
     excludes XY/vitals; unused dirty flags are not mistaken for source fields.
     """
-    def __init__(self, memory):
+    def __init__(self, memory, *, semantic_selection=False):
         super().__init__(memory)
+        self.semantic_selection = semantic_selection
+        self.byte_masks = {}
         self.memo = {}
         self.full_keys = set()
         self.bits = {}
@@ -75,6 +77,54 @@ class _SelectedCensusMemory(_RecordedMemory):
             self.read_set.append((address,self.memo[key]))
             self.full_keys.add(key)
         return self.memo[key]
+
+    def masked_byte(self, address, mask):
+        if type(mask) is not int or not 0 < mask <= 255:
+            raise NativeUnavailable('masque_octet_natif_invalide')
+        if not self.semantic_selection or self.fresh:
+            return self.read_memory(address, 1)[0] & mask
+        key = address, 1
+        if key not in self.memo:
+            index = bisect_right(self.header_addresses, address)-1
+            header = self.header_addresses[index] if index >= 0 else None
+            if header is not None and address < header+0x38:
+                data = self.header_data[header][address-header:address-header+1]
+            else:
+                data = self.memory.read_memory(address, 1)
+            if data is None or len(data) != 1:
+                raise NativeUnavailable('memoire_native_incomplete')
+            self.memo[key] = data
+        value = self.memo[key][0]
+        previous, expected = self.byte_masks.get(address, (0, 0))
+        if (value ^ expected) & previous & mask:
+            raise NativeUnavailable('lecture_champ_bataille_dechiree')
+        self.byte_masks[address] = previous | mask, expected | (value & mask)
+        return value & mask
+
+    def verify_sources(self, native, reason):
+        """One physical final plan, union masks and promotion by full overlaps.
+
+        Group only already authorized header/timer regions. No mask is ever
+        inferred from a field address, name or unit type.
+        """
+        reads = self.coherence_reads(reason)
+        full = {address+i: value for address, data in reads for i, value in enumerate(data)}
+        masks = {}
+        for address, (mask, expected) in self.byte_masks.items():
+            if address in full:
+                if (full[address] ^ expected) & mask:
+                    raise NativeUnavailable(reason)
+            else:
+                masks[address] = mask
+                reads.append((address, bytes([expected])))
+        for address, size, slices in self.coherence_checks(reads):
+            data = native.read(address, size)
+            for offset, expected in slices:
+                mask = masks.get(address+offset) if len(expected) == 1 else None
+                if (data[offset] & mask != expected[0] if mask is not None
+                        else data[offset:offset+len(expected)] != expected):
+                    raise NativeUnavailable(reason)
+        self.verify_bits(native)
 
     def bit_test(self, address, bit):
         if type(bit) is not int or not 0 <= bit < 32:
@@ -220,7 +270,7 @@ class VolskayaBattlefield:
         return unit if n.value(unit+0x10) == tag else None
 
     def _unit_type(self, n, unit):
-        flags = n.value(unit+0x39, 'B')
+        flags = n.masked_byte(unit+0x39, 0x20)
         packed = n.value(unit+(0x20 if flags & 0x20 else 0x18), 'Q')
         catalog = self._pointer(packed & ~31)
         index = n.value(catalog+2, 'H')
@@ -384,13 +434,13 @@ class VolskayaBattlefield:
                 if header is not None:
                     n.memory.read_set.append((unit+0x10,header[:4]))
                 if header is None:
-                    flags = n.value(unit+0x39,'B')
+                    flags = n.masked_byte(unit+0x39, 0x20)
                     packed = n.value(unit+(0x20 if flags & 0x20 else 0x18),'Q')
                 else:
-                    flags = header[0x29]
+                    flags = n.masked_byte(unit+0x39, 0x20)
                     off = 0x10 if flags & 0x20 else 8
                     packed = struct.unpack_from('<Q',header,off)[0]
-                    n.memory.read_set.extend(((unit+0x39,header[0x29:0x2A]),(unit+0x10+off,header[off:off+8])))
+                    n.memory.read_set.append((unit+0x10+off,header[off:off+8]))
                 catalog = self._pointer(packed & ~31)
                 if catalog not in names:
                     try:
@@ -402,6 +452,8 @@ class VolskayaBattlefield:
                 kind = structure_kind(name)
                 if kind is None:
                     continue
+                # Actual structure rows also consume the life bits.
+                flags = n.masked_byte(unit+0x39, 0x26)
                 if header is None:
                     owner = n.value(unit+0x44,'B')
                 else:

@@ -67,6 +67,17 @@ class NativeReader:
     def value(self, address, fmt="I"):
         return struct.unpack("<" + fmt, self.read(address, struct.calcsize("<" + fmt)))[0]
 
+    def masked_byte(self, address, mask):
+        """Declare the exact bits consumed; ordinary backends guard full bytes.
+
+        Only a selected acquisition may narrow its final equality check. An
+        independent full consumer always retains its full guard.
+        """
+        if type(mask) is not int or not 0 < mask <= 255:
+            raise NativeUnavailable('masque_octet_natif_invalide')
+        selected = getattr(self.memory, 'masked_byte', None)
+        return selected(address, mask) if callable(selected) else self.value(address, 'B') & mask
+
     def global_u32(self, rva):
         return self.value(self.base + rva)
 
