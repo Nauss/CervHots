@@ -25,6 +25,44 @@ from cerveau.runner import tactical_key
 FAMILIES = ('objective', 'battlefield', 'talents', 'local_cooldowns')
 
 
+def reads_overlap(reads, field_start, field_end):
+    """Detect physical requests intersecting a forbidden half-open interval."""
+    return any(a < field_end and field_start < a+size for a, size in reads)
+
+
+class ForbiddenReadIntervalTests(unittest.TestCase):
+    """SYNTHETIC NOT_LIVE requests only, not acquired bytes or live costs."""
+
+    def test_forbidden_overlapping_requests_are_detected(self):
+        address = 0x900000
+        for start, end in ((0x224, 0x228), (0x230, 0x234), (0x220, 0x234)):
+            field_start, field_end = address+start, address+end
+            requests = (
+                (field_start, end-start),  # Exact field.
+                (field_start+1, 1),  # Strictly inside.
+                (field_start-8, 9),  # Starts before, includes first byte.
+                (field_start-8, end-start+16),  # Contains the whole field.
+                (field_end-1, 8),  # Includes last byte, ends after.
+            )
+            for request in requests:
+                with self.subTest(field=(start, end), request=request):
+                    self.assertTrue(reads_overlap([request], field_start, field_end))
+                    # The same non-reading assertion used below must reject
+                    # even a grouped request starting before the field.
+                    with self.assertRaises(AssertionError):
+                        self.assertFalse(reads_overlap([request], field_start, field_end))
+
+    def test_adjacent_and_disjoint_requests_are_allowed(self):
+        address = 0x900000
+        for start, end in ((0x224, 0x228), (0x230, 0x234), (0x220, 0x234)):
+            field_start, field_end = address+start, address+end
+            requests = [(field_start-8, 8), (field_end, 8),
+                        (field_start-16, 4), (field_end+16, 4)]
+            with self.subTest(field=(start, end)):
+                self.assertFalse(reads_overlap(requests, field_start, field_end))
+                self.assertFalse(reads_overlap([], field_start, field_end))
+
+
 def map_battlefield(m):
     """Explicit fixture profiles/signatures; no production signature bypass."""
     b = m.module_base
@@ -199,8 +237,8 @@ class NativeDragonWholeTests(unittest.TestCase):
         for address in self.memory.structures:
             self.assertIn((address+0x220, 4), self.physical)
             self.assertIn((address+0x22c, 4), self.physical)
-            self.assertNotIn((address+0x224, 4), self.physical)
-            self.assertNotIn((address+0x230, 4), self.physical)
+            self.assertFalse(reads_overlap(self.physical, address+0x224, address+0x228))
+            self.assertFalse(reads_overlap(self.physical, address+0x230, address+0x234))
         self.physical.clear()
         self.memory.put(0x130000+0x200d0+8192, bytes(8192))
         clean, _ = self.full()
@@ -210,7 +248,7 @@ class NativeDragonWholeTests(unittest.TestCase):
             self.assertIsNone(e['health_percent'])
             self.assertIsNone(e['generation'])
         for address in self.memory.structures:
-            self.assertFalse(any(address+0x220 <= a < address+0x234 for a, s in self.physical))
+            self.assertFalse(reads_overlap(self.physical, address+0x220, address+0x234))
         print('SYNTHETIC NOT_LIVE WHOLE visible/fog reads,bytes:', costs)
 
     def test_native_discrete_mutations_change_only_their_family_key(self):
