@@ -1,7 +1,7 @@
 """Allowlisted local cooldown projection and discrete tactical transitions.
 
-No diagnostic table is a publishable packet. The source's release scope is
-closed until a real whole-path recipe; JSON cannot renew its in-process seal.
+No diagnostic table is a publishable packet. Only qualified current bindings
+are exposed; JSON cannot renew the in-process seal. Not total castability.
 """
 from __future__ import annotations
 
@@ -9,6 +9,7 @@ import math
 import re
 
 from hotstate.acquisition import fresh
+from hotstate.cooldown_qualification import binding
 
 
 def _number(value, upper):
@@ -33,6 +34,7 @@ def _project(raw, local, team, *, scopes=()):
             or type(meta.get('native_build')) is not int or meta['native_build'] != 98348
             or meta.get('context_source') != 'initdata_native_fields'
             or p.get('status') != 'validated' or not fresh(p)
+            or p.get('actor_scope') != 'current_native_main_hero' or p.get('ui_control_body') != 'unknown'
             or (meta.get('map_id'), local.get('hero')) not in scopes
             or p.get('map_id') != meta.get('map_id') or p.get('local_hero') != local.get('hero')
             or type(p.get('local_id')) is not int or p['local_id'] != local['id']
@@ -66,6 +68,9 @@ def _project(raw, local, team, *, scopes=()):
                 or a.get('charges_status') not in ('observed', 'unknown', 'not_applicable_current_max_zero')):
             return None
         slots.add(a['instance_slot'])
+        case = binding((98348, meta['map_id'], local['hero']), a['ability'])
+        if case is None or (case[5] == 0 and a['charges_status'] == 'observed'):
+            return None  # A generic fresh seal is not a permission for peer abilities.
         row = {k:a[k] for k in ('ability', 'instance_slot', 'slot_kind', 'cooldown_status', 'charges_status', 'cast_legality')}
         if a['cooldown_status'] == 'observed':
             if (not _number(a.get('remaining_s'), 3600) or type(a.get('cooldown_ready')) is not bool
@@ -85,6 +90,7 @@ def _project(raw, local, team, *, scopes=()):
             return None
         clean.append(row)
     return {'t': p['mission_t_s'], 'map_id': p['map_id'], 'local_id': local['id'],
+            'actor_scope': 'current_native_main_hero', 'ui_control_body': 'unknown',
             'hero': local['hero'], 'alive': p['alive'], 'abilities': sorted(clean, key=lambda a:a['instance_slot'])}
 
 

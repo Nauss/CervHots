@@ -8,6 +8,7 @@ from hotstate import cooldown_packet as candidate
 from test_positions import PositionMemory
 from test_native_match import add_match
 from hotstate import cooldown_sources, cooldown_costs
+from hotstate import cooldown_qualification
 from hotstate.native import NativeReader, NativeUnavailable
 from hotstate.acquisition import fresh
 from cerveau.cooldowns import _project as project
@@ -50,7 +51,7 @@ def memory_fixture(m=None):
     m.pack(registry+0x60,'Q',m.module_base+next(s['rva'] for s in profile['signatures'] if s['name']=='CostClass9'))
     m.pack(m.module_base+profile['cooldown_condition_index_rva'],'I',0xffffffff)
     m.pack(m.module_base+profile['condition_player_mask_rva'],'I',0)
-    m.cd_node=node;m.data_table=datatable;m.data=data;m.cost=cost
+    m.cd_node=node;m.data_table=datatable;m.data=data;m.cost=cost;m.name_string=namestr
     return m,profiles
 
 
@@ -68,12 +69,14 @@ class CooldownPacketTests(unittest.TestCase):
         self.stack.enter_context(patch.object(candidate,'SIGNATURES',tuple(self.m.profile['signatures'])*3))
         self.stack.enter_context(patch.object(cooldown_sources,'PROFILE',profiles[0]))
         self.stack.enter_context(patch.object(cooldown_costs,'PROFILE',profiles[1]))
+        self.stack.enter_context(patch.dict(cooldown_qualification.QUALIFIED_BINDINGS,{
+            (98348,'Volskaya','ragnaros'):{'FixtureSpell':(9,'unit','Abil/FixtureSpell',None,None,0)}}))
         self.reader=candidate.LocalCooldowns(self.native)
 
     def opened(self):return patch.object(candidate,'VALIDATED_SCOPES',(('Volskaya','ragnaros'),))
     def read(self):return self.reader.read(self.m.context,hero_ids=self.m.hero_ids)
 
-    def test_release_closed_before_physical_reads(self):
+    def test_unqualified_scope_refuses_before_physical_reads(self):
         before=len(self.calls)
         with self.assertRaisesRegex(NativeUnavailable,'recette_cooldowns_absente'):self.read()
         self.assertEqual(before,len(self.calls))
@@ -121,6 +124,15 @@ class CooldownPacketTests(unittest.TestCase):
             second=self.read()['abilities'][0]
             self.assertEqual(second['cooldown_status'],'unknown');self.assertNotIn('remaining_s',second)
             self.assertNotIn('cooldown_ready',second)
+
+    def test_current_internal_name_does_not_get_a_ui_grant_or_base_fallback(self):
+        name='UnprovenInternal'
+        self.m.pack(self.m.name_string+0x18,'II',len(name)*4,0)
+        self.m.put(self.m.name_string+0x20,name.encode('ascii'))
+        with self.opened():p=self.read()
+        self.assertEqual(p['abilities'],[])
+        self.assertEqual(p['actor_scope'],'current_native_main_hero')
+        self.assertEqual(p['ui_control_body'],'unknown')
 
     def test_final_value_mutation_refuses_receipt(self):
         original=self.m.read_memory;calls=0

@@ -9,6 +9,7 @@ from test_native_context import TypedContextMemory
 from test_capture_visibility_pipeline import FixtureProcess, FixtureClock
 from etudes.rea.scripts import capture_cooldown_pipeline as capture
 from hotstate import cooldown_packet, cooldown_sources, cooldown_costs
+from hotstate import cooldown_qualification
 from hotstate.native import NativeReader
 
 
@@ -25,6 +26,8 @@ class CooldownPipelineTests(unittest.TestCase):
                 ('hotstate.cooldown_costs.PROFILE',self.profiles[1]),
                 ('etudes.rea.scripts.capture_cooldown_pipeline.CANDIDATE_SCOPES',(('Volskaya','ragnaros'),))):
             self.stack.enter_context(patch(target,value))
+        self.stack.enter_context(patch.dict(cooldown_qualification.QUALIFIED_BINDINGS,{
+            (98348,'Volskaya','ragnaros'):{'FixtureSpell':(9,'unit','Abil/FixtureSpell',None,None,0)}}))
 
     def take(self,clock=None):
         return capture.take_sample(FixtureProcess(self.m),self.probe,clock=clock or FixtureClock(),native_profile=self.m.profile)
@@ -40,7 +43,7 @@ class CooldownPipelineTests(unittest.TestCase):
         self.assertLessEqual(row['whole_snapshot_window_s'],0.125)
         self.assertEqual(row['read_count'],len(row['reads']))
         self.assertNotIn('OWNER_TEST',json.dumps(row['normalized']))
-        self.assertEqual(cooldown_packet.VALIDATED_SCOPES,())
+        self.assertEqual(cooldown_packet.VALIDATED_SCOPES,(('DragonShire','sonya'),))
         replay=capture.replay_sample(row,self.m.module_base,self.probe,native_profile=self.m.profile)
         self.assertEqual(row['normalized'],replay['normalized'])
         self.assertEqual(row['tactical_key'],replay['tactical_key'])
@@ -55,6 +58,9 @@ class CooldownPipelineTests(unittest.TestCase):
         self.assertEqual(keys[0],keys[1]);self.assertNotEqual(keys[1],keys[2])
 
     def test_native_class8_player_cd_and_charge_join_reaches_real_key(self):
+        # Synthetic binding ONLY; no actual BattleRage production grant.
+        self.stack.enter_context(patch.dict(cooldown_qualification.QUALIFIED_BINDINGS,{
+            (98348,'Volskaya','ragnaros'):{'FixtureSpell':(8,'player','Abil/FixtureSpell','player','Abil/FixtureSpell',2)}}))
         n=NativeReader(self.m,profile=self.m.profile);p=self.profiles[1]
         cls=n.value(self.m.data+0x60,'Q');membership=n.value(cls+0x100,'Q')
         self.m.pack(cls+0x24,'I',8);self.m.pack(membership+1,'B',1)

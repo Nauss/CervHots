@@ -18,6 +18,7 @@ class CooldownContractTests(unittest.TestCase):
             'heroes':[dict(self.local,alive=True)],
             'local_cooldowns':{'status':'validated','map_id':'DragonShire','match_id':'a'*64,
                 'local_id':0,'team':0,'local_hero':'sonya','alive':True,'mission_t_s':20,'read_window_s':0.01,
+                'actor_scope':'current_native_main_hero','ui_control_body':'unknown',
                 'private_pointer':123456789,'private_name':'PRIVATE_FIXTURE',
                 'abilities':[{'ability':'BarbarianAncientSpear','instance_slot':22,
                     'slot_kind':'native_instance_NOT_HUD_button','cooldown_status':'observed',
@@ -58,9 +59,26 @@ class CooldownContractTests(unittest.TestCase):
         first=key(self.result());a=self.raw['local_cooldowns']['abilities'][0]
         a['remaining_s']=1;self.seal();self.assertEqual(first,key(self.result()))
         a.update(remaining_s=0,cooldown_ready=True);self.seal();self.assertNotEqual(first,key(self.result()))
+        # Generic key utility fixture only, NOT a Spear charge publication grant.
+        clean=self.result();a=clean['abilities'][0]
         a.update(charges_status='observed',charges_max=3,charges_used=2,charges_available=1,charge_regen_s=1.5)
-        self.seal();before=key(self.result());a['charge_regen_s']=1;self.seal();self.assertEqual(before,key(self.result()))
-        a.update(charges_used=1,charges_available=2);self.seal();self.assertNotEqual(before,key(self.result()))
+        before=key(clean);a['charge_regen_s']=1;self.assertEqual(before,key(clean))
+        a.update(charges_used=1,charges_available=2);self.assertNotEqual(before,key(clean))
+
+    def test_unqualified_peer_even_with_fresh_seal_is_not_ui_permission(self):
+        self.raw['local_cooldowns']['abilities'][0]['ability']='BarbarianBattleRage';self.seal()
+        self.assertIsNone(self.result())
+
+    def test_unqualified_actor_or_ui_control_claim_is_refused(self):
+        old=copy.deepcopy(self.raw)
+        for field,value in (('actor_scope','current_ui_body'),('actor_scope',None),('ui_control_body','vehicle')):
+            self.raw=copy.deepcopy(old);self.raw['local_cooldowns'][field]=value;self.seal()
+            self.assertIsNone(self.result())
+
+    def test_spear_cannot_publish_unproven_charge_count(self):
+        self.raw['local_cooldowns']['abilities'][0].update(charges_status='observed',charges_max=2,
+            charges_used=0,charges_available=2,charge_regen_s=0)
+        self.seal();self.assertIsNone(self.result())
 
     def test_invalid_typed_values_and_orphan_unknown_fields_refuse(self):
         old=copy.deepcopy(self.raw)

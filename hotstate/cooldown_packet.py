@@ -1,6 +1,6 @@
-"""Bounded main-local-hero cooldown packet, not a released producer yet.
+"""Bounded main-local-hero cooldown packet, partial Spear CD scope only.
 
-Release scopes stay EMPTY until the real whole consumer recipe and review.
+Only the actual whole-consumer/HUD-qualified current Spear binding is exposed.
 Current native instances and player cost overlays are read, never a base loadout
 or an event countdown. Only cooldown readiness; castability/HUD bindings unknown.
 No process, GUI, coach or audio is opened here. Caller owns the live backend.
@@ -20,9 +20,10 @@ from .match import ActiveMatch
 from .cooldowns import read_unit_links, SIGNATURES
 from . import cooldown_sources, cooldown_costs
 from .acquisition import issue
+from .cooldown_qualification import qualify
 
 ROOT = Path(__file__).resolve().parents[1]
-VALIDATED_SCOPES = ()
+VALIDATED_SCOPES = (('DragonShire', 'sonya'),)
 
 
 class LocalCooldowns:
@@ -96,6 +97,9 @@ class LocalCooldowns:
                     stores[name] = {'status': 'unknown', 'reason': str(exc)}
             rows = cooldown_costs.diagnostic_abilities(instances, links, stores)
             for instance, row in zip(instances, rows):
+                row = qualify((n.profile['build'], map_id, actual[2]), instance, row)
+                if row is None:
+                    continue  # An attached internal/peer ability is not a HUD grant.
                 value = {k:v for k,v in row.items() if k in (
                     'ability', 'cooldown_status', 'remaining_s', 'cooldown_ready',
                     'charges_status', 'charges_max', 'charges_used', 'charges_available',
@@ -114,5 +118,6 @@ class LocalCooldowns:
             raise NativeUnavailable('cooldown_window_or_context_changed')
         return {'map_id': map_id, 'match_id': match, 'local_id': local, 'team': team,
                 'local_hero': actual[2], 'alive': alive, 'mission_t_s': last,
+                'actor_scope': 'current_native_main_hero', 'ui_control_body': 'unknown',
                 'read_window_s': elapsed, 'abilities': abilities, '_acquired': budget.started,
                 'read_count': budget.read_count, 'bytes_requested': budget.bytes_requested}
