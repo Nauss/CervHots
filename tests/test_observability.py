@@ -10,6 +10,27 @@ from test_cerveau import Gateway
 
 
 class ObservabilityTests(unittest.TestCase):
+    def test_journal_flush_never_extends_freshness_permission(self):
+        from cerveau.diagnostics import Journal
+        for delayed_check in (1, 2, 3):
+            with self.subTest(check=delayed_check):
+                now, checks = [0.0], []
+                records = []
+                def emit(event):
+                    records.append(event)
+                    if event['event'] == 'freshness':
+                        checks.append(None)
+                        if len(checks) == delayed_check:
+                            now[0] += 21
+                coach = Coach(Gateway())
+                pipeline = Pipeline(coach, lambda: {'meta': {}, 'stats': {}},
+                                    knowledge=lambda s: '', clock=lambda: now[0], journal=Journal(emit))
+                result = pipeline.cycle()
+                self.assertFalse(result.parler)
+                self.assertEqual(result.raison, 'non_diffusé' if delayed_check == 3 else 'périmé')
+                self.assertFalse(coach.history)
+                self.assertTrue(any(r['event'] == 'freshness_overrun' for r in records))
+
     def test_journal_rejects_hostile_advice_and_enemy_vitals(self):
         from cerveau.diagnostics import Journal
         records = []

@@ -125,6 +125,13 @@ class Pipeline:
             if self.journal is not None:
                 self.journal.observation(current)
                 self.journal.freshness(key, current_key, age, self.max_age)
+                # A synchronous journal flush is not free time. Recheck after
+                # emission, especially on the final delivery callback.
+                final_age = self.clock() - started
+                if age <= self.max_age < final_age:
+                    self.journal.record('freshness_overrun', cause='age_during_journal',
+                                        age_s=round(final_age, 6))
+                age = final_age
             return age <= self.max_age and current_key == key
 
         if self.journal is not None:
