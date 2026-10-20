@@ -1,0 +1,18 @@
+{
+  "build": 98348,
+  "scope": "Diagnostic native active instance ordinals and local Unit/Player storage only. NOT current cost binding, charges maximum, HUD slots or product qualification.",
+  "signatures": [
+    {"name":"UnitAbilityCount","rva":33849664,"size":64,"sha256":"d24fe76ba93f94d8a32c4db717011f8364780cfcc7b2e0fe65675a4fec4c9f3e"},
+    {"name":"UnitAbilityGet","rva":33850272,"size":64,"sha256":"b9feeda8c15cf1bef592af908ea4b01c731cebfb2d0d84fb9465c8afbee056e7"},
+    {"name":"AbilityOrdinalResolver","rva":11166080,"size":64,"sha256":"3b9296d98605027959924532703c42234c0becafc74fd038ca5152a742980d84"},
+    {"name":"AbilityDescriptorResolver","rva":33673712,"size":64,"sha256":"106b6174839b1f48d02160ae12ce19919fd0c5438acf420b447359ae02fd347b"},
+    {"name":"AbilityCatalogue","rva":6150896,"size":64,"sha256":"0e9b2849adbc56b9bc684027861aef8cf0d0dfeaff1f7977fbb3252c5ee3f316"},
+    {"name":"PlayerGetCooldown","rva":34332960,"size":64,"sha256":"16789cf27328850971808fef8a11b0242f2b5cd5928cd7562c084a33cb046a51"},
+    {"name":"UnitGetChargeRegen","rva":33879504,"size":64,"sha256":"30e16c264ea4ec6c3b6259d14fba4665afc1e6c29705ac6f5cfb63346806769e"},
+    {"name":"UnitGetChargeUsed","rva":33879968,"size":64,"sha256":"2a9a05b246201d37d5e0c5a9703c4a6e2c4f3fbefbcd238e396379b3b180da0e"},
+    {"name":"PlayerGetChargeRegen","rva":34331904,"size":64,"sha256":"33c09aaee46e12a57bfbe6b5087fc9d6c58390cc66283846fd88595ecbe862d9"},
+    {"name":"PlayerGetChargeUsed","rva":34332448,"size":64,"sha256":"55550d285e8e074cc7576f5755fbdbf707f89b1351b8968b5a4091e20e88b113"},
+    {"name":"UnitChargeList","rva":12025136,"size":64,"sha256":"b245216333417b9934982a602dee880ef090d7840543163a7cff861548ff1461"},
+    {"name":"TaggedChargeNext","rva":9006992,"size":64,"sha256":"77c4ceee4555b2588aaae472f4cbcfa5ed82a503f8d3a9bb35d1cbeb41b25b96"}
+  ]
+}

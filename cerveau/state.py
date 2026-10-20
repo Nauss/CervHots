@@ -244,6 +244,10 @@ def snapshot(raw: dict, *, at: float | None = None, team: int | None = None,
             battlefield = project_battlefield(raw,local,team)
             if battlefield is not None and (map_name is None or map_name == meta.get('map')):
                 result['battlefield'] = battlefield
+            from .cooldowns import project_local_cooldowns
+            local_cooldowns = project_local_cooldowns(raw, local, team)
+            if local_cooldowns is not None and (map_name is None or map_name == meta.get('map')):
+                result['local_cooldowns'] = local_cooldowns
             result["meta"]["native_status"] = "valide"
             from .talents import project_talents
             talents = project_talents(raw, local, team)

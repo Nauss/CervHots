@@ -1,0 +1,21 @@
+{
+ "build":98348,
+ "scope":"DIAGNOSTIC current local player cost overlay native classes6/7/8/9 command0 only. NOT released ability producer. Classes8/9 observed on Sonya require distinct overlay+24 cost source.",
+ "registry_rva":56640144,"registry_flags_rva":56840384,
+ "cooldown_condition_index_rva":56840456,"condition_bits_rva":56840520,"condition_player_mask_rva":56840536,
+ "signatures":[
+ {"name":"AbilityDataClass","rva":6179024,"size":64,"sha256":"ec9dad6a099a056eda6187e4e611b957cafbd38d44be9df70b4b92ed7529bad3"},
+ {"name":"AbilityCurrentData","rva":33674016,"size":64,"sha256":"702cf54ecbc3a8962d9b0b5f99075973770f63a243bdfc039b18a224034c1148"},
+ {"name":"PlayerOverlaySelector","rva":33674256,"size":64,"sha256":"4a4757f7ea7a88cec58799aeccf409fec4325b1d74993d2610aff4bea1b4ff9a"},
+ {"name":"ClassMembership","rva":33673648,"size":64,"sha256":"36a4a11332dc5dd5449d9b38a3713bb516d70a1d4cf5115308de545214300681"},
+ {"name":"CostCopy","rva":3480448,"size":64,"sha256":"7579150c2bf67cce5e16e3766eee05ca2a018f966cd6be2b1d01c11112a20de3"},
+ {"name":"CostClass6","rva":12591760,"size":64,"sha256":"8f5813bc9bbacccf59817a72e7791067fe3de7a033af797a6dd032dbd2243e38"},
+ {"name":"CostClass7","rva":12605024,"size":64,"sha256":"254875f1b55372bc38991213a10b8c48a263007a33e03a772d406ae1f07080b1"},
+ {"name":"CostRegistry","rva":10820208,"size":64,"sha256":"61199fdeefbc07c677883f5e0ae45c39442190480624abbf1118d313bf0784f3"},
+ {"name":"CostCallback","rva":10646192,"size":64,"sha256":"ee7bb0a433cfb70fcfca8a13428221d583c3e56854506d4d10ba44b38f932180"},
+ {"name":"CostApplicability","rva":11193648,"size":64,"sha256":"dbd6a93884735501c92fe46c971a6777aec554932e32cdb6c88284c07a349987"},
+ {"name":"CurrentCooldownAggregation","rva":11200368,"size":64,"sha256":"88777e2de657f6b1799e62be0a737885f3f458e6d5840451dc858aa48a2c9379"},
+ {"name":"CostClass8","rva":12209904,"size":699,"sha256":"d2f72175dc58cf958a4f37bf73a2e4bfa96598608c34d44bb53b1fb8199acfd6"},
+ {"name":"CostClass9","rva":12213248,"size":699,"sha256":"97d6d7675261b1612861be36b21210c4b755357797e498fe71a403b152b37ee1"}
+ ]
+}
