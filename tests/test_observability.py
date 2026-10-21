@@ -10,6 +10,55 @@ from test_cerveau import Gateway
 
 
 class ObservabilityTests(unittest.TestCase):
+    def test_unqualified_battlefield_refusal_precedes_memory_reads(self):
+        from hotstate.battlefield import VolskayaBattlefield
+        from hotstate.diagnostics import exception_refusal
+        from hotstate.native import NativeReader
+        from test_native import NativeMemory
+        from unittest.mock import patch
+        memory = NativeMemory()
+        memory.add_roster()
+        memory.context['meta']['map_id'] = 'TowersOfDoom'
+        reader = VolskayaBattlefield(NativeReader(memory, profile=memory.profile))
+        with patch.object(memory, 'read_memory', side_effect=AssertionError('read forbidden')) as read:
+            with self.assertRaises(NativeUnavailable) as caught:
+                reader.read(memory.context)
+        read.assert_not_called()
+        self.assertEqual(caught.exception.args, ('champ_bataille_non_valide_en_recette',))
+        self.assertEqual(exception_refusal(caught.exception), {
+            'code': 'champ_bataille_non_valide_en_recette', 'category': 'optional_unqualified'})
+
+    def test_real_reader_preserves_unqualified_battlefield_diagnostic(self):
+        from hotstate.reader import snapshot
+        from test_native_context import TypedContextMemory
+        from test_capture_visibility_pipeline import FixtureProcess, PipelineCollectorTests
+        memory = TypedContextMemory()
+        probe = memory.probe()
+        probe.map_resolver = lambda handles: {'map_id': 'TowersOfDoom', 'map': 'Towers of Doom'}
+        a, b, c = PipelineCollectorTests().options(memory)
+        with a, b, c:
+            raw = snapshot(FixtureProcess(memory), {'triggers': {}}, context=probe,
+                           native_profile=memory.profile)
+        self.assertEqual(raw['meta']['map_id'], 'TowersOfDoom')
+        self.assertEqual(raw['meta']['native_status'], 'valide')
+        self.assertNotIn('battlefield', raw)
+        self.assertEqual(raw['meta']['optional_refusals']['battlefield'],
+                         'champ_bataille_non_valide_en_recette')
+
+    def test_exception_refusal_never_exports_hostile_or_untrusted_payloads(self):
+        from hotstate.diagnostics import exception_refusal
+        class Hostile:
+            def __str__(self):
+                raise AssertionError('payload must not be formatted')
+        class Derived(NativeUnavailable):
+            pass
+        for exc in (NativeUnavailable(Hostile()), NativeUnavailable('0x12345678'),
+                    NativeUnavailable('champ_bataille_non_valide_en_recette\nsecret'),
+                    NativeUnavailable('champ_bataille_non_valide_en_recette', 'secret'),
+                    ValueError('champ_bataille_non_valide_en_recette'),
+                    Derived('champ_bataille_non_valide_en_recette')):
+            self.assertEqual(exception_refusal(exc), {'code': 'unknown_refusal', 'category': 'unknown'})
+
     def test_journal_flush_never_extends_freshness_permission(self):
         from cerveau.diagnostics import Journal
         for delayed_check in (1, 2, 3):

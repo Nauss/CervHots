@@ -139,6 +139,8 @@ class Pipeline:
         knowledge = self.knowledge(state)
         if self.journal is not None:
             self.journal.set_phase('api')
+        if self.checkpoint is not None:
+            self.checkpoint()
         decision = self.coach.decide(state, knowledge)
         if self.checkpoint is not None:
             self.checkpoint()

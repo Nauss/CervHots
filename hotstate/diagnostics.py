@@ -52,6 +52,7 @@ CODES = {
         'fenetre_objectif_invalide',
     },
     'optional_unqualified': {
+        'champ_bataille_non_valide_en_recette',
         'recette_positions_absente', 'recette_positions_joueur_absente',
         'carte_positions_non_prise_en_charge', 'recette_objectifs_absente',
         'carte_ou_capture_objectif_non_prise_en_charge',

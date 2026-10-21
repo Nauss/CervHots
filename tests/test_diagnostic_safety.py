@@ -12,6 +12,39 @@ from test_cerveau import Gateway
 
 
 class SafetyTests(unittest.TestCase):
+    def test_stop_during_api_phase_emission_prevents_request_and_closes_once(self):
+        from cerveau.runner import Pipeline
+        original_init = Pipeline.__init__
+        records, closed = [], []
+        gateway = Gateway()
+        coach = Coach(gateway)
+        with tempfile.TemporaryDirectory() as tmp:
+            stop = Path(tmp) / 'STOP'
+            def emit(event):
+                records.append(event)
+                if event.get('event') == 'phase' and event.get('phase') == 'api':
+                    stop.touch()
+            args = SimpleNamespace(stop_file=stop, max_seconds=1, interval=30)
+            with patch.object(coach, 'remember', wraps=coach.remember) as remember, \
+                    patch.object(Pipeline, '__init__', autospec=True) as init:
+                # Keep the real constructor, but fail if any delivery is attempted.
+                def initialize(instance, *a, **kw):
+                    kw['deliver'] = lambda *a: self.fail('delivery forbidden')
+                    original_init(instance, *a, **kw)
+                init.side_effect = initialize
+                result = run_session(args, lambda observe: (
+                    lambda: {'meta': {}, 'stats': {}},
+                    SimpleNamespace(close=lambda: closed.append(None))),
+                    lambda: coach, emit, clock=lambda: 0, knowledge=lambda s: '')
+            remember.assert_not_called()
+        self.assertEqual(result, 0)
+        self.assertFalse(gateway.calls)
+        self.assertFalse(coach.history)
+        self.assertEqual(len(closed), 1)
+        self.assertFalse(any(r.get('event') in ('proposal', 'outcome') for r in records))
+        self.assertTrue(any(r.get('event') == 'boundary' and r.get('reason') == 'stop_file'
+                            for r in records))
+
     def test_stop_during_api_precedes_journal_proposal_and_never_remembers(self):
         for speaking in (False, True):
             with self.subTest(speaking=speaking), tempfile.TemporaryDirectory() as tmp:
