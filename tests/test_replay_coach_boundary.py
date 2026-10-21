@@ -21,6 +21,115 @@ def replay():
 
 
 class ReplayBoundaryTests(unittest.TestCase):
+    def test_ambiguous_lifecycle_cannot_preserve_life_or_xy_in_prepared_prompt(self):
+        from cerveau.brain import Coach
+
+        class FakeClient:
+            messages = None
+
+            def chat(self, messages, **kwargs):
+                self.messages = messages
+                return {'choices': [{'message': {'content': '{"parler": false}'}}]}
+
+        for identity in (
+                {'player': 'SYNTHETIC_PRIVATE_ALLY', 'hero': 'Diablo'},
+                {'player': 'SYNTHETIC_PRIVATE_ALLY', 'hero': {'private': 'SYNTHETIC_PRIVATE'}},
+                {'hero': 'Jaina'},
+                {'player': 'SYNTHETIC_PRIVATE_UNKNOWN', 'hero': 'Jaina'},
+                {'player': ['SYNTHETIC_PRIVATE_ALLY'], 'hero': 'Jaina'}):
+            for kind in ('death', 'spawn', 'respawn'):
+                with self.subTest(identity=identity, kind=kind):
+                    raw = replay()
+                    raw['timeline']['hero_events'].append(dict(t=10.25, type=kind, **identity))
+                    state = snapshot(raw, at=10.5, team=0)
+                    client = FakeClient()
+                    Coach(client).decide(state)
+                    prepared = json.loads(client.messages[1]['content'])['etat']
+                    for projected in (state, prepared):
+                        self.assertNotIn('positions', projected)
+                        self.assertTrue(all('alive' not in h for h in projected['heroes']))
+                        self.assertNotIn('deaths_total', projected['stats'])
+                        self.assertNotIn('SYNTHETIC_PRIVATE', json.dumps(projected))
+
+    def test_duplicate_names_remain_ambiguous_even_with_invalid_roster_rows(self):
+        for extra in ({'hero': 'Diablo', 'team': 0},
+                      {'hero': {'private': 'SYNTHETIC_PRIVATE'}, 'team': 0},
+                      {'hero': 'Jaina', 'team': True}):
+            with self.subTest(extra=extra):
+                raw = replay()
+                raw['players'].append(dict(id=2, name='SYNTHETIC_PRIVATE_ALLY', **extra))
+                state = snapshot(raw, at=10, team=0)
+                self.assertNotIn('positions', state)
+                self.assertTrue(all('alive' not in h for h in state['heroes']))
+                self.assertNotIn('deaths_total', state['stats'])
+
+    def test_validly_dated_future_rows_do_not_change_the_projected_prefix(self):
+        baseline = snapshot(replay(), at=10, team=0)
+        for event in ({'t': 100, 'type': 'SYNTHETIC_PRIVATE_FUTURE'},
+                      {'t': 100, 'type': {'private': 'SYNTHETIC_PRIVATE'}},
+                      {'t': 100, 'type': 'death', 'hero': 'Jaina'},
+                      {'t': 100, 'type': 'death', 'player': 'SYNTHETIC_PRIVATE_ALLY',
+                       'hero': 'Diablo'}):
+            with self.subTest(event=event):
+                raw = replay()
+                raw['timeline']['hero_events'].append(event)
+                raw['position_snapshots'].append({'t': 100, 'positions': None})
+                self.assertEqual(snapshot(raw, at=10, team=0), baseline)
+
+    def test_duplicate_heroes_do_not_resolve_an_unbound_death_in_prompt(self):
+        from cerveau.brain import Coach
+
+        class FakeClient:
+            def chat(self, messages, **kwargs):
+                self.state = json.loads(messages[1]['content'])['etat']
+                return {'choices': [{'message': {'content': '{"parler": false}'}}]}
+
+        for duplicate_name in (False, True):
+            with self.subTest(duplicate_name=duplicate_name):
+                raw = replay()
+                raw['players'].append({'id': 2, 'hero': 'Jaina', 'team': 0,
+                                       'name': 'SYNTHETIC_PRIVATE_ALLY' if duplicate_name
+                                       else 'SYNTHETIC_PRIVATE_SECOND'})
+                raw['timeline']['hero_events'].extend([
+                    {'t': 0, 'type': 'spawn', 'player': raw['players'][2]['name']},
+                    {'t': 10.25, 'type': 'death', 'hero': 'Jaina'},
+                    {'t': 10.3, 'type': 'respawn', 'player': 'SYNTHETIC_PRIVATE_ALLY'}])
+                state = snapshot(raw, at=10.5, team=0)
+                client = FakeClient()
+                Coach(client).decide(state)
+                for projected in (state, client.state):
+                    self.assertNotIn('positions', projected)
+                    self.assertTrue(all('alive' not in h for h in projected['heroes']))
+                    self.assertNotIn('deaths_total', projected['stats'])
+
+    def test_coherent_duplicate_heroes_keep_independently_bound_public_facts_in_prompt(self):
+        from cerveau.brain import Coach
+
+        class FakeClient:
+            def chat(self, messages, **kwargs):
+                self.state = json.loads(messages[1]['content'])['etat']
+                return {'choices': [{'message': {'content': '{"parler": false}'}}]}
+
+        raw = replay()
+        raw['players'][1]['hero'] = 'Jaina'
+        raw['timeline']['hero_events'][1]['hero'] = 'Jaina'
+        raw['timeline']['hero_events'].append(
+            {'t': 9, 'type': 'death', 'player': 'SYNTHETIC_PRIVATE_ENEMY', 'hero': 'Jaina'})
+        raw['timeline']['stat_events'] = [
+            {'t': 2, 'name': 'LevelUp', 'player': 'SYNTHETIC_PRIVATE_ALLY', 'data': {'Level': 7}},
+            {'t': 3, 'name': 'TributeCollected', 'data': {'TeamID': 8192}}]
+        state = snapshot(raw, at=10, team=0)
+        client = FakeClient()
+        Coach(client).decide(state)
+        for projected in (state, client.state):
+            self.assertTrue(projected['heroes'][0]['alive'])
+            self.assertFalse(projected['heroes'][1]['alive'])
+            self.assertEqual(projected['heroes'][0]['level'], 7)
+            self.assertEqual(projected['stats']['deaths_total'], 1)
+            self.assertEqual(projected['positions']['heroes'],
+                             [{'hero': 'Jaina', 'team': 0, 'x': 100, 'y': 200}])
+            self.assertIn({'t': 3, 'name': 'TributeCollected', 'team': 1}, projected['events'])
+
     def test_enemy_xy_is_absent_without_historical_player_visibility(self):
         state = snapshot(replay(), at=10, team=0)
         self.assertEqual(state['positions']['heroes'],

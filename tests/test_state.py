@@ -84,7 +84,7 @@ class StateTests(unittest.TestCase):
             "meta": {"source": "replay", "map": "Cursed Hollow", "duration_s": 999},
             "players": [{"id": 1, "name": "PrivateName", "hero": "Jaina", "team": 0, "result": 1}],
             "timeline": {
-                "hero_events": [{"t": 10, "type": "death", "hero": "Jaina"},
+                "hero_events": [{"t": 10, "type": "death", "hero": "Jaina", "player": "PrivateName"},
                                 {"t": 30, "type": "death", "hero": "Diablo"}],
                 "stat_events": [{"t": 20, "name": "LevelUp", "data": {"Level": 7}},
                                 {"t": 25, "name": "EndOfGameTimeSpentDead", "data": {}}],
@@ -121,8 +121,9 @@ class StateTests(unittest.TestCase):
                 snapshot(state)
 
     def test_replay_events_remain_chronological_and_bounded(self):
-        result = snapshot({"meta": {"source": "replay"}, "players": [], "timeline": {
-            "hero_events": [{"t": i, "type": "death"} for i in range(100)],
+        result = snapshot({"meta": {"source": "replay"}, "players": [
+            {"name": "PrivateName", "hero": "Jaina", "team": 0}], "timeline": {
+            "hero_events": [{"t": i, "type": "death", "player": "PrivateName"} for i in range(100)],
             "stat_events": [{"t": 98.5, "name": "LevelUp", "data": {}}],
         }}, at=99, team=0)
         self.assertEqual(len(result["events"]), 24)

@@ -62,20 +62,22 @@ def project(raw, *, at, team, map_name=None, allies=None, enemies=None):
         raise TypeError("players doit être une liste d'objets")
     if len(players) > 10:
         raise ValueError('composition replay ambiguë')
-    members, roster, ambiguous = [], {}, set()
+    members, roster, ambiguous, seen_names = [], {}, set(), set()
     for player in players:
+        name = player.get('name')
+        if type(name) is str and 0 < len(name) <= 256:
+            if name in seen_names:
+                ambiguous.add(name)
+            seen_names.add(name)
         hero, side = _known(player.get('hero'), HEROES), player.get('team')
         if hero is None or type(side) is not int or side not in (0, 1):
             continue
         member = {'hero': hero, 'team': side}
         members.append((player, member))
-        name = player.get('name')
         if type(name) is str and 0 < len(name) <= 256:
-            if name in roster:
-                ambiguous.add(name)
             roster[name] = member
     for name in ambiguous:
-        del roster[name]
+        roster.pop(name, None)
     local = raw.get('local_player')
     if local is not None:
         if not isinstance(local, dict) or type(local.get('id')) is not int:
@@ -107,8 +109,8 @@ def project(raw, *, at, team, map_name=None, allies=None, enemies=None):
     hero_rows = timeline.get('hero_events')
     life_complete = (isinstance(hero_rows, list)
                      and all(isinstance(e, dict) and _number(e.get('t'), MAX_TIME_S)
-                             and type(e.get('type')) is str
-                             and e['type'] in (*LIFE_EVENTS, 'upgrade')
+                             and (e['t'] > at or (type(e.get('type')) is str
+                                  and e['type'] in (*LIFE_EVENTS, 'upgrade')))
                              for e in hero_rows))
     pending = []
     for family in ('hero_events', 'stat_events'):
@@ -127,9 +129,16 @@ def project(raw, *, at, team, map_name=None, allies=None, enemies=None):
         player = event.get('player')
         member = roster.get(player) if type(player) is str else None
         hero = _known(event.get('hero'), HEROES)
+        conflicting_hero = (member is not None and event.get('hero') is not None
+                            and hero != member['hero'])
+        if is_life and (member is None or conflicting_hero):
+            # An unbound/contradictory transition is not evidence that everyone
+            # stayed alive. Invalidate the whole life family; never join by hero.
+            life_complete = False
+            continue
         if member is not None:
-            if event.get('hero') is not None and hero != member['hero']:
-                continue  # conflicting identity cannot update life or positions
+            if conflicting_hero:
+                continue
             clean.update(hero=member['hero'], team=member['team'])
             if is_life:
                 key, alive = id(member), kind != 'death'

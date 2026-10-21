@@ -32,6 +32,11 @@ qualification de l'utilité du coach.
 - Événements triés AVANT application de la vie et des niveaux, jamais après `at`.
   Les 24 derniers faits admissibles sont transmis ; le compteur de morts porte
   sur tout le préfixe admissible, non sur ces seuls 24 faits.
+- S01 : une ligne future dont le temps est valide dans 0..21600 est ignorée avant
+  validation de son type/identité. Elle ne change pas le préfixe projeté à `at`.
+  Une ligne non datée ou au temps invalide ne peut pas être classée future et
+  continue d'invalider conservativement sa famille. Le candidat initial avait
+  une dépendance conservative au futur, pas une fuite future démontrée.
 
 ## Coordonnées
 
@@ -57,6 +62,14 @@ Seul le dernier `position_snapshots` daté peut produire des positions alliées 
   mort ou vie inconnue : pas de fallback vers une ancienne position. Une famille
   de cycle de vie malformée rend la vie actuelle inconnue. Des transitions de vie
   contradictoires au même instant rendent cet état inconnu.
+- B01 : toute transition spawn/death/respawn du préfixe sans jointure unique
+  par player, ou avec héros contradictoire/composite, invalide la famille de vie
+  entière pour ce snapshot : aucun alive, aucune XY, aucun deaths_total. Même
+  une transition valide ultérieure ne rétablit pas cette famille dans ce préfixe.
+  Les transitions ambiguës ne sont pas émises comme faits de vie. Les autres
+  faits publics indépendants restent admissibles. Ce choix sacrifie la
+  disponibilité plutôt que de rattacher naïvement par héros (doublons possibles).
+  Un nom dupliqué reste ambigu même si une des lignes du roster est invalide.
 
 La famille positions est absente si aucun allié ne satisfait ces conditions.
 Cette politique réduit volontairement sa disponibilité dans un replay clairsemé.
@@ -107,6 +120,10 @@ son test de politique d'âge sans assimiler l'absence à zéro ; `test_gameplay_
 spécifie l'équipe pour continuer à vérifier l'absence de chrono HUD en replay.
 Ces deux ajustements de tests, hors du fichier ciblé principal, sont nécessaires
 au changement volontaire du contrat replay, sans modification de CLI/brain/runner.
+La révision B01 donne aussi une jointure player cohérente aux fixtures historiques
+de coupure temporelle/borne 24 ; leurs assertions de chronologie et de taille
+restent inchangées. Les nouvelles régressions vérifient séparément le refus des
+transitions sans jointure, au normaliseur et dans le prompt factice.
 
 Commande ciblée : `python -m unittest discover -s tests -p test_replay_coach_boundary.py -v`.
 Les fixtures incluent un vrai prompt préparé par `Coach` via un client FAUX,
