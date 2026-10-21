@@ -18,6 +18,7 @@ import time
 from types import SimpleNamespace
 
 from .diagnostics import Journal
+from .player_identity import read_player_label
 from .runner import Pipeline, ROOT, knowledge_for
 from hotstate.diagnostics import exception_refusal
 from hotstate.native import NativeUnavailable
@@ -242,9 +243,7 @@ def main(argv=None):
         if stop_requested(args.stop_file):
             print(json.dumps({'event': 'boundary', 'reason': 'stop_file'}))
             return 0
-        player = args.player_file.read_text(encoding='utf-8').strip()
-        if not 2 <= len(player) <= 64 or '\n' in player or '\r' in player:
-            raise ValueError('invalid_identity')
+        player = read_player_label(args.player_file)
         args.output_dir.mkdir(parents=True, exist_ok=True)
         with session_lock(args.output_dir.parent / 'diagnostic-session.lock'):
             with (args.output_dir / 'events.jsonl').open('x', encoding='utf-8') as stream:

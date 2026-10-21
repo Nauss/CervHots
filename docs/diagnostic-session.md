@@ -25,6 +25,16 @@ inédite), --stop-file. Exemple :
 
     C:/root/dev/AI/CervHots/tts/.venv/Scripts/python.exe -m cerveau.diagnostic_session --coach-env-file <config-runtime-absolue> --live --player-file <privé> --output-dir <session-absolue-inédite> --stop-file <STOP-absolu> --max-seconds 300 --interval 30
 
+Le fichier explicite est lu en processus via `cerveau.player_identity`, sans
+variable globale : UTF8 strict ou UTF8 avec BOM initial, 2–64 caractères,
+261 octets au maximum et lecture bornée même si le fichier grossit. Un seul LF
+ou CRLF terminal est permis ; autres retours ligne, contrôles Unicode et espaces
+extérieurs sont refusés, pas silencieusement supprimés. Les erreurs ne révèlent
+ni contenu ni chemin. STOP précède cette lecture. Ce label n'est pas une preuve
+de joueur actif : la garde native doit toujours trouver une identité unique dans
+la partie courante, et refuser absence, ambiguïté ou différence. Aucun changement
+de permissions, signatures, build, invariants de partie ou budgets n'en découle.
+
 Un verrou exclusif `diagnostic-session.lock` dans le parent du dossier de session
 empêche deux collecteurs partageant ce répertoire. Un crash laisse le verrou :
 vérifier l'absence du processus avant de l'enlever manuellement. Le STOP n'est
