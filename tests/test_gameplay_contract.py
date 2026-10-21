@@ -57,7 +57,7 @@ class GameplayContractTests(unittest.TestCase):
                 raw["meta"]["gameplay_clock"] = dict(clock(), **{field: value})
                 self.assertNotIn("gameplay_clock", snapshot(raw)["meta"])
         raw = {"meta": {"source": "replay", "gameplay_clock": clock()}, "timeline": {}}
-        self.assertNotIn("gameplay_clock", snapshot(raw, at=123.5)["meta"])
+        self.assertNotIn("gameplay_clock", snapshot(raw, at=123.5, team=0)["meta"])
 
     def test_kb_only_uses_validated_gameplay_never_mission_or_untyped_t_s(self):
         for candidate, expected in ((None, None), (clock(12.5), 12),

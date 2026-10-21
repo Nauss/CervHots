@@ -184,6 +184,9 @@ def snapshot(raw: dict, *, at: float | None = None, team: int | None = None,
     meta = raw.get("meta", {})
     if not isinstance(meta, dict):
         raise TypeError("meta doit être un objet JSON")
+    if meta.get("source") == "replay" or "timeline" in raw:
+        from .replay import project
+        return project(raw, at=at, team=team, map_name=map_name, allies=allies, enemies=enemies)
     local = raw.get("local_player")
     if local is not None:
         if (not isinstance(local, dict) or type(local.get("team")) is not int
@@ -273,53 +276,3 @@ def snapshot(raw: dict, *, at: float | None = None, team: int | None = None,
             if isinstance(match_id, str) and re.fullmatch(r"[0-9a-f]{64}", match_id):
                 result["meta"]["match_id"] = match_id
         return result
-
-    roster = {p.get("name", str(i)): {"hero": p["hero"], "team": p.get("team")}
-              for i, p in enumerate(players) if p.get("hero")}
-    events = []
-    timeline = raw.get("timeline", {})
-    for kind in ("hero_events", "stat_events", "structure_events"):
-        for event in timeline.get(kind, []):
-            if (not _number(event.get("t")) or event["t"] > clock
-                    or event.get("name", "").startswith("EndOfGame")):
-                continue
-            data = event.get("data", {})
-            if not isinstance(data, dict):
-                data = {}
-            member = roster.get(event.get("player"))
-            if member is not None:
-                if event.get("type") in ("spawn", "respawn", "death"):
-                    member["alive"] = event["type"] != "death"
-                if event.get("name") == "LevelUp":
-                    level = data.get("Level")
-                    if type(level) is int and 1 <= level <= 30:
-                        member["level"] = level
-            # Noms des joueurs, chat, score et résultat finaux ne partent pas vers le LLM.
-            clean = {k: v for k, v in event.items()
-                     if k in ("t", "type", "name", "hero", "team", "upgrade", "pos")}
-            if member is not None:
-                clean["team"] = member["team"]
-            fixed_team = data.get("TeamID")
-            if type(fixed_team) is int and fixed_team in (4096, 8192):
-                clean["team"] = fixed_team // 4096 - 1
-            # Typed allowlist: never forward arbitrary strings, nested values,
-            # account identifiers or unknown future tracker fields. Event kind,
-            # hero, team, upgrade and positions still carry tactical facts.
-            level = data.get("Level")
-            if event.get("name") == "LevelUp" and type(level) is int and 1 <= level <= 30:
-                clean["data"] = {"Level": level}
-            events.append(clean)
-    result["heroes"] = list(roster.values())
-    result["events"] = sorted(events, key=lambda e: e["t"])[-24:]
-    result["stats"]["deaths_total"] = sum(e.get("type") == "death" for e in events)
-    positions = [p for p in raw.get("position_snapshots", [])
-                 if _number(p.get("t")) and p["t"] <= clock]
-    if positions:
-        latest = max(positions, key=lambda p: p["t"])
-        result["positions"] = {
-            "t": latest["t"],
-            "heroes": [{"hero": roster[name]["hero"], "team": roster[name]["team"],
-                        "x": pos["x"] / 4, "y": pos["y"] / 4}
-                       for name, pos in latest["positions"].items() if name in roster],
-        }
-    return result

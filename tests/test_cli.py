@@ -30,6 +30,8 @@ class CliTests(unittest.TestCase):
                         raw = {"deaths_total": 2}
                         if source is not None:
                             raw["meta"] = {"source": source}
+                        if source == "replay":
+                            raw["timeline"] = {"hero_events": []}  # observed empty, not unknown
                         path.write_text(json.dumps(raw), encoding="utf-8")
                         if stale:
                             os.utime(path, (1, 1))

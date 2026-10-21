@@ -11,11 +11,11 @@ class StateTests(unittest.TestCase):
                 "hero_events": [{"t": 2, "type": "upgrade", "hero": "Jaina",
                                  "upgrade": "SyntheticTalent", "pos": [2, 3],
                                  "data": {"TeamID": 8192, "ToonHandle": "PRIVATE_TEST"}}]}}
-        result = snapshot(raw, at=2)
+        result = snapshot(raw, at=2, team=0)
         self.assertNotIn("PRIVATE_TEST", str(result))
-        self.assertEqual(result["events"][-1], {
-            "t": 2, "type": "upgrade", "hero": "Jaina", "upgrade": "SyntheticTalent",
-            "pos": [2, 3], "team": 1})
+        # Arbitrary tracker upgrade IDs/XY are not qualified player facts.
+        self.assertEqual(result["events"], [
+            {"t": 1, "name": "LevelUp", "hero": "Jaina", "team": 0}])
 
     def test_replay_stat_data_is_typed_allowlist_not_private_passthrough(self):
         import json
@@ -29,7 +29,7 @@ class StateTests(unittest.TestCase):
                             {"t": 2, "name": "LevelUp", "data": {"Level": 7}},
                             {"t": 3, "name": "LevelUp", "data": {"Level": 20}},
                         ]}}
-                        result = snapshot(raw, at=2)
+                        result = snapshot(raw, at=2, team=0)
                         self.assertNotIn("PRIVATE_TEST", json.dumps(result))
                         self.assertEqual(result["events"][-1]["data"], {"Level": 7})
                         self.assertEqual(len(result["events"]), 2)
@@ -124,7 +124,7 @@ class StateTests(unittest.TestCase):
         result = snapshot({"meta": {"source": "replay"}, "players": [], "timeline": {
             "hero_events": [{"t": i, "type": "death"} for i in range(100)],
             "stat_events": [{"t": 98.5, "name": "LevelUp", "data": {}}],
-        }}, at=99)
+        }}, at=99, team=0)
         self.assertEqual(len(result["events"]), 24)
         self.assertEqual([e["t"] for e in result["events"]], sorted(e["t"] for e in result["events"]))
 
@@ -139,12 +139,17 @@ class StateTests(unittest.TestCase):
                              "hero": "Jaina", "data": {"Level": 4, "PlayerID": 1}},
                             {"t": 22, "name": "TributeCollected", "data": {"TeamID": 4096, "GameTime": 1}}],
         }, "position_snapshots": [{"t": 25, "positions": {"PrivateName": {"x": 400, "y": 800}}}]}
-        result = snapshot(replay, at=30)
+        result = snapshot(replay, at=30, team=0)
         self.assertEqual(result["heroes"], [{"hero": "Jaina", "team": 0, "alive": False, "level": 4}])
         self.assertNotIn("PrivateName", str(result))
-        self.assertEqual(result["positions"]["heroes"], [{"hero": "Jaina", "team": 0, "x": 100, "y": 200}])
+        self.assertNotIn("positions", result)  # dead and stale, not a current location
         self.assertEqual(result["events"][-1]["team"], 0)
         self.assertNotIn("GameTime", str(result))
+        replay["position_snapshots"].append(
+            {"t": 61, "positions": {"PrivateName": {"x": 400, "y": 800}}})
+        current = snapshot(replay, at=61, team=0)
+        self.assertEqual(current["positions"]["heroes"],
+                         [{"hero": "Jaina", "team": 0, "x": 100, "y": 200}])
 
 
 if __name__ == "__main__":
