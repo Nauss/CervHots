@@ -8,7 +8,7 @@ import json
 import math
 import time
 
-from . import braxis
+from . import braxis, braxis_roots
 
 # Closed public vocabulary. Unknown exceptions/decoder text stay private.
 REASONS = frozenset('''whole_budget whole_time address_or_size transport_error short_read
@@ -20,14 +20,19 @@ private_player_label_missing contexte_natif_capture_non_atomique
 profil_natif_invalide build_natif_non_pris_en_charge signature_native_invalide
 aucune_simulation_active memoire_native_incomplete horloge_native_invalide
 contexte_natif_invalide_ou_ambigu contexte_natif_partie_changee contexte_natif_perime
-contexte_natif_dechire context_initial_unavailable channel_bytes_not_recorded'''.split())
+contexte_natif_dechire context_initial_unavailable channel_bytes_not_recorded
+runtime_code_pin selector_changed selector_bound selector_table_null selector_slot_null
+root_pointer_invalid descriptor_arena_null descriptor_arena_bounds descriptor_arena_header
+descriptor_arena_changed simulation_root_null simulation_database_null simulation_root_changed
+unit_pool_bound unit_page_null unit_pool_changed unit_page_changed unit_reference_changed'''.split())
 
 
-def public_attempt(raw):
+def public_attempt(raw, *, previous=None):
     """Closed schema: no pointers, names, decoded structures, identity or clocks."""
     channels = {}
     allowed = {'clock_before', 'clock_after', 'context', 'context_after', 'compiler', 'type',
-               *(f'frames.{index}' for index, _ in braxis.FUNCTIONS)}
+               *(f'frames.{index}' for index, _ in braxis.FUNCTIONS),
+               *(f'roots.{name}' for name in braxis_roots.DECODERS)}
     for name in sorted(allowed):
         if name not in raw['channels']:
             continue
@@ -37,12 +42,17 @@ def public_attempt(raw):
         if 'reason' in row:
             reason = row['reason']
             channels[name]['reason'] = reason if reason in REASONS else 'diagnostic_refused'
-    return {'schema': 'braxis-causal-summary-v1', 'channels': channels,
+    result = {'schema': 'braxis-causal-summary-v1', 'channels': channels,
             'build_status': raw['build']['status'],
             'measurement': braxis.measure(channels), 'target_map': raw['target_map'],
             'physical_requests': raw['physical_requests'], 'bytes_requested': raw['bytes_requested'],
             'elapsed_s': raw['elapsed_s'], 'mission_interval_recorded': raw['mission_clock'] is not None,
             'perspective': 'not_validated', 'normalized_acquisitions': 0, 'objective': None, 'coach': False}
+    if raw.get('experiment') == 'runtime-roots':
+        result['schema'] = 'braxis-runtime-roots-summary-v1'
+        result['runtime_roots'] = braxis_roots.measure(raw)
+        result['runtime_roots']['sample_transitions'] = braxis_roots.sample_transitions(previous, raw)
+    return result
 
 
 def run_session(out, stops, *, seconds, interval, max_attempts, player_label,
@@ -72,6 +82,7 @@ def run_session(out, stops, *, seconds, interval, max_attempts, player_label,
     deadline = started + seconds
     backend = None
     match = None
+    previous = None
 
     def stopped():
         if any(stop.exists() for stop in stops):
@@ -119,9 +130,10 @@ def run_session(out, stops, *, seconds, interval, max_attempts, player_label,
                     if reason:
                         summary['stop_reason'] = reason
                         break
-                    public.write(json.dumps(public_attempt(raw), allow_nan=False) + '\n')
+                    public.write(json.dumps(public_attempt(raw, previous=previous), allow_nan=False) + '\n')
                     public.flush()
                     summary['public_persisted'] += 1
+                    previous = raw if raw.get('experiment') == 'runtime-roots' else None
                     reason = stopped()
                     if reason:
                         summary['stop_reason'] = reason
@@ -153,11 +165,13 @@ def run_session(out, stops, *, seconds, interval, max_attempts, player_label,
     return summary
 
 
-def preflight(player_file=None):
+def preflight(player_file=None, *, experiment='publication'):
     """Local sources/profile and explicit identity input only; zero native IO."""
     import hashlib
     import importlib.util
     from cerveau.player_identity import read_player_label
+    if experiment not in ('publication', 'runtime-roots'):
+        raise ValueError('diagnostic_experiment')
     root = Path(__file__).resolve().parents[1]
     paths = sorted((root / 'hotstate').glob('*.py')) + sorted((root / 'hotstate/profiles').glob('*.json'))
     paths += [root / 'cerveau/player_identity.py', root / 'hotstate/BRAXIS_DIAGNOSTIC.md']
@@ -168,7 +182,14 @@ def preflight(player_file=None):
         raise ValueError('diagnostic_profile_invalid')
     if player_file:
         read_player_label(player_file)
+    runtime = json.loads(braxis_roots.PROFILE.read_text(encoding='utf-8'))
+    if (runtime['image_size'] != pins['image_size']
+            or set(runtime['channels']) != set(braxis_roots.DECODERS)
+            or any(not rows for rows in runtime['channels'].values())):
+        raise ValueError('diagnostic_profile_invalid')
     return {'schema': 'braxis-preflight-v1', 'backend_opened': False, 'live_authorized': False,
+            'experiment': experiment,
+            'runtime_channel_pins': {name: len(rows) for name, rows in runtime['channels'].items()},
             'private_identity_loaded': player_file is not None,
             'limits': {'seconds': .125, 'reads': 8192, 'bytes': 1048576},
             'source_hashes': source_hashes, 'code_pins': len(pins['code']),
@@ -199,11 +220,14 @@ class ExactMemory:
             raise ValueError('replay_unconsumed_reads')
 
 
-def replay_channels(rows):
+def replay_channels(rows, *, experiment='publication'):
     """Only recorded metadata channels; never claims context/build/freshness."""
     decodes = {'compiler': braxis.decoders.compiler_global, 'type': braxis.decoders.named_type}
     for index, name in braxis.FUNCTIONS:
         decodes[f'frames.{index}'] = lambda tx, i=index, n=name: braxis.frame(tx, i, n)
+    if experiment == 'runtime-roots':
+        decodes = {f'roots.{name}': lambda tx, n=name: braxis_roots.decode_channel(tx, n)
+                   for name in braxis_roots.DECODERS}
     channels = {key: {'status': 'not_recorded', 'reason': 'channel_bytes_not_recorded', 'requests': 0}
                 for key in (*decodes, 'context', 'clock_before', 'clock_after')}
     seen = set()
@@ -232,12 +256,18 @@ def replay_channels(rows):
 
 def replay_attempt(raw):
     """Replay product metadata slices; context/time/build are not requalified."""
-    if raw.get('schema') != 'braxis-causal-v1' or len(raw['reads']) > 8192:
+    if raw.get('schema') not in ('braxis-causal-v1', 'braxis-runtime-roots-v1') or len(raw['reads']) > 8192:
         raise ValueError('readset_schema_or_bound')
+    if any(not isinstance(row, dict) or type(row.get('size')) is not int
+           or not 0 < row['size'] <= 65536 for row in raw['reads']):
+        raise ValueError('readset_row_invalid')
     if sum(row['size'] for row in raw['reads']) > 1048576:
         raise ValueError('readset_byte_bound')
     rows, excluded = [], {}
-    for kind in ('compiler', 'type', *(f'frames.{index}' for index, _ in braxis.FUNCTIONS)):
+    experiment = 'runtime-roots' if raw['schema'] == 'braxis-runtime-roots-v1' else 'publication'
+    names = (tuple(f'roots.{name}' for name in braxis_roots.DECODERS) if experiment == 'runtime-roots'
+             else ('compiler', 'type', *(f'frames.{index}' for index, _ in braxis.FUNCTIONS)))
+    for kind in names:
         row = raw['channels'].get(kind)
         if row is None or row['status'] == 'not_attempted':
             continue
@@ -249,7 +279,7 @@ def replay_attempt(raw):
             raise ValueError('readset_channel_bounds')
         rows.append({**row, 'kind': kind, 'module_base': raw['module_base'],
                      'reads': raw['reads'][start:end]})
-    result = replay_channels(rows)
+    result = replay_channels(rows, experiment=experiment)
     result['channels'].update(excluded)
     result['measurement'] = braxis.measure(result['channels'])
     return result
@@ -263,6 +293,8 @@ def main(argv=None, *, backend_factory=None):
     modes.add_argument('--replay', type=Path, help='exact recorded per-channel JSONL only')
     modes.add_argument('--live', action='store_true', help='operator-only private game diagnostic')
     parser.add_argument('--operator-private-game', action='store_true')
+    parser.add_argument('--experiment', choices=('publication', 'runtime-roots'), default='publication',
+                        help='runtime-roots: independent execution/allocator/native registry diagnostic, not SCHO data')
     parser.add_argument('--player-file', type=Path, help='absolute bounded private UTF8 label file; never label in argv')
     parser.add_argument('--out', type=Path, help='new exclusive session directory')
     parser.add_argument('--stop', type=Path, action='append', default=[], help='absolute STOP file, repeatable')
@@ -272,7 +304,7 @@ def main(argv=None, *, backend_factory=None):
     args = parser.parse_args(argv)
     try:
         if args.preflight:
-            print(json.dumps(preflight(args.player_file), sort_keys=True))
+            print(json.dumps(preflight(args.player_file, experiment=args.experiment), sort_keys=True))
             return 0
         if args.replay:
             with args.replay.open('rb') as stream:
@@ -300,9 +332,11 @@ def main(argv=None, *, backend_factory=None):
                 import mpyq  # noqa: F401
                 from .reader import ProcessBackend
                 return ProcessBackend()
+        from functools import partial
         summary = run_session(args.out, args.stop, seconds=args.seconds, interval=args.interval,
                               max_attempts=args.max_attempts, player_label=player,
-                              backend_factory=backend_factory)
+                              backend_factory=backend_factory,
+                              collect_attempt=partial(braxis.collect, experiment=args.experiment))
         print(json.dumps(summary, sort_keys=True))
         return 0 if summary['stop_reason'] not in ('diagnostic_error', 'build_refused', 'wrong_map') else 2
     except (OSError, ValueError, ImportError, KeyError, TypeError, SystemExit):
