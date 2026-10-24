@@ -27,7 +27,7 @@ def playable_bounds(map_id):
 
 
 class _RecordedMemory:
-    def __init__(self, memory, *, cache=False):
+    def __init__(self, memory, *, cache=False, diagnose=False):
         self.memory = memory
         self.module_base = memory.module_base
         self.recorded_non_atomic = getattr(memory, 'recorded_non_atomic', False)
@@ -35,6 +35,41 @@ class _RecordedMemory:
         self.cache = cache
         self.memo = {}
         self.fresh = False
+        self.diagnose = diagnose
+        self.scope = 'unclassified'
+        self.read_fields = {}
+
+    @contextmanager
+    def read_scope(self, field):
+        previous = self.scope
+        self.scope = field
+        try:
+            yield
+        finally:
+            self.scope = previous
+
+    def reject_coherence(self, reason, phase, address, size, *, before=None, after=None):
+        error = NativeUnavailable(reason)
+        if self.diagnose:
+            from .diagnostics import coherence_detail
+            detail = {'phase': phase, 'field': self.read_fields.get((address, size)),
+                      'width': size}
+            # Only compare two complete observations of the SAME tick address.
+            # Never export bytes/addresses, infer an overlapping partial word,
+            # or treat a forward change as permission to accept it.
+            if (detail['field'] == 'clock_tick' and size == 4
+                    and type(before) is bytes and type(after) is bytes
+                    and len(before) == len(after) == 4):
+                first, last = struct.unpack('<i', before)[0], struct.unpack('<i', after)[0]
+                if not (0 <= first <= 21600 * 4096 and 0 <= last <= 21600 * 4096):
+                    detail['clock_transition'] = 'out_of_range'
+                elif last < first:
+                    detail['clock_transition'] = 'backward'
+                elif last > first:
+                    detail['clock_transition'] = ('forward_bounded' if last - first <= 4096
+                                                  else 'forward_over_window')
+            error.coherence = coherence_detail(detail)
+        raise error
 
     @contextmanager
     def fresh_reads(self):
@@ -52,6 +87,8 @@ class _RecordedMemory:
         data = self.memory.read_memory(address, size)
         if data is not None:
             self.read_set.append((address, data))
+            if self.diagnose:
+                self.read_fields.setdefault((address, len(data)), self.scope)
             if self.cache and not self.fresh and len(data)==size:
                 self.memo[key] = data
         return data
@@ -66,13 +103,38 @@ class _RecordedMemory:
             for offset, value in enumerate(data):
                 at = address+offset
                 if at in observed and observed[at] != value:
-                    raise NativeUnavailable(reason)
+                    self.reject_coherence(reason, 'initial_overlap', address, len(data),
+                                          before=unique.get((address, len(data))), after=data)
                 observed[at] = value
             key = address, len(data)
             if key in unique and unique[key] != data:
-                raise NativeUnavailable(reason)
+                self.reject_coherence(reason, 'initial_overlap', address, len(data))
             unique[key] = data
         return [(address, data) for (address, size), data in unique.items()]
+
+    def core_coherence_checks(self, reason):
+        """Batch only consecutive, adjacent core fields with the same scope.
+
+        Validate ALL initial overlaps first. Never bridge unacquired bytes,
+        reorder checks, batch clock boundaries or reuse acquisition memo bytes.
+        Each original slice retains its full equality check and attribution.
+        """
+        reads = self.coherence_reads(reason)
+        batches = []
+        previous_field = None
+        batchable = {'identity', 'roster', 'life', 'level', 'respawn', 'vitals', 'generation'}
+        for address, data in reads:
+            field = self.read_fields.get((address, len(data)))
+            if (batches and field in batchable and field == previous_field
+                    and address == batches[-1][0] + batches[-1][1]
+                    and batches[-1][1] + len(data) <= 65536):
+                start, size, slices = batches[-1]
+                slices.append((address, data))
+                batches[-1] = (start, size + len(data), slices)
+            else:
+                batches.append((address, len(data), [(address, data)]))
+            previous_field = field
+        return batches
 
     def validate_clock_end(self, start, reason):
         # The final clock was read AFTER physical equality checks. Its roots

@@ -140,6 +140,88 @@ Volskaya et `python -m cerveau.objective_journal --journal <events.jsonl>`.
 Ce complément ne change ni les allowlists, ni le budget WHOLE, ni les permissions
 CURRENT ; aucune preuve native/live nouvelle n'est revendiquée par le code.
 
+## Comprendre un refus de cohérence du cœur
+
+`lecture_native_dechiree` conserve exactement son refus. Son événement
+`acquisition` peut désormais contenir un objet fermé `coherence` :
+
+```json
+{"phase":"initial_overlap","field":"clock_tick","width":4}
+```
+
+- `initial_overlap` : deux lectures sources déjà effectuées se contredisent,
+  même si leurs intervalles ne se recouvrent que partiellement.
+- `final_equality` : une relecture physique finale diffère de sa source.
+- `field` : groupe du premier consommateur de cet intervalle exact parmi
+  `build`, `identity`, `clock_roots`, `clock_tick`, `roster`, `life`, `level`,
+  `respawn`, `vitals`, `generation`, `core_state`, `unclassified`.
+- `width` : taille de la lecture comparée (1–65536 octets), pas nombre d'octets
+  différents. Seul le premier conflit est décrit, pas une liste exhaustive.
+
+Aucune adresse, valeur avant/après, identité ni reçu n'est exporté. Un détail
+absent reste inconnu (anciens journaux, autre refus ou donnée invalide), jamais
+un tick supposé. Un tick divergent n'est pas accepté : ce diagnostic permet
+justement de distinguer l'horloge des racines ou des vitaux **avant** de changer
+une politique. Il n'explique pas rétrospectivement un ancien refus sans trace.
+Les enrichissements optionnels gardent leurs propres acquisitions/refus.
+
+Pour deux mots complets de quatre octets lus à **la même adresse de tick**,
+`coherence.clock_transition` peut préciser le changement signé en unités fixes
+(4096 unités/seconde), sans publier les valeurs :
+
+- `forward_bounded` : les deux valeurs sont dans [0,21600s] et l'avance est
+  strictement positive et au plus 1s ; **le snapshot reste refusé**.
+- `forward_over_window` : valeurs valides, avance supérieure à 1s.
+- `backward` : valeurs valides, recul.
+- `out_of_range` : au moins une valeur hors plage. Un garde d'horloge peut déjà
+  refuser avant le garde de cohérence et ne porte alors pas ce détail.
+
+Les overlaps partiels, autres groupes ou mots égaux ne sont pas classifiés.
+Absence du champ = inconnu, pas stabilité. Les racines restent vérifiées en
+égalité complète ; aucun octet n'est masqué. Une avance bornée est compatible
+avec une transition réelle mais **ne prouve ni atomicité, ni absence d'ABA, ni
+cause des anciens refus**. Les copies du journal sont historiques uniquement.
+Cette précision corrige un manque d'explicabilité, pas le taux de refus : une
+mesure live distincte doit départager les hypothèses avant tout changement.
+Les absences de qualification optionnelle attendues ne constituent pas une
+répétition d'erreurs cœur ; les compter séparément dans le brief opérateur.
+
+La commande de lancement ne change pas. Pour une nouvelle mesure autorisée,
+utiliser un checkout gelé, une sortie et un STOP neufs selon la préparation
+ci-dessus ; compter les détails par phase/groupe avec les coûts de la même
+acquisition. Pas de retry interne, de lecture diagnostique supplémentaire,
+d'augmentation des 12 défaillances, ni de renouvellement d'âge/reçu. Le coût
+CPU de cette instrumentation reste dans WHOLE. STOP après lecture supprime aussi
+ce détail avant persistance. Une nouvelle commande crée un suivi entièrement neuf.
+
+## Coût des relectures finales du cœur
+
+Le cœur regroupe ses rechecks **consécutifs et exactement adjacents**, du même
+groupe sémantique, dans une requête physique bornée à65536octets. Aucun trou
+n'est lu : les octets demandés sont les mêmes, dans le même ordre des champs.
+Les horloges (tick et racines), le build et les scopes différents restent
+séparés. Tous les conflits entre lectures initiales sont refusés **avant** ce
+regroupement ; chaque tranche originale conserve sa comparaison complète et
+son détail de refus (groupe/largeur d'origine, pas taille du regroupement).
+
+Ce changement évite21appels de recheck sur la fixture cœur (257→236), sans
+nouvel octet. Un test à coût physique déterministe exerce un dépassement WHOLE
+avant optimisation puis une acquisition valide après, avec les mêmes125ms.
+Ce n'est **pas** une mesure de latence Windows ou du taux de refus en partie.
+Les trois avances `initial_overlap/clock_tick/forward_bounded` de la recette
+précédente restent légitimement refusées : ce regroupement ne les corrige pas.
+
+Une erreur OS ou une lecture groupée incomplète reste un échec coûté, sans
+fallback ni nouvelle tentative. Le regroupement modifie l'instant des samples
+finaux ; il ne prouve ni atomicité ni absence d'ABA. Les acquisitions optionnelles
+ne sortent pas du bracket existant ; les budgets WHOLE, l'âge et l'instant
+d'acquisition originaux des reçus, STOP et le recheck final de contexte restent
+inchangés. La commande utilisateur reste `python -m cerveau.passive_session`
+pour le préflight sans mémoire, puis le lancement explicite documenté plus haut.
+
+Régression ciblée :
+`python -B -m unittest discover -s tests -p test_core_read_batches.py -v`.
+
 ## Vérification et recette privée opérateur
 
 Tests synthétiques : `python -B -m unittest discover -s tests -p test_passive_session.py -v`.

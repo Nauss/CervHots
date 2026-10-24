@@ -40,6 +40,12 @@ def measured_acquisition(row):
     reason = row.get('refusal')
     result['refusal'] = None if reason is None else refusal(
         reason.get('code') if type(reason) is dict else reason)
+    if (result['outcome'] == 'refused' and result['refusal'] is not None
+            and result['refusal']['code'] == 'lecture_native_dechiree'):
+        from hotstate.diagnostics import coherence_detail
+        detail = coherence_detail(row.get('coherence'))
+        if detail is not None:
+            result['coherence'] = detail
     optional = row.get('optional_refusals', {})
     result['optional_refusals'] = {name: refusal(
         optional[name].get('code') if type(optional[name]) is dict else optional[name])

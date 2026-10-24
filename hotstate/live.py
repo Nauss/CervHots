@@ -67,10 +67,14 @@ def read_current(backend, mapping, *, context, project=None, key=None, clock=Non
     memory = LiveBudget(backend, clock=clock)
     stage, outcome, optional = 'snapshot', 'error', {}
     code = None
+    coherence = None
     try:
         raw = memory_snapshot(memory, mapping, context=context)
         memory.check()
         if raw['meta'].get('native_status') != 'valide':
+            if raw['meta'].get('native_status') == 'lecture_native_dechiree':
+                from .diagnostics import coherence_detail
+                coherence = coherence_detail(raw['meta'].get('native_coherence'))
             raise NativeUnavailable(raw['meta'].get('native_status', 'coeur_pipeline_absent'))
         optional = raw['meta'].get('optional_refusals', {})
         stage = 'context_recheck'
@@ -84,8 +88,10 @@ def read_current(backend, mapping, *, context, project=None, key=None, clock=Non
         outcome = 'accepted'
         return result
     except NativeUnavailable as exc:
-        from .diagnostics import exception_refusal
+        from .diagnostics import exception_refusal, coherence_detail
         outcome, code = 'refused', exception_refusal(exc)
+        if code['code'] == 'lecture_native_dechiree' and coherence is None:
+            coherence = coherence_detail(getattr(exc, 'coherence', None))
         raise
     finally:
         if observe is not None:
@@ -98,4 +104,5 @@ def read_current(backend, mapping, *, context, project=None, key=None, clock=Non
                      'refusal': code,
                      'optional_refusals': {name: refusal(optional[name]) for name in
                          ('gameplay_clock', 'positions', 'visibility', 'objective',
-                          'talents', 'local_cooldowns', 'battlefield') if name in optional}})
+                          'talents', 'local_cooldowns', 'battlefield') if name in optional},
+                     **({'coherence': coherence} if coherence is not None else {})})
