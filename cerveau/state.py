@@ -243,6 +243,29 @@ def snapshot(raw: dict, *, at: float | None = None, team: int | None = None,
             objective = project_objective(raw, local, team)
             if objective is not None and (map_name is None or map_name == meta.get('map')):
                 result['objective'] = objective
+            from hotstate.diagnostics import refusal
+            objective_refusal = meta.get('optional_refusals', {}).get('objective')
+            result['objective_qualification'] = {
+                'status': ('refused' if objective_refusal is not None else
+                           'rejected' if 'objective' in raw else 'not_attempted'),
+                'reason': (refusal(objective_refusal) if objective_refusal is not None else
+                           refusal('objective_packet_rejected') if 'objective' in raw else None),
+                'source': 'native_player', 'source_mission_t_s': None,
+                'age_s': None, 'read_window_s': None}
+            if 'objective' in result:
+                import time
+                packet = raw['objective']
+                # Projection already authenticated this exact packet. Never issue
+                # a new receipt or replace its original acquisition timestamp.
+                age = time.monotonic() - packet['acquisition']['monotonic_s']
+                from hotstate.acquisition import MAX_AGE_S
+                if 0 <= age <= MAX_AGE_S:
+                    result['objective_qualification'].update(
+                        status='normalized', reason=None, age_s=age,
+                        source_mission_t_s=packet['mission_t_s'],
+                        read_window_s=packet['read_window_s'])
+                else:
+                    result.pop('objective')
             from .battlefield import project_battlefield
             battlefield = project_battlefield(raw,local,team)
             if battlefield is not None and (map_name is None or map_name == meta.get('map')):
