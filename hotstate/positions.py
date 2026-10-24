@@ -112,6 +112,30 @@ class _RecordedMemory:
             unique[key] = data
         return [(address, data) for (address, size), data in unique.items()]
 
+    def core_coherence_checks(self, reason):
+        """Batch only consecutive, adjacent core fields with the same scope.
+
+        Validate ALL initial overlaps first. Never bridge unacquired bytes,
+        reorder checks, batch clock boundaries or reuse acquisition memo bytes.
+        Each original slice retains its full equality check and attribution.
+        """
+        reads = self.coherence_reads(reason)
+        batches = []
+        previous_field = None
+        batchable = {'identity', 'roster', 'life', 'level', 'respawn', 'vitals', 'generation'}
+        for address, data in reads:
+            field = self.read_fields.get((address, len(data)))
+            if (batches and field in batchable and field == previous_field
+                    and address == batches[-1][0] + batches[-1][1]
+                    and batches[-1][1] + len(data) <= 65536):
+                start, size, slices = batches[-1]
+                slices.append((address, data))
+                batches[-1] = (start, size + len(data), slices)
+            else:
+                batches.append((address, len(data), [(address, data)]))
+            previous_field = field
+        return batches
+
     def validate_clock_end(self, start, reason):
         # The final clock was read AFTER physical equality checks. Its roots
         # must still agree with every observed source, but the last tick may

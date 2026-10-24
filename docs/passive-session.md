@@ -194,6 +194,34 @@ d'augmentation des 12 défaillances, ni de renouvellement d'âge/reçu. Le coût
 CPU de cette instrumentation reste dans WHOLE. STOP après lecture supprime aussi
 ce détail avant persistance. Une nouvelle commande crée un suivi entièrement neuf.
 
+## Coût des relectures finales du cœur
+
+Le cœur regroupe ses rechecks **consécutifs et exactement adjacents**, du même
+groupe sémantique, dans une requête physique bornée à65536octets. Aucun trou
+n'est lu : les octets demandés sont les mêmes, dans le même ordre des champs.
+Les horloges (tick et racines), le build et les scopes différents restent
+séparés. Tous les conflits entre lectures initiales sont refusés **avant** ce
+regroupement ; chaque tranche originale conserve sa comparaison complète et
+son détail de refus (groupe/largeur d'origine, pas taille du regroupement).
+
+Ce changement évite21appels de recheck sur la fixture cœur (257→236), sans
+nouvel octet. Un test à coût physique déterministe exerce un dépassement WHOLE
+avant optimisation puis une acquisition valide après, avec les mêmes125ms.
+Ce n'est **pas** une mesure de latence Windows ou du taux de refus en partie.
+Les trois avances `initial_overlap/clock_tick/forward_bounded` de la recette
+précédente restent légitimement refusées : ce regroupement ne les corrige pas.
+
+Une erreur OS ou une lecture groupée incomplète reste un échec coûté, sans
+fallback ni nouvelle tentative. Le regroupement modifie l'instant des samples
+finaux ; il ne prouve ni atomicité ni absence d'ABA. Les acquisitions optionnelles
+ne sortent pas du bracket existant ; les budgets WHOLE, l'âge et l'instant
+d'acquisition originaux des reçus, STOP et le recheck final de contexte restent
+inchangés. La commande utilisateur reste `python -m cerveau.passive_session`
+pour le préflight sans mémoire, puis le lancement explicite documenté plus haut.
+
+Régression ciblée :
+`python -B -m unittest discover -s tests -p test_core_read_batches.py -v`.
+
 ## Vérification et recette privée opérateur
 
 Tests synthétiques : `python -B -m unittest discover -s tests -p test_passive_session.py -v`.
