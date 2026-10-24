@@ -298,6 +298,11 @@ def snapshot(backend, mapping: dict, debug: bool = False, *, context=None,
                 native = reader.read_state(state)
             except NativeUnavailable as exc:
                 state["meta"]["native_status"] = str(exc)
+                from .diagnostics import coherence_detail, exception_refusal
+                if exception_refusal(exc)['code'] == 'lecture_native_dechiree':
+                    detail = coherence_detail(getattr(exc, 'coherence', None))
+                    if detail is not None:
+                        state['meta']['native_coherence'] = detail
             else:
                 state["meta"].update(native["meta"])
                 state.update({k: v for k, v in native.items() if k != "meta"})

@@ -27,7 +27,7 @@ def playable_bounds(map_id):
 
 
 class _RecordedMemory:
-    def __init__(self, memory, *, cache=False):
+    def __init__(self, memory, *, cache=False, diagnose=False):
         self.memory = memory
         self.module_base = memory.module_base
         self.recorded_non_atomic = getattr(memory, 'recorded_non_atomic', False)
@@ -35,6 +35,27 @@ class _RecordedMemory:
         self.cache = cache
         self.memo = {}
         self.fresh = False
+        self.diagnose = diagnose
+        self.scope = 'unclassified'
+        self.read_fields = {}
+
+    @contextmanager
+    def read_scope(self, field):
+        previous = self.scope
+        self.scope = field
+        try:
+            yield
+        finally:
+            self.scope = previous
+
+    def reject_coherence(self, reason, phase, address, size):
+        error = NativeUnavailable(reason)
+        if self.diagnose:
+            from .diagnostics import coherence_detail
+            error.coherence = coherence_detail({
+                'phase': phase, 'field': self.read_fields.get((address, size)),
+                'width': size})
+        raise error
 
     @contextmanager
     def fresh_reads(self):
@@ -52,6 +73,8 @@ class _RecordedMemory:
         data = self.memory.read_memory(address, size)
         if data is not None:
             self.read_set.append((address, data))
+            if self.diagnose:
+                self.read_fields.setdefault((address, len(data)), self.scope)
             if self.cache and not self.fresh and len(data)==size:
                 self.memo[key] = data
         return data
@@ -66,11 +89,11 @@ class _RecordedMemory:
             for offset, value in enumerate(data):
                 at = address+offset
                 if at in observed and observed[at] != value:
-                    raise NativeUnavailable(reason)
+                    self.reject_coherence(reason, 'initial_overlap', address, len(data))
                 observed[at] = value
             key = address, len(data)
             if key in unique and unique[key] != data:
-                raise NativeUnavailable(reason)
+                self.reject_coherence(reason, 'initial_overlap', address, len(data))
             unique[key] = data
         return [(address, data) for (address, size), data in unique.items()]
 

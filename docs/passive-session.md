@@ -140,6 +140,39 @@ Volskaya et `python -m cerveau.objective_journal --journal <events.jsonl>`.
 Ce complément ne change ni les allowlists, ni le budget WHOLE, ni les permissions
 CURRENT ; aucune preuve native/live nouvelle n'est revendiquée par le code.
 
+## Comprendre un refus de cohérence du cœur
+
+`lecture_native_dechiree` conserve exactement son refus. Son événement
+`acquisition` peut désormais contenir un objet fermé `coherence` :
+
+```json
+{"phase":"initial_overlap","field":"clock_tick","width":4}
+```
+
+- `initial_overlap` : deux lectures sources déjà effectuées se contredisent,
+  même si leurs intervalles ne se recouvrent que partiellement.
+- `final_equality` : une relecture physique finale diffère de sa source.
+- `field` : groupe du premier consommateur de cet intervalle exact parmi
+  `build`, `identity`, `clock_roots`, `clock_tick`, `roster`, `life`, `level`,
+  `respawn`, `vitals`, `generation`, `core_state`, `unclassified`.
+- `width` : taille de la lecture comparée (1–65536 octets), pas nombre d'octets
+  différents. Seul le premier conflit est décrit, pas une liste exhaustive.
+
+Aucune adresse, valeur avant/après, identité ni reçu n'est exporté. Un détail
+absent reste inconnu (anciens journaux, autre refus ou donnée invalide), jamais
+un tick supposé. Un tick divergent n'est pas accepté : ce diagnostic permet
+justement de distinguer l'horloge des racines ou des vitaux **avant** de changer
+une politique. Il n'explique pas rétrospectivement un ancien refus sans trace.
+Les enrichissements optionnels gardent leurs propres acquisitions/refus.
+
+La commande de lancement ne change pas. Pour une nouvelle mesure autorisée,
+utiliser un checkout gelé, une sortie et un STOP neufs selon la préparation
+ci-dessus ; compter les détails par phase/groupe avec les coûts de la même
+acquisition. Pas de retry interne, de lecture diagnostique supplémentaire,
+d'augmentation des 12 défaillances, ni de renouvellement d'âge/reçu. Le coût
+CPU de cette instrumentation reste dans WHOLE. STOP après lecture supprime aussi
+ce détail avant persistance. Une nouvelle commande crée un suivi entièrement neuf.
+
 ## Vérification et recette privée opérateur
 
 Tests synthétiques : `python -B -m unittest discover -s tests -p test_passive_session.py -v`.

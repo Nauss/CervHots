@@ -110,3 +110,17 @@ def exception_refusal(exc):
     # Do not call __str__ on arbitrary errors or interpolate their payload.
     from .native import NativeUnavailable
     return refusal(exc.args[0] if type(exc) is NativeUnavailable and len(exc.args) == 1 else None)
+
+
+def coherence_detail(value):
+    """Closed core guard location, NOT bytes, addresses or a causal diagnosis."""
+    if type(value) is not dict:
+        return None
+    phase, field, width = value.get('phase'), value.get('field'), value.get('width')
+    if (type(phase) is not str or phase not in ('initial_overlap', 'final_equality')
+            or type(field) is not str or field not in (
+                'build', 'identity', 'clock_roots', 'clock_tick', 'core_state',
+                'generation', 'roster', 'life', 'level', 'respawn', 'vitals', 'unclassified')
+            or type(width) is not int or not 1 <= width <= 65536):
+        return None
+    return {'phase': phase, 'field': field, 'width': width}

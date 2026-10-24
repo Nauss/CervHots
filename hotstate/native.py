@@ -81,14 +81,19 @@ class NativeReader:
     def global_u32(self, rva):
         return self.value(self.base + rva)
 
+    def read_scope(self, field):
+        return getattr(self.memory, 'read_scope', lambda _: nullcontext())(field)
+
     def read_clock(self):
         # A per-acquisition source memo must NEVER freeze either the tick or
         # its encoded roots. Both boundaries still make five physical reads.
         scope = getattr(self.memory,'fresh_reads',nullcontext)
         with scope():
-            high = (self.global_u32(0x32C2130) + self.global_u32(0x34F01D4) + 0x6D6AFAFC) & MASK
-            low = self.global_u32(0x34F01D0) ^ self.global_u32(0x32C4880)
-            seconds = self.value(((high << 32) | low) + 0x68, "i") / 4096
+            with self.read_scope('clock_roots'):
+                high = (self.global_u32(0x32C2130) + self.global_u32(0x34F01D4) + 0x6D6AFAFC) & MASK
+                low = self.global_u32(0x34F01D0) ^ self.global_u32(0x32C4880)
+            with self.read_scope('clock_tick'):
+                seconds = self.value(((high << 32) | low) + 0x68, "i") / 4096
             if not 0 <= seconds <= 21600:
                 raise NativeUnavailable("horloge_native_invalide")
             return seconds
@@ -193,9 +198,11 @@ class NativeReader:
         if hero_ids is None:
             hero_ids = json.loads((Path(__file__).parent / 'hero_ids.json').read_text(encoding='utf-8'))
         acquired = time.monotonic()
-        memory = _RecordedMemory(self.memory,cache=True)
-        n = NativeReader(memory, profile=self.profile)
-        identity = AlliedPositions(n, profile=self.profile)._identity(n, hero_ids)
+        memory = _RecordedMemory(self.memory, cache=True, diagnose=True)
+        with memory.read_scope('build'):
+            n = NativeReader(memory, profile=self.profile)
+        with memory.read_scope('identity'):
+            identity = AlliedPositions(n, profile=self.profile)._identity(n, hero_ids)
         native_id, native_team, hero, members, stamp = identity
         if (native_id != local_id or native_team != team
                 or hero != hero_ids.get(expected['local_player']['hero'], expected['local_player']['hero'])
@@ -204,13 +211,15 @@ class NativeReader:
             raise NativeUnavailable('perspective_native_incoherente')
         # Optional enrichments own their read-sets and rejection policy. An XY
         # read already refused as torn must not poison the independent core.
-        result = n._read_state(expected, hero_ids=hero_ids, optional_native=self)
-        local_generation = n.value(n.player_pointer(local_id + 1) + 0x58) & 0x3FFFFF
-        allied_generations = {str(p['id']): n.value(n.player_pointer(p['id'] + 1) + 0x58) & 0x3FFFFF
-                              for p in members if p['team'] == team}
+        with memory.read_scope('core_state'):
+            result = n._read_state(expected, hero_ids=hero_ids, optional_native=self)
+        with memory.read_scope('generation'):
+            local_generation = n.value(n.player_pointer(local_id + 1) + 0x58) & 0x3FFFFF
+            allied_generations = {str(p['id']): n.value(n.player_pointer(p['id'] + 1) + 0x58) & 0x3FFFFF
+                                  for p in members if p['team'] == team}
         for address, data in memory.coherence_reads('lecture_native_dechiree'):
             if self.read(address, len(data)) != data:
-                raise NativeUnavailable('lecture_native_dechiree')
+                memory.reject_coherence('lecture_native_dechiree', 'final_equality', address, len(data))
         window = time.monotonic() - acquired
         if not 0 <= window <= 0.125 or context != expected:
             raise NativeUnavailable('perspective_native_perimee_ou_modifiee')
@@ -245,25 +254,31 @@ class NativeReader:
         players, heroes = [], []
         for member in sorted(roster, key=lambda p: p["id"]):
             index = member["id"]
-            player = self.player_pointer(index + 1)
-            hero = self.hero_id(player, hero_ids)
-            unit = self.unit_pointer(self.value(player + 0x58), index + 1)
-            alive = self.value(unit + 0x39, "B") & 6 == 0
+            with self.read_scope('roster'):
+                player = self.player_pointer(index + 1)
+                hero = self.hero_id(player, hero_ids)
+                unit = self.unit_pointer(self.value(player + 0x58), index + 1)
+            with self.read_scope('life'):
+                alive = self.value(unit + 0x39, "B") & 6 == 0
+            with self.read_scope('level'):
+                level = self.unit_level(unit)
             observation = {"id": index, "team": member["team"], "hero": hero,
-                           "alive": alive, "level": self.unit_level(unit)}
+                           "alive": alive, "level": level}
             if not alive:
-                remaining = self.respawn_seconds(player)
+                with self.read_scope('respawn'):
+                    remaining = self.respawn_seconds(player)
                 if remaining is not None:
                     observation["respawn_s"] = remaining
             if member["team"] == local["team"]:
-                maximum = self.value(unit + 0x220, "i") / 4096
-                health = maximum - self.value(unit + 0x22C, "i") / 4096
-                if maximum > 0 and 0 <= health <= maximum:
-                    observation.update(health=health, health_max=maximum)
-                resource = self.value(unit + 0x234, "i") / 4096
-                resource_max = self.value(unit + 0x228, "i") / 4096
-                if resource_max > 0 and 0 <= resource <= resource_max:
-                    observation.update(resource=resource, resource_max=resource_max)
+                with self.read_scope('vitals'):
+                    maximum = self.value(unit + 0x220, "i") / 4096
+                    health = maximum - self.value(unit + 0x22C, "i") / 4096
+                    if maximum > 0 and 0 <= health <= maximum:
+                        observation.update(health=health, health_max=maximum)
+                    resource = self.value(unit + 0x234, "i") / 4096
+                    resource_max = self.value(unit + 0x228, "i") / 4096
+                    if resource_max > 0 and 0 <= resource <= resource_max:
+                        observation.update(resource=resource, resource_max=resource_max)
             heroes.append(observation)
             players.append({key: observation[key] for key in ("id", "team", "hero")})
         local_player = next(p for p in players if p["id"] == local["id"])
