@@ -6,7 +6,8 @@ Depuis le checkout gelé, avec Python + `heroprotocol/mpyq` :
 
 ```text
 python -B -m cerveau.passive_session
-python -B -m cerveau.passive_session --live --player-file <identite-privee-absolue> --output-dir <sortie-absolue-NEUVE> --stop-file <STOP-absolu-neuf> --max-seconds 300 --interval 1
+python -B -m cerveau.passive_session --collection talents
+python -B -m cerveau.passive_session --live --collection talents --player-file <identite-privee-absolue> --output-dir <sortie-absolue-NEUVE> --stop-file <STOP-absolu-neuf> --max-seconds 90 --interval 1
 python -B -m cerveau.talents_journal --journal <sortie-absolue>/events.jsonl
 ```
 
@@ -16,6 +17,34 @@ Créer le STOP termine coopérativement ; ne jamais supprimer un ancien STOP.
 Une nouvelle partie exige une nouvelle invocation et une sortie neuve. Le STOP
 global/reprise propriétaire reste surveillé par l'opérateur (un seul `--stop-file`
 est surveillé par le collecteur). Aucun Coach/API/audio/OCR n'est nécessaire.
+
+### Collecte ciblée, pas récupération après refus
+
+`--collection talents` choisit **avant la première lecture** le cœur complet
+(build, contexte, identité, dix héros, niveaux, génération, horloges et tous
+leurs rechecks) + la famille talents existante. Les autres acquisitions
+optionnelles ne sont pas appelées : chrono HUD, positions, visibilité,
+objectifs, cooldowns et battlefield. Le chrono de mission du cœur reste lu.
+Le journal `acquisition` conserve `collection: "talents"` et `not_selected` ;
+ces six familles sont non sélectionnées, ni refusées ni implicitement réussies.
+La synthèse conserve aussi le mode. `--collection all`, valeur par défaut,
+garde le parcours composé antérieur. Toute autre valeur est rejetée.
+
+Ce n'est pas une stratégie de retry, un découpage du WHOLE en plusieurs
+budgets ni une publication partielle après dépassement : un refus du budget
+partagé reste fatal, même après une lecture talents réussie. Chaque tentative
+repart à neuf. Aucun octet final n'est remplacé par un cache.
+
+La recette précédente lot7 composée a refusé 12/12 acquisitions : neuf au
+plafond8192reads, une au délai125ms, deux pour conflit tick initial. Le journal
+agrégé ne permet pas d'attribuer rétrospectivement la famille coûteuse. Les
+anciennes recettes talents seules ne qualifiaient pas le pipeline futur composé
+(voir P2-TALENTS). La nouvelle expérience sélectionne uniquement la famille
+utile, sans nouvelle portée ni baisse des gardes. Sur une fixture **synthétique**
+multi-familles, les appels physiques passent de2709 à1513 et les octets demandés
+de14663 à7982, avec les mêmes lectures ordonnées/octets cœur+contexte+talents.
+Ces coûts ne prédisent ni le délai Windows ni le taux de refus live. Un conflit
+tick initial reste refusé ; aucune qualification live n'est déduite des tests.
 
 ## Ce qui change, sans étendre la couverture
 
@@ -41,7 +70,8 @@ maintenant un objet `talents` fermé, limité aux cinq acteurs locaux/alliés :
 
 Aucun cache/historique de choix n'est réinjecté. Reçus frais, identité/génération,
 contexte, build entier98348, signatures, rôles, WHOLE125ms/8192reads/1MiB
-restent obligatoires. Le code de lecture native et les allowlists sont inchangés.
+restent obligatoires. Les décodeurs de familles et les allowlists sont inchangés ;
+seule la sélection des acquisitions optionnelles est maintenant explicite.
 La politique existante est uniquement DragonShire : Sonya locale ; Arthas,
 Dehaka, LtMorales et Tassadar alliés. Cela ne qualifie aucune autre carte, aucun
 autre héros/rôle et ne constitue pas une nouvelle validation live de ces cas.

@@ -99,6 +99,9 @@ def read_current(backend, mapping, *, context, project=None, key=None, clock=Non
             # Emission is outside the WHOLE measurement and cannot grant a receipt.
             # Failure to persist the journal propagates (no silently blind recipe).
             observe({'event': 'acquisition', 'stage': stage, 'outcome': outcome,
+                     **({'collection': mapping['collection']} if
+                        type(mapping.get('collection')) is str and
+                        mapping['collection'] in ('all', 'talents') else {}),
                      'elapsed_ms': round((memory.clock() - memory.started) * 1000, 3),
                      'reads': memory.reads, 'bytes_requested': memory.bytes_requested,
                      'refusal': code,

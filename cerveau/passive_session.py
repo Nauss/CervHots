@@ -52,6 +52,11 @@ def measured_acquisition(row):
         optional[name].get('code') if type(optional[name]) is dict else optional[name])
         for name in ('gameplay_clock', 'positions', 'visibility', 'objective',
                      'talents', 'local_cooldowns', 'battlefield') if name in optional}
+    collection = row.get('collection')
+    if type(collection) is str and collection in ('all', 'talents'):
+        result['collection'] = collection
+        result['not_selected'] = ([] if collection == 'all' else [
+            'gameplay_clock', 'positions', 'visibility', 'objective', 'local_cooldowns', 'battlefield'])
     return result
 
 
@@ -155,8 +160,8 @@ def run_session(source_factory, stopped, emit, *, duration=300, interval=5,
                 binding, mission = current, now_mission
                 comparison = {
                     'session_token': session_token,
-                    'map_id': ('DragonShire' if state.get('objective', {}).get('map_id') == 'DragonShire'
-                               else None),
+                    'map_id': ('DragonShire' if any(state.get(family, {}).get('map_id') == 'DragonShire'
+                                                    for family in ('objective', 'talents')) else None),
                     'perspective': ('native_player' if state['meta'].get('source') == 'live'
                                     and state['meta'].get('native_status') == 'valide'
                                     else 'unknown'),
@@ -213,7 +218,10 @@ def preflight():
 
 class NativeSource:
     """One process/probe lifetime; no rebinding or receipt caching across sessions."""
-    def __init__(self, player):
+    def __init__(self, player, *, collection='all'):
+        if type(collection) is not str or collection not in ('all', 'talents'):
+            raise ValueError('invalid_collection')
+        self.collection = collection
         from hotstate.native_context import NativeContextProbe
         from hotstate.reader import ProcessBackend
         self.probe = NativeContextProbe(player)
@@ -223,7 +231,10 @@ class NativeSource:
         from hotstate.live import read_current
         from .state import snapshot
         from .runner import tactical_key
-        return read_current(self.backend, {'triggers': {}}, context=self.probe,
+        mapping = {'triggers': {}}
+        if self.collection != 'all':
+            mapping['collection'] = self.collection
+        return read_current(self.backend, mapping, context=self.probe,
                             project=snapshot, key=tactical_key, observe=observe)
 
     def close(self):
@@ -272,6 +283,8 @@ def parser():
     result.add_argument('--stop-file', type=Path, help='absolute cooperative STOP; never removed')
     result.add_argument('--max-seconds', type=bounded(1, 1800), default=300)
     result.add_argument('--interval', type=bounded(1, 300), default=5)
+    result.add_argument('--collection', choices=('all', 'talents'), default='all',
+                        help='talents: core + selected talents only; other optional families not attempted')
     return result
 
 
@@ -323,11 +336,12 @@ def main(argv=None):
                     stream.write(json.dumps(row, ensure_ascii=True, allow_nan=False) + '\n')
                     stream.flush()
                     status(row)
-                result = run_session(lambda: NativeSource(player),
+                result = run_session(lambda: (NativeSource(player) if args.collection == 'all'
+                                             else NativeSource(player, collection=args.collection)),
                                      lambda: stop_requested(args.stop_file), emit,
                                      duration=args.max_seconds, interval=args.interval,
                                      private_labels=(player,))
-            summary = dict(result, event='summary',
+            summary = dict(result, event='summary', collection=args.collection,
                            chat_called=False, audio_enabled=False, single_match=True,
                            finished_at_utc=dt.datetime.now(dt.timezone.utc).isoformat())
             with (args.output_dir / 'summary.json').open('x', encoding='utf-8') as stream:

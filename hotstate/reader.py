@@ -246,6 +246,9 @@ def scan_triggers(backend, wanted: dict, *, observe_region=None):
 def snapshot(backend, mapping: dict, debug: bool = False, *, context=None,
              native_profile=None) -> dict:
     triggers = mapping["triggers"]
+    collection = mapping.get('collection', 'all')
+    if type(collection) is not str or collection not in ('all', 'talents'):
+        raise ValueError('invalid_collection')
     if context is not None:
         context.begin()
     from .native_context import NativeContextProbe
@@ -295,7 +298,8 @@ def snapshot(backend, mapping: dict, debug: bool = False, *, context=None,
             try:
                 reader = (NativeReader(backend) if native_profile is None
                           else NativeReader(backend, profile=native_profile))
-                native = reader.read_state(state)
+                native = (reader.read_state(state) if collection == 'all'
+                          else reader.read_state(state, collection=collection))
             except NativeUnavailable as exc:
                 state["meta"]["native_status"] = str(exc)
                 from .diagnostics import coherence_detail, exception_refusal
@@ -308,6 +312,8 @@ def snapshot(backend, mapping: dict, debug: bool = False, *, context=None,
                 state.update({k: v for k, v in native.items() if k != "meta"})
                 # Independent bounded family acquisitions, not a claim that
                 # camps/structures and the earlier hero core are atomic.
+                if collection == 'talents':
+                    return state  # Unselected families are NOT acquired or refused.
                 from .battlefield import VolskayaBattlefield
                 try:
                     if state['meta'].get('map_id') == 'DragonShire':

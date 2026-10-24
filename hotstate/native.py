@@ -184,12 +184,14 @@ class NativeReader:
         remaining = (deadline - elapsed) / 4096
         return remaining if deadline >= 0 and 0 <= remaining <= 600 else None
 
-    def read_state(self, context, *, hero_ids=None):
+    def read_state(self, context, *, hero_ids=None, collection='all'):
         """Bind vitals to the ACTIVE human perspective, not a cached lobby.
 
         All successful core reads are repeated before issuance. This detects
         torn reads, not an atomic snapshot or an ABA change between samples.
         """
+        if type(collection) is not str or collection not in ('all', 'talents'):
+            raise ValueError('invalid_collection')
         from .positions import AlliedPositions, _RecordedMemory
         from .acquisition import issue
 
@@ -212,7 +214,8 @@ class NativeReader:
         # Optional enrichments own their read-sets and rejection policy. An XY
         # read already refused as torn must not poison the independent core.
         with memory.read_scope('core_state'):
-            result = n._read_state(expected, hero_ids=hero_ids, optional_native=self)
+            result = n._read_state(expected, hero_ids=hero_ids, optional_native=self,
+                                   collection=collection)
         with memory.read_scope('generation'):
             local_generation = n.value(n.player_pointer(local_id + 1) + 0x58) & 0x3FFFFF
             allied_generations = {str(p['id']): n.value(n.player_pointer(p['id'] + 1) + 0x58) & 0x3FFFFF
@@ -238,7 +241,9 @@ class NativeReader:
             }, acquired)
         return result
 
-    def _read_state(self, context, *, hero_ids=None, optional_native=None):
+    def _read_state(self, context, *, hero_ids=None, optional_native=None, collection='all'):
+        if type(collection) is not str or collection not in ('all', 'talents'):
+            raise ValueError('invalid_collection')
         if not isinstance(context, dict):
             raise NativeUnavailable("contexte_natif_absent")
         local = context.get("local_player")
@@ -289,49 +294,54 @@ class NativeReader:
         expected = hero_ids.get(local["hero"], local["hero"])
         if local_player["hero"] != expected:
             raise NativeUnavailable("identite_locale_native_incoherente")
-        from .gameplay import GameplayClock
         optional_native = self if optional_native is None else optional_native
         from .diagnostics import exception_refusal
         optional_refusals = {}
         gameplay_clock = None
-        try:
-            gameplay_clock = GameplayClock(optional_native).read()
-        except NativeUnavailable as exc:
-            optional_refusals['gameplay_clock'] = exception_refusal(exc)['code']
-        from .positions import AlliedPositions
+        if collection == 'all':
+            from .gameplay import GameplayClock
+            try:
+                gameplay_clock = GameplayClock(optional_native).read()
+            except NativeUnavailable as exc:
+                optional_refusals['gameplay_clock'] = exception_refusal(exc)['code']
         positions = None
-        try:
-            positions = AlliedPositions(optional_native).read(context, hero_ids=hero_ids)
-        except NativeUnavailable as exc:
-            optional_refusals['positions'] = exception_refusal(exc)['code']
-        from .visibility import CurrentVisibility
+        if collection == 'all':
+            from .positions import AlliedPositions
+            try:
+                positions = AlliedPositions(optional_native).read(context, hero_ids=hero_ids)
+            except NativeUnavailable as exc:
+                optional_refusals['positions'] = exception_refusal(exc)['code']
         visibility = None
-        try:
-            visibility = CurrentVisibility(optional_native).read(context, hero_ids=hero_ids)
-        except NativeUnavailable as exc:
-            optional_refusals['visibility'] = exception_refusal(exc)['code']
-        from .objectives import VolskayaObjective
+        if collection == 'all':
+            from .visibility import CurrentVisibility
+            try:
+                visibility = CurrentVisibility(optional_native).read(context, hero_ids=hero_ids)
+            except NativeUnavailable as exc:
+                optional_refusals['visibility'] = exception_refusal(exc)['code']
         objective = None
-        try:
-            if context.get('meta', {}).get('map_id') == 'DragonShire':
-                from .dragon import DragonObjective
-                objective = DragonObjective(optional_native).read(context, hero_ids=hero_ids)
-            else:
-                objective = VolskayaObjective(optional_native).read(context, hero_ids=hero_ids)
-        except NativeUnavailable as exc:
-            optional_refusals['objective'] = exception_refusal(exc)['code']
+        if collection == 'all':
+            from .objectives import VolskayaObjective
+            try:
+                if context.get('meta', {}).get('map_id') == 'DragonShire':
+                    from .dragon import DragonObjective
+                    objective = DragonObjective(optional_native).read(context, hero_ids=hero_ids)
+                else:
+                    objective = VolskayaObjective(optional_native).read(context, hero_ids=hero_ids)
+            except NativeUnavailable as exc:
+                optional_refusals['objective'] = exception_refusal(exc)['code']
         from .talents import NativeTalentChoices
         talents = None
         try:
             talents = NativeTalentChoices(optional_native).read(context, hero_ids=hero_ids)
         except NativeUnavailable as exc:
             optional_refusals['talents'] = exception_refusal(exc)['code']
-        from .cooldown_packet import LocalCooldowns
         local_cooldowns = None
-        try:
-            local_cooldowns = LocalCooldowns(optional_native).read(context, hero_ids=hero_ids)
-        except NativeUnavailable as exc:
-            optional_refusals['local_cooldowns'] = exception_refusal(exc)['code']
+        if collection == 'all':
+            from .cooldown_packet import LocalCooldowns
+            try:
+                local_cooldowns = LocalCooldowns(optional_native).read(context, hero_ids=hero_ids)
+            except NativeUnavailable as exc:
+                optional_refusals['local_cooldowns'] = exception_refusal(exc)['code']
         finished = self.read_clock()
         if not 0 <= finished - started <= 1:
             raise NativeUnavailable("observation_native_non_synchrone")
