@@ -12,6 +12,7 @@ import math
 import os
 import json
 import re
+import secrets
 import time
 from pathlib import Path
 
@@ -68,10 +69,17 @@ def run_session(source_factory, stopped, emit, *, duration=300, interval=5,
     mission = None
     result = {'accepted': 0, 'refused': 0, 'attempts': 0, 'failures': 0,
               'reason': 'session_limit'}
-    journal = Journal(lambda row: emit(dict(row, elapsed_s=round(clock() - started, 6),
-                                            cycle=result['attempts'],
-                                            timestamp_utc=dt.datetime.now(dt.timezone.utc).isoformat())),
-                      private_labels=private_labels)
+    # Random per invocation, never derived from a raw name or reused on resume.
+    session_token = secrets.token_hex(16)
+    comparison = None
+
+    def record(row):
+        if row.get('event') == 'observation':
+            row = dict(row, comparison=comparison)
+        emit(dict(row, elapsed_s=round(clock() - started, 6), cycle=result['attempts'],
+                  timestamp_utc=dt.datetime.now(dt.timezone.utc).isoformat()))
+
+    journal = Journal(record, private_labels=private_labels)
 
     def boundary():
         if stopped():
@@ -91,7 +99,9 @@ def run_session(source_factory, stopped, emit, *, duration=300, interval=5,
                     source = source_factory()
                 boundary()
                 phase = 'read'
+                read_started = clock()
                 state = source.read(pending.append)
+                read_finished = clock()
             except SystemExit as exc:
                 boundary()
                 message = exc.args[0] if len(exc.args) == 1 else None
@@ -143,6 +153,15 @@ def run_session(source_factory, stopped, emit, *, duration=300, interval=5,
                 if binding is not None and (current != binding or now_mission < mission):
                     raise Boundary('session_changed')
                 binding, mission = current, now_mission
+                comparison = {
+                    'session_token': session_token,
+                    'map_id': ('DragonShire' if state.get('objective', {}).get('map_id') == 'DragonShire'
+                               else None),
+                    'perspective': ('native_player' if state['meta'].get('source') == 'live'
+                                    and state['meta'].get('native_status') == 'valide'
+                                    else 'unknown'),
+                    'clock_basis': 'host_monotonic',
+                    'read_started_s': read_started, 'read_finished_s': read_finished}
                 boundary()
                 journal.observation(state)
                 result['accepted'] += 1
