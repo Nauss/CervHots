@@ -1,0 +1,62 @@
+{
+  "schema": "braxis-runtime-roots-profile-v1",
+  "image_sha256": "bdd1bccb433c113da7187c053a462eabb0d9398f28df628ffad3d8ecd7815780",
+  "image_size": 73064448,
+  "channels": {
+    "selector": [
+      {
+        "name": "context-stack-leaf-two-returns",
+        "rva": 11069184,
+        "size": 29,
+        "sha256": "9195dac88c270def52234dc13495bb660bb826cc5364362004942ca619349d1d"
+      },
+      {
+        "name": "native1454-context-or-fallback",
+        "rva": 10465552,
+        "size": 35,
+        "sha256": "60b7a9e6aebcfd9dfc1bb32670943cfa8787f9ffb1df37ec7ed3aead36a549ab"
+      }
+    ],
+    "descriptor_arena": [
+      {
+        "name": "descriptor-arena-reservation",
+        "rva": 33623088,
+        "size": 148,
+        "sha256": "1413238e94ddd76b108e0089ae2115df9cd0556ac6c3014daeb82c3e0cd1d8b9"
+      },
+      {
+        "name": "descriptor-arena-growth",
+        "rva": 3074256,
+        "size": 147,
+        "sha256": "5d09bad69cb9352c523a15be60edec431f46ce6ed07c355e2dea2c7d6b3f288f"
+      }
+    ],
+    "simulation_root": [
+      {
+        "name": "simulation-pool-reset",
+        "rva": 10043040,
+        "size": 144,
+        "sha256": "7881100fe1183b7cb160f6195127cce5d6c9d5ac4fecaadc48406d120df9e7b2"
+      }
+    ],
+    "unit_pages": [
+      {
+        "name": "encoded-page-release-and-null",
+        "rva": 10059056,
+        "size": 154,
+        "sha256": "0cf57852b82c540a99edde2c9add9ba16e629c79a3b86a5a19a492505675e5cf"
+      },
+      {
+        "name": "unit_resolver",
+        "rva": 6601424,
+        "size": 80,
+        "sha256": "6eece1a483adac9d70eb4ef01b499c23849a6cb414593d9f23a3c8f5a9f5cf6c"
+      }
+    ]
+  },
+  "provenance": {
+    "historical_findings_sha256": "669196cadd7d7ba38410ff664cb7d61ac830e1b6d038fdc8f2b90a00c06bb22f",
+    "runtime_scho_allocation_authorized": false,
+    "unit_pool_is_scho_global_allocator": false
+  }
+}

@@ -155,18 +155,22 @@ def recheck_context(tx):
     return {'stable': True}
 
 
-def collect(memory, *, player_label=None, clock=time.perf_counter):
+def collect(memory, *, player_label=None, clock=time.perf_counter, experiment='publication'):
     """One attempt, guarded, bounded and never normalized or sealed for Coach."""
+    if experiment not in ('publication', 'runtime-roots'):
+        raise ValueError('diagnostic_experiment')
+    from . import braxis_roots
+    metadata = (('compiler', 'type', *(f'frames.{index}' for index, _ in FUNCTIONS))
+                if experiment == 'publication' else tuple(f'roots.{name}' for name in braxis_roots.DECODERS))
     tx = WholeTx(memory, clock=clock)
-    names = ('clock_before', 'context', 'compiler', 'type',
-             *(f'frames.{index}' for index, _ in FUNCTIONS), 'context_after', 'clock_after')
+    names = ('clock_before', 'context', *metadata, 'context_after', 'clock_after')
     channels = {name: {'status': 'not_attempted', 'reason': 'build_guard', 'requests': 0,
                        'bytes_requested': 0, 'elapsed_s': 0.0} for name in names}
     build = run_channel(tx, verify_build)
     if build['status'] == 'observed':
         channels['clock_before'] = run_channel(tx, read_clock)
         channels['context'] = run_channel(tx, lambda t: read_context(t, player_label))
-        channels.update(diagnose(tx))
+        channels.update(diagnose(tx) if experiment == 'publication' else braxis_roots.diagnose(tx))
         channels['context_after'] = run_channel(tx, recheck_context)
         channels['clock_after'] = run_channel(tx, read_clock)
     clocks = [channels[key] for key in ('clock_before', 'clock_after')]
@@ -177,7 +181,8 @@ def collect(memory, *, player_label=None, clock=time.perf_counter):
             interval = values
     context = channels['context'].get('result', {}).get('meta', {})
     context_bracketed = (channels['context_after']['status'] == 'observed' and interval is not None)
-    return {'schema': 'braxis-causal-v1', 'qualification': 'private_diagnostic_not_atomic',
+    return {'schema': ('braxis-causal-v1' if experiment == 'publication' else 'braxis-runtime-roots-v1'),
+            'experiment': experiment, 'qualification': 'private_diagnostic_not_atomic',
             'module_base': tx.base, 'module_size': tx.module_size,
             'build': build, 'channels': channels, 'measurement': measure(channels),
             'mission_clock': interval, 'perspective': 'not_validated',
@@ -193,7 +198,9 @@ def measure(channels):
     """Separate a scoped lookup miss from a channel never physically attempted."""
     absent = {'compiler_root_null', 'global_table_absent',
               'named_global_not_yet_published', 'named_type_absent',
-              'function_table_null', 'function_slot_null'}
+              'function_table_null', 'function_slot_null', 'selector_table_null',
+              'selector_slot_null', 'descriptor_arena_null', 'simulation_root_null',
+              'simulation_database_null'}
     return {
         'scoped_absences': [name for name, row in channels.items()
                             if row['status'] == 'refused' and row.get('reason') in absent

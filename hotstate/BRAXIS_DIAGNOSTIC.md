@@ -1,6 +1,6 @@
 # Braxis : diagnostic natif causal borné
 
-**Cette commande mesure la publication de métadonnées, pas l’état de l’objectif.**
+**Cette commande mesure des métadonnées/racines natives, pas l’état de l’objectif.**
 Elle ne produit aucun paquet normalisé, aucune acquisition scellée, aucun conseil,
 aucun appel API/audio/GUI. `objective=null`, `coach=false`, perspective non validée.
 Inconnu n’est jamais zéro. Aucun accès en écriture au jeu ni recherche de tas.
@@ -144,7 +144,96 @@ rejeu sont propres à ce lot. Aucun fichier lot1 modifié/cherry-pické ; import
 uniquement des modules déjà dans bbf551e. L’intégration séquentielle avec le lot1
 reste à tester sur main après revue, sans lancer simultanément leurs lecteurs.
 
-Tests synthétiques : `python -B -m unittest tests.test_braxis_diagnostic -v`.
+## Expérience lot3 : racines runtime et alternative native
+
+La publication nommée sur Holdout est déjà démontrée par la recette lot2 : ce
+nouveau mode **ne relit ni le compilateur ni le type ni les slots 6003/6007/6122**.
+L'audit des 30 readsets lot2 ne trouve aucun des quatre nouveaux points d'entrée.
+Ce manque de couverture ne permet pas de conclure que ces racines sont nulles.
+Le mode par défaut `--experiment publication` reste compatible avec le lot2.
+
+```bash
+python -B -m hotstate.braxis_diagnostic --preflight --experiment runtime-roots
+python -B -m hotstate.braxis_diagnostic --replay C:/chemin/prive/readsets.jsonl
+```
+
+Recette nouvelle **uniquement par opérateur DEFAULT**, depuis le cwd absolu du
+candidat gelé indiqué dans `ready-live.json` (pas depuis un autre main/worktree) :
+
+```bash
+C:/root/dev/AI/CervHots/tts/.venv/Scripts/python.exe -B -m hotstate.braxis_diagnostic \
+  --live --experiment runtime-roots --operator-private-game \
+  --player-file C:/chemin/prive/identite.txt \
+  --out C:/chemin/prive/session-runtime-neuve \
+  --stop C:/chemin/prive/STOP-runtime-neuf \
+  --stop C:/root/dev/AI/CervHots/out/weekend/2026-10-24/STOP \
+  --seconds 120 --interval 2 --max-attempts 60
+```
+
+Un seul lecteur, sources lot2 libérées, nouvelle partie privée Holdout + neuf bots.
+Ne pas réarmer un ancien STOP. Au préalable vérifier mandat/STOP global/échéance,
+commit, hashes, identité privée, dépendances et nouveau répertoire. Ne lancer la
+partie que si cette mesure nouvelle est prête. L'auteur ne lance ni jeu ni lecteur.
+
+Les quatre canaux indépendants, **après les gardes build communes et dans le même
+WHOLE**, vérifient chacun leurs fonctions natives épinglées supplémentaires :
+
+| Canal | Mesure privée ciblée et recontrôle | Ce qui n'est pas prouvé |
+|---|---|---|
+| `roots.selector` | compteur pile de contextes ; si non nul, table et slot `count-1`, tous relus | VM/partie active ou appartenance SCHO ; aucun déréférencement du contexte sélectionné |
+| `roots.descriptor_arena` | header de l'arène **des descripteurs**, bloc courant/end/start/cursor et header physique de bloc, tous relus | allocation des globals SCHO, capacité OS effective, retour allocateur ou lifetime |
+| `roots.simulation_root` | racine base simulation, membre `+0x2a0`, WORD brut `+0x38` consommé par le chemin reset, tous relus | lien instance globale→VM, liste active/libre/retirée, ordre effectif des writers |
+| `roots.unit_pages` | header domaine unités, clés, pages encodées puis seul tag DWORD `+0x10` des slots bornés ; toutes lectures relues | origine balise SCHO, sémantique d'objectif, liste active/libre/retirée ou absence d'ABA |
+
+**Le pool d'unités natif n'est PAS l'allocateur des globals SCHO.** C'est la voie
+native alternative utile de ce lot, réutilisant la relation page/slot/tag déjà
+présente dans `NativeReader.unit_pointer` et le recensement produit. Un tag dont
+l'index correspond au slot est une référence cohérente échantillonnée, pas une
+preuve de vie tactique. Aucune recherche de noms/heap, owner, position, vie ou autre
+valeur de jeu. Les tags/pages restent dans `PRIVATE` et ne sont jamais exportés.
+
+Pile vide : `observed` + `selector_selection=fallback_only` signifie **aucun
+contexte d'exécution échantillonné à cet instant**, pas VM absente. Le fallback
+n'est jamais déréférencé ou promu actif. Les caps diagnostiques (pile 4096,
+domaine unités 1024, masque alignement 4095) ne sont pas des capacités natives
+inventées : au-delà, refus sans clamp ni zéro ni scan partiel. Une page décodée
+nulle n'est pas déréférencée. Changement au recontrôle, OS/short-read, pin ou coût
+refusé : résultat absent, coûts conservés ; un canal refusé ne masque pas le suivant.
+
+Sortie publique `braxis-runtime-roots-summary-v1` : coûts/statuts/refus fermés,
+maillons manquants et `sample_transitions` par canal : `first_sample`,
+`sample_equal`, `sample_changed` ou `not_comparable`. La comparaison porte seulement
+sur deux tentatives adjacentes Holdout recontrôlées, même identité privée, build
+observé, mission monotone avec gap ≤10 s et durée WHOLE <125 ms. Un refus/canal
+absent/contexte perdu casse la comparaison ; aucune liaison à travers une nouvelle
+partie. Le premier échantillon qualifié après une tentative non qualifiée reste
+`not_comparable`, plutôt qu'un faux historique continu. Une égalité ne prouve
+**jamais** une génération monotone, la continuité d'allocation ou l'absence d'ABA.
+L'état comparé est uniquement en RAM de la session, sans cache de lectures natives.
+
+Readsets privés `braxis-runtime-roots-v1` : le rejeu exact inclut les pins propres
+à chaque canal et ses lectures dans l'ordre. Octets/résultat manquants, surplus ou
+falsifiés sont refusés. Les timeouts/budgets/erreurs transport ne sont pas rejoués
+comme une observation. Build/contexte/perspective/fraîcheur **non requalifiés**,
+transitions live non reconstruites à partir des seules slices. Les anciens readsets
+publication restent compatibles et n'acquièrent aucun nouveau canal fictif.
+
+Coût du canal `unit_pages` au cap synthétique 1024 : **2182 requêtes / 9248 octets**,
+sans pins/contexte/horloges ; ce n'est pas un benchmark live. Le bracket commun
+reste 125 ms / 8192 lectures / 1 MiB, tous canaux/erreurs/relectures compris. La
+recette 60 tentatives est plafonnée à 60 MiB demandés, non une promesse d'acceptation.
+STOP/deadline/journaux/fermeture/absence de reprise conservent le contrat ci-dessus.
+
+Règle de sortie : une recette nouvelle, comparer couverture/refus/transitions aux
+maillons absents du lot2. Ne pas refaire une partie pour observer les mêmes noms.
+Si sélecteur toujours fallback, cela indique la limite de l'échantillonnage hors
+exécution, pas une autorisation de suspendre/injecter/appeler la VM. Sans gain après
+deux expériences causalement nouvelles, consigner refus et proposer au contrôleur
+la prochaine famille native utile, sans répéter la même sonde. Même avec toutes
+les racines observées, B1/B2/B3 restent `unproven`, `objective=null`, Coach désactivé.
+
+Tests hermétiques : `python -B -m unittest tests.test_braxis_roots tests.test_braxis_diagnostic -v`.
+Tests synthétiques historiques : `python -B -m unittest tests.test_braxis_diagnostic -v`.
 Régressions : `python -B -m unittest discover -s tests -v` (créer `out/` au préalable
 pour les tests de découverte existants dans un worktree neuf). Les environnements
 réellement exercés et les preuves historiques figurent dans le handoff du lot.
