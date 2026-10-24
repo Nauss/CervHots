@@ -14,7 +14,8 @@ def project_talents(raw, local, team):
     p, meta, perspective = raw.get('talents'), raw.get('meta', {}), raw.get('perspective')
     if (not isinstance(local, dict) or type(team) is not int or team != local.get('team')
             or not isinstance(p, dict) or not isinstance(perspective, dict)
-            or meta.get('source') != 'live' or meta.get('native_build') != 98348
+            or meta.get('source') != 'live' or type(meta.get('native_build')) is not int
+            or meta['native_build'] != 98348
             or meta.get('context_source') != 'initdata_native_fields'
             or p.get('status') != 'validated' or p.get('scope') != 'allied_selected_talents'
             or not fresh(p) or not fresh(perspective)

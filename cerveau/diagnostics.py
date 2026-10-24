@@ -92,6 +92,8 @@ class Journal:
         summary['available_fields'] = sorted(k for k in FIELDS if k in state)
         from .objective_journal import objective_summary
         summary['objective'] = objective_summary(state)
+        from .talents_journal import talents_summary
+        summary['talents'] = talents_summary(state)
         self.record('observation', **summary)
 
     def advice(self, text):

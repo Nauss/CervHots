@@ -15,6 +15,10 @@ Chaque brique a son propre projet, ses propres dépendances.
   (préflight local, aucune mémoire ouverte). Lancement live explicite, identité
   privée par fichier, arrêt STOP et nouvelle commande par partie :
   [`docs/passive-session.md`](docs/passive-session.md).
+  Talents réellement choisis : journal allié durable, âge original, libellés
+  inconnus sans provenance et inspection historique sans permission live :
+  `python -m cerveau.talents_journal --help`,
+  [`docs/talents-collection.md`](docs/talents-collection.md).
   Objectif Dragon : qualification explicite, valeurs publiques durables, âge
   source conservé et rejeu sans permission live :
   [`docs/objective-collection.md`](docs/objective-collection.md).

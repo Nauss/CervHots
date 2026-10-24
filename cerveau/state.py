@@ -277,8 +277,23 @@ def snapshot(raw: dict, *, at: float | None = None, team: int | None = None,
             result["meta"]["native_status"] = "valide"
             from .talents import project_talents
             talents = project_talents(raw, local, team)
+            result['talents_qualification'] = {
+                'status': ('refused' if meta.get('optional_refusals', {}).get('talents') is not None
+                           else 'rejected' if 'talents' in raw else 'not_attempted'),
+                'source': 'native_player', 'source_mission_t_s': None,
+                'age_s': None, 'read_window_s': None}
             if talents is not None and (map_name is None or map_name == meta.get('map')):
-                result['talents'] = talents
+                import time
+                from hotstate.acquisition import MAX_AGE_S
+                packet = raw['talents']
+                age = time.monotonic() - packet['acquisition']['monotonic_s']
+                # Preserve the ORIGINAL receipt age, never its seal or a renewed receipt.
+                if 0 <= age <= MAX_AGE_S:
+                    result['talents'] = talents
+                    result['talents_qualification'].update(
+                        status='normalized', age_s=age,
+                        source_mission_t_s=packet['mission_t_s'],
+                        read_window_s=packet['read_window_s'])
             gameplay_clock = validated_gameplay_clock(meta)
             if gameplay_clock is not None:
                 result["meta"]["gameplay_clock"] = gameplay_clock

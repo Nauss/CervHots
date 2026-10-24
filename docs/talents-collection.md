@@ -1,0 +1,98 @@
+# Talents choisis : collecte durable et inspection historique
+
+## Commandes
+
+Depuis le checkout gelé, avec Python + `heroprotocol/mpyq` :
+
+```text
+python -B -m cerveau.passive_session
+python -B -m cerveau.passive_session --live --player-file <identite-privee-absolue> --output-dir <sortie-absolue-NEUVE> --stop-file <STOP-absolu-neuf> --max-seconds 300 --interval 1
+python -B -m cerveau.talents_journal --journal <sortie-absolue>/events.jsonl
+```
+
+Sans `--live`, le préflight n'ouvre aucun backend. Voir
+[passive-session.md](passive-session.md) pour identité, verrou, arrêt et reprise.
+Créer le STOP termine coopérativement ; ne jamais supprimer un ancien STOP.
+Une nouvelle partie exige une nouvelle invocation et une sortie neuve. Le STOP
+global/reprise propriétaire reste surveillé par l'opérateur (un seul `--stop-file`
+est surveillé par le collecteur). Aucun Coach/API/audio/OCR n'est nécessaire.
+
+## Ce qui change, sans étendre la couverture
+
+La source native et le normaliseur savaient déjà lire les choix persistés. Le
+journal passif ne conservait que la présence du champ `talents`. Il conserve
+maintenant un objet `talents` fermé, limité aux cinq acteurs locaux/alliés :
+
+- `status` : `not_attempted`, `refused`, `rejected`, `normalized`, ou `unknown`
+  pour une ancienne observation sans qualification. Ce n'est pas un taux de
+  réussite live ; les coûts/refus détaillés restent dans `acquisition`.
+- `source_mission_t_s`, `age_s`, `read_window_s` : temps de la source, âge du
+  **reçu original lors de la normalisation**, et fenêtre de lecture. Un flush
+  lent ou un rejeu ne remet jamais l'âge à zéro. Aucun seal, pointeur, génération
+  native, session native ou catalogue d'offres n'est exporté.
+- `value` : build exact, carte, équipe native, slot local, puis slots/héros/niveaux
+  alliés et paliers. L'export revérifie la composition alliée ; aucun talent ennemi.
+- Palier `selected` = index choisi réellement observé et résolu dans l'arbre
+  courant du héros ; `slot` et `catalog_id` sont présents. `unselected` = lecture
+  explicite sans choix sur un palier offert. `unknown` = palier non établi.
+  Acteur `unknown` = `tiers: null`, **pas** un arbre vide ou zéro talent.
+  Une offre/catalogue, une possession ou un choix précédent ne crée jamais un choix.
+  Un reset natif fait disparaître le choix au prochain échantillon accepté.
+
+Aucun cache/historique de choix n'est réinjecté. Reçus frais, identité/génération,
+contexte, build entier98348, signatures, rôles, WHOLE125ms/8192reads/1MiB
+restent obligatoires. Le code de lecture native et les allowlists sont inchangés.
+La politique existante est uniquement DragonShire : Sonya locale ; Arthas,
+Dehaka, LtMorales et Tassadar alliés. Cela ne qualifie aucune autre carte, aucun
+autre héros/rôle et ne constitue pas une nouvelle validation live de ces cas.
+
+## Libellés : refus explicite
+
+`catalog_id` est un identifiant natif, **pas** un libellé traduit. Ce lot ne
+qualifie aucun catalogue de noms ayant une clé exacte héros/build/id/langue et
+une provenance vérifiée. Ainsi `label: null`, `label_status: "unknown"`,
+`label_provenance: null` sont systématiques, même si l'entrée fournit un nom.
+Ni KB approximative ni catalogue d'offres ne servent de fallback. C'est une
+limite assumée, pas une nouvelle couverture sémantique.
+
+## Rejeu et exemple synthétique
+
+```text
+uv run --offline --no-project --python 3.14 --with heroprotocol python -B -m cerveau.talents_journal --journal examples/talents/SYNTHETIC/events.jsonl
+```
+
+L'exemple **entièrement synthétique** illustre choix / reset / inconnu. Le faux
+identifiant `SyntheticSelectedTalent` n'est pas une preuve de talent du jeu.
+Chaque ligne de sortie est `historical_not_current`, sans nouvelle permission
+ni reçu, même si le statut enregistré est `normalized`. L'âge historique est
+conservé ; il ne signifie jamais « frais maintenant ». JSON non authentifié :
+ce rejeu inspecte un journal, il ne certifie pas sa vérité native ni une référence
+HUD. Il re-sélectionne les champs et supprime les libellés non prouvés.
+Limites : 64KiB/ligne, 4MiB/fichier, 10000lignes ; entrée invalide ⇒ code1,
+message fermé sans donnée privée. Une erreur tardive n'annule pas les lignes
+historiques déjà imprimées : exiger aussi le code0 et la synthèse finale.
+
+## Recette indépendante (opérateur uniquement)
+
+Une seule privée +9bots, sur la portée existante ci-dessus, sans changer de
+carte pour obtenir une allowlist. Avant de démarrer une collecte, vérifier que
+le panneau talents de l'acteur autorisé est lisible : héros, palier, choix
+**coché**, pas simplement une option offerte. Une ROI minimap n'est pas une
+référence talents. Si ce panneau/choix n'est pas accessible, refuser la
+comparaison et ne pas lancer un match d'attente.
+
+L'opérateur choisit manuellement un talent de Sonya locale (ou observe un choix
+allié qualifié). Relever indépendamment héros/slot/palier/choix et intervalle
+stable sur l'horloge monotone hôte avec incertitude mesurée. Dans cette recette
+à intervalle1s, le journal conserve aussi les bornes monotones de `comparison` du
+collecteur existant ; agrandir conservativement de `age_s` et `read_window_s`
+originaux, puis exiger l'inclusion complète dans la fenêtre HUD stable.
+Pas de plus-proche-frame/temps replay/UTC ni d'inférence offre→choix. L'opérateur
+atteste explicitement même partie/acteur/perspective : ce lot n'ajoute pas de
+comparateur automatique talents et ne modifie pas celui des objectifs.
+
+Vérifier avant/après choix, un inconnu/refus attendu, STOP neuf, fermeture du
+lecteur et absence du verrou. Reset uniquement s'il est offert normalement par
+le client ; sinon le cas reste testé synthétiquement, non qualifié live. Garder
+la référence privée séparée du journal minimisé. Budget inchangé ; pas de scan,
+OCR stats, données ennemies cachées, push ou déploiement.
