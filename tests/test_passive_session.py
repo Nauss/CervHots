@@ -332,7 +332,7 @@ class PassiveCLITests(unittest.TestCase):
         self.assertFalse(summary['reader_active'])
         self.assertEqual(status['event'], 'summary')
         self.assertTrue(source.closed)
-        self.assertFalse((self.root / 'passive-session.lock').exists())
+        self.assertTrue((self.root / 'passive-session.lock').is_file(), 'claim retained conservatively')
 
     def test_cli_help_import_and_default_preflight_real_subprocesses(self):
         """Entrypoint characterization, no live opt-in in any subprocess."""
@@ -367,7 +367,7 @@ class PassiveCLITests(unittest.TestCase):
         with patch('cerveau.player_identity.read_player_label', side_effect=read_then_stop), \
                 patch.object(product, 'NativeSource', side_effect=AssertionError('no source')):
             self.assertEqual(product.main(self.arguments()), 0)
-        self.assertFalse((self.root / 'passive-session.lock').exists())
+        self.assertTrue((self.root / 'passive-session.lock').is_file(), 'claim retained conservatively')
 
     def test_stop_during_initial_status_precedes_identity(self):
         from cerveau import passive_session as product
@@ -379,7 +379,7 @@ class PassiveCLITests(unittest.TestCase):
         with patch.object(product.os, 'replace', side_effect=persist_then_stop), \
                 patch('cerveau.player_identity.read_player_label', side_effect=AssertionError('no identity')):
             self.assertEqual(product.main(self.arguments()), 0)
-        self.assertFalse((self.root / 'passive-session.lock').exists())
+        self.assertTrue((self.root / 'passive-session.lock').is_file(), 'claim retained conservatively')
 
     def test_cli_stop_precedes_identity_output_and_source(self):
         from cerveau import passive_session as product
@@ -390,7 +390,7 @@ class PassiveCLITests(unittest.TestCase):
             self.assertEqual(product.main(self.arguments()), 0)
         self.assertFalse(self.output.exists())
 
-    def test_new_output_and_exclusive_parent_lock_release_after_io_error(self):
+    def test_new_output_and_exclusive_parent_claim_retained_after_io_error(self):
         from cerveau import passive_session as product
         self.assertTrue(callable(getattr(product, 'main', None)), 'product CLI missing')
         source = SyntheticSource([synthetic_state()])
@@ -399,7 +399,7 @@ class PassiveCLITests(unittest.TestCase):
         with patch.object(product, 'NativeSource', return_value=source), \
                 patch.object(product, 'run_session', side_effect=broken):
             self.assertEqual(product.main(self.arguments()), 1)
-        self.assertFalse((self.root / 'passive-session.lock').exists())
+        self.assertTrue((self.root / 'passive-session.lock').is_file(), 'claim retained conservatively')
         with patch('cerveau.player_identity.read_player_label', side_effect=AssertionError('no identity')):
             self.assertEqual(product.main(self.arguments()), 1)
         other = self.root / 'other'

@@ -28,12 +28,13 @@ permission current. Dépendances : `hotstate/requirements.txt`.
 Exemple de chemins absolus à réserver avant usage : `C:/CervHots-private/player.txt`
 est un fichier privé préparé par le propriétaire, **pas** une identité exemple à
 inventer. Ces commandes live ne font pas partie du smoke SYNTHETIC ci-dessous.
-Ne lancer qu'un lecteur ; toutes les sorties de la campagne partagent le parent.
-`session-001` doit être inexistant et `session-001.STOP` neuf et réservé à elle.
+Ne lancer qu'un lecteur. Réserver un parent neuf par invocation : le claim parent
+reste conservé même après arrêt propre (aucune suppression sûre par chemin).
+`run-001/session` doit être inexistant et `run-001.STOP` neuf et réservé à elle.
 
 ```bash
 cd C:/root/dev/AI/CervHots
-C:/root/dev/AI/CervHots/tts/.venv/Scripts/python.exe -B -m cerveau.passive_session --live --player-file C:/CervHots-private/player.txt --output-dir C:/root/dev/AI/CervHots/out/passive-operations/session-001 --stop-file C:/root/dev/AI/CervHots/out/passive-operations/session-001.STOP --max-seconds 300 --interval 5
+C:/root/dev/AI/CervHots/tts/.venv/Scripts/python.exe -B -m cerveau.passive_session --live --player-file C:/CervHots-private/player.txt --output-dir C:/root/dev/AI/CervHots/out/passive-operations/run-001/session --stop-file C:/root/dev/AI/CervHots/out/passive-operations/run-001.STOP --max-seconds 300 --interval 5
 ```
 
 - **Préflight** : dépendances seulement, aucun processus de jeu recherché/ouvert.
@@ -49,7 +50,7 @@ C:/root/dev/AI/CervHots/tts/.venv/Scripts/python.exe -B -m cerveau.passive_sessi
 
 ```bash
 cd C:/root/dev/AI/CervHots
-C:/root/dev/AI/CervHots/tts/.venv/Scripts/python.exe -B -m cerveau.passive_session --status --output-dir C:/root/dev/AI/CervHots/out/passive-operations/session-001
+C:/root/dev/AI/CervHots/tts/.venv/Scripts/python.exe -B -m cerveau.passive_session --status --output-dir C:/root/dev/AI/CervHots/out/passive-operations/run-001/session
 ```
 
 Diagnostic minimisé, lecture bornée de `status.json`/`summary.json` uniquement
@@ -62,7 +63,7 @@ Un lecteur mort sans résumé, un verrou périmé ou un propriétaire inconnu re
 Sorties réelles du smoke **SYNTHETIC**, sans backend (JSON compacté seulement) :
 
 ```json
-{"event":"session_status","state":"recorded_stopped","reason":"stop_file","reader_active":null,"recorded_reader_active":false,"current_permission":false,"basis":"historical_disk_only","parent_lock":"absent","last_event":"summary"}
+{"event":"session_status","state":"recorded_stopped","reason":"stop_file","reader_active":null,"recorded_reader_active":false,"current_permission":false,"basis":"historical_disk_only","parent_lock":"present_owner_unverified","last_event":"summary"}
 {"event":"session_status","state":"unknown","reason":"ownership_unverified","reader_active":null,"recorded_reader_active":null,"current_permission":false,"basis":"historical_disk_only","parent_lock":"present_owner_unverified","last_event":"acquisition"}
 ```
 
@@ -76,7 +77,7 @@ Sans résumé valide, ne jamais interpréter l'absence de verrou comme « arrêt
 Dans le second terminal bash, seulement pour la session identifiée ci-dessus :
 
 ```bash
-touch C:/root/dev/AI/CervHots/out/passive-operations/session-001.STOP
+touch C:/root/dev/AI/CervHots/out/passive-operations/run-001.STOP
 ```
 
 Relire son `--status` et la sortie du premier terminal. Le signal seul ne prouve
@@ -85,16 +86,23 @@ vérifié avant ouverture, après lecture et pendant l'attente (200ms au plus).
 Ne toucher aucun autre STOP, claim ou processus ; ne pas utiliser `kill`.
 Ne pas supprimer les fichiers d'une ancienne session ni forcer un verrou périmé.
 
-Pour la partie suivante, nouvelle commande, nouvelle sortie **et nouveau STOP** :
+Avant toute reprise, vérifier indépendamment que l'ancien collecteur a terminé
+(retour du terminal propriétaire, pas seulement statut historique). Si sa fin
+reste inconnue, ne pas lancer un deuxième lecteur. Un parent distinct n'est pas
+un verrou global ; le claim conservé ne prouve pas une activité actuelle.
+Ne jamais supprimer/renommer/réécrire un ancien claim pour débloquer une reprise.
+
+Pour la partie suivante, nouvelle commande, **parent neuf**, sortie et STOP neufs :
 
 ```bash
 cd C:/root/dev/AI/CervHots
-C:/root/dev/AI/CervHots/tts/.venv/Scripts/python.exe -B -m cerveau.passive_session --live --player-file C:/CervHots-private/player.txt --output-dir C:/root/dev/AI/CervHots/out/passive-operations/session-002 --stop-file C:/root/dev/AI/CervHots/out/passive-operations/session-002.STOP --max-seconds 300 --interval 5
+C:/root/dev/AI/CervHots/tts/.venv/Scripts/python.exe -B -m cerveau.passive_session --live --player-file C:/CervHots-private/player.txt --output-dir C:/root/dev/AI/CervHots/out/passive-operations/run-002/session --stop-file C:/root/dev/AI/CervHots/out/passive-operations/run-002.STOP --max-seconds 300 --interval 5
 ```
 
-Ne pas relancer `session-001` : un STOP existant est respecté avant toute création
+Ne pas relancer `run-001/session` : un STOP existant est respecté avant toute création
 ou lecture d'identité (code 0), jamais consommé/réarmé. Une sortie existante sans
-STOP refuse (code 1). Nouvelle invocation = nouveau backend/probe, contexte,
+STOP refuse (code 1), comme toute nouvelle sortie sous un parent déjà revendiqué.
+Nouvelle invocation = nouveau backend/probe, contexte,
 identifiant de comparaison et sel ; aucun reçu/âge ou binding n'est repris.
 
 ## Codes de sortie

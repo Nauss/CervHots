@@ -38,11 +38,16 @@ fallback replay pour une recette live.
 
 Le dossier de sortie doit être inexistant. Il n'est jamais repris ni nettoyé
 par l'outil, même après une initialisation ratée. Le parent peut être créé.
-Le verrou exclusif `passive-session.lock` est dans ce parent : toutes les
-sessions d'une campagne doivent partager ce parent pour être mutuellement
-exclusives. Cela ne verrouille pas les anciens outils ni des parents différents :
-l'opérateur vérifie aussi l'absence de tout autre lecteur. Après un crash, ne
-retirer un verrou qu'après vérification du processus ; jamais d'expiration forcée.
+Le claim exclusif `passive-session.lock` est dans ce parent. Il est conservé
+après toute sortie, propre ou non : comparer un chemin puis le supprimer ne
+garantit pas l'ownership face à une substitution concurrente. Aucune expiration,
+suppression ou réécriture automatique. Un parent revendiqué refuse une autre
+sortie (code 1), sans identité ni backend. Après arrêt vérifié indépendamment
+par l'opérateur, utiliser un parent neuf, une sortie et un STOP neufs ; ne jamais
+retirer un claim ancien/tiers pour reprendre. Cela ne verrouille ni les anciens
+outils ni les parents différents : l'opérateur garantit un seul lecteur, et
+suspend la reprise si la fin de l'ancien collecteur est inconnue. Le statut
+historique et le claim conservé ne prouvent pas la vie ou la mort du processus.
 
 ## Arrêt, limites et changement de partie
 
@@ -238,8 +243,9 @@ Recette privée attendue sur la révision gelée du handoff ready-live :
    une partie privée autorisée ; obtenir un cœur et comparer champs/références
    HUD exactes selon scénario opérateur, sans prétendre qualifier Braxis.
 4. STOP pendant attente/lecture : aucune observation ultérieure, backend fermé,
-   verrou libéré ; ou fin/changement partie : arrêt clair sans ancien contexte.
-5. Nouvelle commande/sortie pour le prochain match. Conserver les preuves privées
+   claim conservé ; ou fin/changement partie : arrêt clair sans ancien contexte.
+5. Vérifier la fin du collecteur, puis nouvelle commande/parent/sortie/STOP pour
+   le prochain match. Conserver les preuves privées
    minimisées et les coûts/refus. Une recette ratée reste une recette ratée.
 
 La livraison candidate hors ligne n'est ni une recette live, ni une intégration

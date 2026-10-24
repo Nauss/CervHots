@@ -8,6 +8,30 @@ from cerveau import passive_session as product
 
 
 class LockOwnershipTests(unittest.TestCase):
+    def test_substitution_immediately_before_unlink_is_never_deleted(self):
+        """ROGER interleaving: a comparison cannot authorize a later unlink."""
+        from unittest.mock import patch
+        unlink = Path.unlink
+        with tempfile.TemporaryDirectory() as directory:
+            lock = Path(directory) / 'passive-session.lock'
+            def substitute_then_unlink(path, *args, **kwargs):
+                if path == lock:
+                    path.write_text('SYNTHETIC_FOREIGN_OWNER', encoding='ascii')
+                return unlink(path, *args, **kwargs)
+            with patch.object(Path, 'unlink', substitute_then_unlink), product.session_lock(lock):
+                pass
+            self.assertTrue(lock.is_file(), 'TOCTOU release deleted substituted claim')
+
+    def test_claim_is_retained_even_after_clean_exit_and_blocks_reuse(self):
+        with tempfile.TemporaryDirectory() as directory:
+            lock = Path(directory) / 'passive-session.lock'
+            with product.session_lock(lock):
+                original = lock.read_bytes()
+            self.assertTrue(lock.is_file())
+            self.assertEqual(lock.read_bytes(), original)
+            with self.assertRaises(FileExistsError), product.session_lock(lock):
+                self.fail('retained claim was silently reused')
+
     def test_foreign_lock_content_is_not_removed_on_release(self):
         with tempfile.TemporaryDirectory() as directory:
             lock = Path(directory) / 'passive-session.lock'
@@ -161,7 +185,7 @@ class RestartTests(unittest.TestCase):
             tokens = []
             sources = []
             for name, match in (('session-A', 'a'), ('session-B', 'b')):
-                output, stop = root / name, root / (name + '.STOP')
+                output, stop = root / name / 'session', root / (name + '.STOP')
                 source = SyntheticSource([synthetic_state(match)])
                 sources.append(source)
                 clock = Clock()
@@ -189,7 +213,8 @@ class RestartTests(unittest.TestCase):
                 self.assertTrue(stop.exists())
             self.assertNotEqual(tokens[0], tokens[1])
             self.assertTrue(all(source.closed and source.calls == 1 for source in sources))
-            self.assertFalse((root / 'passive-session.lock').exists())
+            for name in ('session-A', 'session-B'):
+                self.assertTrue((root / name / 'passive-session.lock').is_file())
 
     def test_stale_claim_blocks_new_output_without_identity_or_backend(self):
         from contextlib import redirect_stdout

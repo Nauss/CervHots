@@ -258,21 +258,16 @@ def stop_requested(path):
 def session_lock(path):
     claim = secrets.token_hex(32)
     handle = path.open('x', encoding='ascii')
-    owned = os.fstat(handle.fileno())
     try:
         handle.write(claim)
         handle.flush()
         yield
     finally:
         handle.close()
-        # Never remove a replaced claim, including a same-file overwrite.
-        try:
-            current = path.stat()
-            if ((current.st_dev, current.st_ino) == (owned.st_dev, owned.st_ino)
-                    and path.read_bytes() == claim.encode('ascii')):
-                path.unlink()
-        except FileNotFoundError:
-            pass
+        # Path comparison followed by unlink is not an atomic ownership check.
+        # Retain the claim even on clean exit: never mutate a possibly replaced
+        # path. Resume requires a fresh parent after independent shutdown checks.
+        # This marker is neither a current liveness proof nor a global lock.
 
 
 def session_status(output):
