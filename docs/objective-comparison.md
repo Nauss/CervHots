@@ -168,8 +168,14 @@ constitue pas une validation réelle ; conserver cette limitation dans la recett
 Pour chaque cycle ciblé, cinq lignes de verdict sont produites : `compared`
 (égalité exacte), `divergent` (valeurs connues différentes), `non_comparable`
 (raison fermée). Un champ sans référence reste non comparable ; doublon ou cycle
-ambigu aussi. Rien n'est moyenné, interpolé, arrondi comme une valeur exacte, ni
-promu depuis unknown. Les refus survenant hors du cycle ne sont pas des valeurs.
+ambigu aussi. L'audit porte sur **toutes les observations du journal**, même
+hors du cycle ciblé : session, jeton, carte et perspective doivent rester uniques.
+Une observation sans liaison (absente, nulle ou malformée) dans un flux lié rend
+**tout le flux non comparable** (`journal_context_ambiguous`), même après recalcul
+des hashes et du témoin. Un ancien journal isolé sans liaison reste non comparable
+(`binding_missing`). Ne pas concaténer des parties ou reprises.
+Rien n'est moyenné, interpolé, arrondi comme une valeur exacte, ni promu depuis
+unknown. Les refus survenant hors du cycle ne sont pas des valeurs.
 
 L'intervalle source conservateur est
 `[read_started_s - age_s - read_window_s, read_finished_s]` : il englobe le reçu

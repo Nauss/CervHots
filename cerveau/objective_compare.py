@@ -275,8 +275,14 @@ def compare(journal, references, *, evidence=None, match_link=None, clock_eviden
     observations = [r for r in rows if r.get('event') == 'observation']
     # Imported files are not trusted to preserve the collector's single-context
     # boundary. Refuse merged streams, even when a selected cycle looks valid.
-    contexts = {json.dumps([r.get('session'), r.get('comparison', {}).get('session_token')], sort_keys=True)
-                for r in observations if type(r.get('comparison')) is dict}
+    contexts = set()
+    for row in observations:
+        binding = row.get('comparison')
+        # Missing/malformed bindings are contexts too: skipping them would let
+        # a selected valid cycle conceal an unlinked observation from any match.
+        binding = binding if type(binding) is dict else {}
+        contexts.add(json.dumps([row.get('session'), *(binding.get(k) for k in
+                                ('session_token', 'map_id', 'perspective'))], sort_keys=True))
     if global_reason is None and len(contexts) > 1:
         global_reason = 'journal_context_ambiguous'
     if global_reason is None:

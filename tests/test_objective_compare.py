@@ -227,6 +227,43 @@ class ComparisonTests(unittest.TestCase):
             changed = dict(paths, evidence=paths['journal'])
             self.assertEqual(compare(**changed)['fields'][0]['reason'], 'self_reference')
 
+    def test_every_observation_must_preserve_the_unique_match_binding(self):
+        import copy
+        import hashlib
+        import json
+        import tempfile
+        from pathlib import Path
+        from cerveau.objective_compare import compare
+        with tempfile.TemporaryDirectory() as tmp:
+            paths, initial = fixture(Path(tmp))
+            original = [json.loads(line) for line in paths['journal'].read_bytes().splitlines()]
+            obs = next(row for row in original if row['event'] == 'observation')
+            mutations = (
+                ('other_match_unlinked', lambda row: (row.update(session='session_other_match'), row.pop('comparison'))),
+                ('same_alias_unlinked', lambda row: row.pop('comparison')),
+                ('null_binding', lambda row: row.update(comparison=None)),
+                ('malformed_binding', lambda row: row.update(comparison=[])),
+                ('other_map', lambda row: row['comparison'].update(map_id='VolskayaFoundry')),
+                ('other_perspective', lambda row: row['comparison'].update(perspective='observer')),
+                ('missing_token', lambda row: row['comparison'].pop('session_token')),
+                ('missing_session', lambda row: row.pop('session')),
+            )
+            for name, mutate in mutations:
+                with self.subTest(case=name):
+                    rows = copy.deepcopy(original)
+                    extra = copy.deepcopy(obs); extra['cycle'] = 2; mutate(extra)
+                    rows.append(extra)
+                    paths['journal'].write_text(''.join(json.dumps(row) + '\n' for row in rows), encoding='utf-8')
+                    reference = copy.deepcopy(initial)
+                    reference['journal_sha256'] = hashlib.sha256(paths['journal'].read_bytes()).hexdigest()
+                    refresh_witness(paths, reference)
+                    save(paths['references'], reference)
+                    result = compare(**paths)
+                    self.assertEqual(result['counts'], {'compared': 0, 'divergent': 0, 'non_comparable': 5})
+                    self.assertTrue(all(row['reason'] == 'journal_context_ambiguous' for row in result['fields']))
+                    self.assertTrue(all(row['native'] is None and row['reference'] is None for row in result['fields']))
+                    self.assertFalse(result['current_permission'])
+
     def test_clip_metadata_is_verified_not_just_operator_supplied_timestamps(self):
         import copy
         import hashlib
