@@ -1,0 +1,48 @@
+{
+  "image_sha256": "bdd1bccb433c113da7187c053a462eabb0d9398f28df628ffad3d8ecd7815780",
+  "image_size": 73064448,
+  "code": [
+    {
+      "rva": 33617488,
+      "size": 388,
+      "sha256": "38f68e3cbba7225cb6883f18bf26379b9c0319a1d3597529ea082912fea3e5df"
+    },
+    {
+      "rva": 33618448,
+      "size": 207,
+      "sha256": "b819cf04c0ceba40ae3acda974eb873707e38eac63a38ff1b33c1c480e9ad9a7"
+    },
+    {
+      "rva": 33621984,
+      "size": 158,
+      "sha256": "b1e4ba2ae9080e982cc91df1c18af48bf3bc3dbfd7eacf088071ecc73358f9b7"
+    },
+    {
+      "rva": 33621504,
+      "size": 347,
+      "sha256": "fdaa1a3dd13f2daa95413c34c722a7079b7902f18e00fc61c0c6d2b2fb1e45f2"
+    },
+    {
+      "rva": 33622784,
+      "size": 139,
+      "sha256": "881864ba72eadf10b9bab2e942689dcf2944a17e356d64300fb41fd91b60637f"
+    },
+    {
+      "rva": 33625888,
+      "size": 501,
+      "sha256": "36bda53d9f5382be78f5ba6c1f0b21eb11f2b8b1db36c481e97e9679816baddd"
+    }
+  ],
+  "source": {
+    "braxis_probe.py": "88ddc4e06993b436ce54d82091663af18561dacd4a788b1116f54977299a4b59",
+    "symbol_hash.py": "dc5e5ec3f80f715366d041f0e8b8b549ebe7f15c0dcb6b1cafb1921b2ffaf2eb",
+    "inspect_descriptors.py": "df8e5df61642a03b2358b5aaae1cc29f48aa64ef476b177bb00c6e126cdf909f",
+    "test_braxis_probe.py": "815c32d6dbbe1172685c8ee599b871573ae1f4dc29805e277ea4e32bae068388"
+  },
+  "provenance": {
+    "candidate_sha256": "a6e39a424ebd829bbebf324d48fd38056faa6359358dc20491cd3c8542cdd902",
+    "source_schema": "braxis-targeted-private-diagnostic-v1",
+    "subset": "hash_name, descriptor, named_type, compiler_global; unchanged function bodies",
+    "product_objective_authorized": false
+  }
+}
