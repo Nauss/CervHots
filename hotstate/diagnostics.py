@@ -123,4 +123,9 @@ def coherence_detail(value):
                 'generation', 'roster', 'life', 'level', 'respawn', 'vitals', 'unclassified')
             or type(width) is not int or not 1 <= width <= 65536):
         return None
-    return {'phase': phase, 'field': field, 'width': width}
+    detail = {'phase': phase, 'field': field, 'width': width}
+    transition = value.get('clock_transition')
+    if (field == 'clock_tick' and width == 4 and type(transition) is str
+            and transition in ('forward_bounded', 'forward_over_window', 'backward', 'out_of_range')):
+        detail['clock_transition'] = transition
+    return detail

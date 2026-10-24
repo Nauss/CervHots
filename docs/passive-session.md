@@ -165,6 +165,27 @@ justement de distinguer l'horloge des racines ou des vitaux **avant** de changer
 une politique. Il n'explique pas rétrospectivement un ancien refus sans trace.
 Les enrichissements optionnels gardent leurs propres acquisitions/refus.
 
+Pour deux mots complets de quatre octets lus à **la même adresse de tick**,
+`coherence.clock_transition` peut préciser le changement signé en unités fixes
+(4096 unités/seconde), sans publier les valeurs :
+
+- `forward_bounded` : les deux valeurs sont dans [0,21600s] et l'avance est
+  strictement positive et au plus 1s ; **le snapshot reste refusé**.
+- `forward_over_window` : valeurs valides, avance supérieure à 1s.
+- `backward` : valeurs valides, recul.
+- `out_of_range` : au moins une valeur hors plage. Un garde d'horloge peut déjà
+  refuser avant le garde de cohérence et ne porte alors pas ce détail.
+
+Les overlaps partiels, autres groupes ou mots égaux ne sont pas classifiés.
+Absence du champ = inconnu, pas stabilité. Les racines restent vérifiées en
+égalité complète ; aucun octet n'est masqué. Une avance bornée est compatible
+avec une transition réelle mais **ne prouve ni atomicité, ni absence d'ABA, ni
+cause des anciens refus**. Les copies du journal sont historiques uniquement.
+Cette précision corrige un manque d'explicabilité, pas le taux de refus : une
+mesure live distincte doit départager les hypothèses avant tout changement.
+Les absences de qualification optionnelle attendues ne constituent pas une
+répétition d'erreurs cœur ; les compter séparément dans le brief opérateur.
+
 La commande de lancement ne change pas. Pour une nouvelle mesure autorisée,
 utiliser un checkout gelé, une sortie et un STOP neufs selon la préparation
 ci-dessus ; compter les détails par phase/groupe avec les coûts de la même

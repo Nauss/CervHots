@@ -265,7 +265,8 @@ class CoreCoherenceTests(unittest.TestCase):
         acq, = [r for r in rows if r['event'] == 'acquisition']
         self.assertEqual(acq['refusal']['code'], 'lecture_native_dechiree')
         self.assertEqual(acq.get('coherence'), {
-            'phase': 'initial_overlap', 'field': 'clock_tick', 'width': 4})
+            'phase': 'initial_overlap', 'field': 'clock_tick', 'width': 4,
+            'clock_transition': 'forward_bounded'})
         self.assertEqual(acq['reads'], len(physical))
         self.assertEqual(acq['bytes_requested'], sum(size for _, size in physical))
         self.assertEqual(len(ticks), 2)
@@ -292,7 +293,8 @@ class CoreCoherenceTests(unittest.TestCase):
                 memory.context, hero_ids=memory.hero_ids)
         self.assertEqual(caught.exception.args, ('lecture_native_dechiree',))
         self.assertEqual(getattr(caught.exception, 'coherence', None), {
-            'phase': 'initial_overlap', 'field': 'clock_tick', 'width': 4})
+            'phase': 'initial_overlap', 'field': 'clock_tick', 'width': 4,
+            'clock_transition': 'forward_bounded'})
         self.assertEqual(len(ticks), 6)  # Core boundaries + existing optional clocks.
         self.assertEqual(reads[-1], (0x100068, 4))  # Refuse before final rereads.
 

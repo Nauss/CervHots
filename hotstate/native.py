@@ -218,8 +218,10 @@ class NativeReader:
             allied_generations = {str(p['id']): n.value(n.player_pointer(p['id'] + 1) + 0x58) & 0x3FFFFF
                                   for p in members if p['team'] == team}
         for address, data in memory.coherence_reads('lecture_native_dechiree'):
-            if self.read(address, len(data)) != data:
-                memory.reject_coherence('lecture_native_dechiree', 'final_equality', address, len(data))
+            current = self.read(address, len(data))
+            if current != data:
+                memory.reject_coherence('lecture_native_dechiree', 'final_equality', address, len(data),
+                                        before=data, after=current)
         window = time.monotonic() - acquired
         if not 0 <= window <= 0.125 or context != expected:
             raise NativeUnavailable('perspective_native_perimee_ou_modifiee')

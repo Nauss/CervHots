@@ -48,13 +48,27 @@ class _RecordedMemory:
         finally:
             self.scope = previous
 
-    def reject_coherence(self, reason, phase, address, size):
+    def reject_coherence(self, reason, phase, address, size, *, before=None, after=None):
         error = NativeUnavailable(reason)
         if self.diagnose:
             from .diagnostics import coherence_detail
-            error.coherence = coherence_detail({
-                'phase': phase, 'field': self.read_fields.get((address, size)),
-                'width': size})
+            detail = {'phase': phase, 'field': self.read_fields.get((address, size)),
+                      'width': size}
+            # Only compare two complete observations of the SAME tick address.
+            # Never export bytes/addresses, infer an overlapping partial word,
+            # or treat a forward change as permission to accept it.
+            if (detail['field'] == 'clock_tick' and size == 4
+                    and type(before) is bytes and type(after) is bytes
+                    and len(before) == len(after) == 4):
+                first, last = struct.unpack('<i', before)[0], struct.unpack('<i', after)[0]
+                if not (0 <= first <= 21600 * 4096 and 0 <= last <= 21600 * 4096):
+                    detail['clock_transition'] = 'out_of_range'
+                elif last < first:
+                    detail['clock_transition'] = 'backward'
+                elif last > first:
+                    detail['clock_transition'] = ('forward_bounded' if last - first <= 4096
+                                                  else 'forward_over_window')
+            error.coherence = coherence_detail(detail)
         raise error
 
     @contextmanager
@@ -89,7 +103,8 @@ class _RecordedMemory:
             for offset, value in enumerate(data):
                 at = address+offset
                 if at in observed and observed[at] != value:
-                    self.reject_coherence(reason, 'initial_overlap', address, len(data))
+                    self.reject_coherence(reason, 'initial_overlap', address, len(data),
+                                          before=unique.get((address, len(data))), after=data)
                 observed[at] = value
             key = address, len(data)
             if key in unique and unique[key] != data:
