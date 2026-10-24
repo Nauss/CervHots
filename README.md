@@ -18,6 +18,9 @@ Chaque brique a son propre projet, ses propres dépendances.
   Objectif Dragon : qualification explicite, valeurs publiques durables, âge
   source conservé et rejeu sans permission live :
   [`docs/objective-collection.md`](docs/objective-collection.md).
+  Comparaison indépendante bornée à une référence HUD manuelle liée à la partie :
+  `python -m cerveau.objective_compare --help`,
+  [`docs/objective-comparison.md`](docs/objective-comparison.md).
 
 - `FAISABILITE.md` — l'étude complète : architecture, options techniques,
   risques, roadmap. **À lire en premier.**

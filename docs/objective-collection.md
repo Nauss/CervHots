@@ -80,6 +80,13 @@ retour1 et message fermé sans chemin/contenu ; des lignes historiques déjà
 le dispatch optionnel réel sur mémoire synthétique, la persistance et le CLI.
 Ces tests ne sont **pas une partie live** ni une comparaison HUD/native.
 
+La commande produit `python -B -m cerveau.objective_compare` réalise une
+comparaison distincte avec référence HUD manuelle, jeton de session minimisé,
+clip OS horodaté et incertitude mesurée. Voir
+[objective-comparison.md](objective-comparison.md) pour son schéma fermé, la
+démonstration synthétique et les refus (dont horloge replay non calibrée).
+Ce raccord ne requalifie pas les anciens journaux sans liaison indépendante.
+
 Recette DEFAULT utile : dans une nouvelle partie privée locale+9bots Dragon,
 comparer une phase publique et les propriétés visibles, puis un même beacon hors
 CURRENT/avec CURRENT et éventuellement une statue sans/avec vue ; capturer une
