@@ -179,7 +179,11 @@ def preflight():
     load_protocol()
     return {'event': 'preflight', 'ready': True, 'memory_opened': False,
             'chat_called': False, 'audio_enabled': False,
-            'profiles_checked': len(profiles), 'single_match': True}
+            'profiles_checked': len(profiles), 'single_match': True,
+            'objective_collection': {
+                'value_families': ['dragon'], 'qualification_only_maps': ['Volskaya'],
+                'age_basis': 'original_receipt_at_normalization',
+                'historical_replay_grants_permission': False}}
 
 
 class NativeSource:

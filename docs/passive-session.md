@@ -130,6 +130,16 @@ Code retour : 0 pour STOP, limite de durée et changement de partie ; 1 pour
 130 pour interruption clavier ; 2 pour arguments refusés. Toujours lire le
 motif du résumé : 0 ne veut pas dire qu'une observation a été acceptée.
 
+## Objectif Dragon : complément de collecte
+
+Les observations conservent désormais la qualification de l'objectif et les
+valeurs publiques Dragon déjà normalisées, avec temps source/âge du reçu initial,
+refus explicites et rejeu historique borné. Voir
+[objective-collection.md](objective-collection.md) pour le schéma, les limites
+Volskaya et `python -m cerveau.objective_journal --journal <events.jsonl>`.
+Ce complément ne change ni les allowlists, ni le budget WHOLE, ni les permissions
+CURRENT ; aucune preuve native/live nouvelle n'est revendiquée par le code.
+
 ## Vérification et recette privée opérateur
 
 Tests synthétiques : `python -B -m unittest discover -s tests -p test_passive_session.py -v`.

@@ -90,6 +90,8 @@ class Journal:
                 row['alive'] = h['alive']
             summary['heroes'].append(row)
         summary['available_fields'] = sorted(k for k in FIELDS if k in state)
+        from .objective_journal import objective_summary
+        summary['objective'] = objective_summary(state)
         self.record('observation', **summary)
 
     def advice(self, text):

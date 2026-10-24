@@ -15,6 +15,9 @@ Chaque brique a son propre projet, ses propres dépendances.
   (préflight local, aucune mémoire ouverte). Lancement live explicite, identité
   privée par fichier, arrêt STOP et nouvelle commande par partie :
   [`docs/passive-session.md`](docs/passive-session.md).
+  Objectif Dragon : qualification explicite, valeurs publiques durables, âge
+  source conservé et rejeu sans permission live :
+  [`docs/objective-collection.md`](docs/objective-collection.md).
 
 - `FAISABILITE.md` — l'étude complète : architecture, options techniques,
   risques, roadmap. **À lire en premier.**
