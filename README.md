@@ -14,6 +14,9 @@ Chaque brique a son propre projet, ses propres dépendances.
 - **Collecte native passive sans Coach/API/audio** : `python -m cerveau.passive_session`
   (préflight local, aucune mémoire ouverte). Lancement live explicite, identité
   privée par fichier, arrêt STOP et nouvelle commande par partie :
+  [`docs/passive-quickstart.md`](docs/passive-quickstart.md) : parcours court avec
+  chemins absolus, préflight, `--status` historique sans backend, STOP ciblé,
+  reprise neuve et codes de sortie. Contrat détaillé :
   [`docs/passive-session.md`](docs/passive-session.md).
   Talents réellement choisis : journal allié durable, âge original, libellés
   inconnus sans provenance et inspection historique sans permission live :

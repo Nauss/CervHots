@@ -1,7 +1,9 @@
 # Collecte native passive — une partie par commande
 
 Commande produit : `python -m cerveau.passive_session --help`.
-**Sans `--live`, le préflight reste local : aucune ouverture mémoire, découverte
+Parcours court démarrer/vérifier/STOP/reprendre :
+[passive-quickstart.md](passive-quickstart.md).
+**Sans option, ou avec `--preflight`, le préflight reste local : aucune ouverture mémoire, découverte
 processus, requête réseau, configuration Coach, API ou audio.** Il importe les
 vrais consommateurs, vérifie les profils JSON, le protocole installé et mpyq.
 Il ne qualifie ni le build du jeu actif, ni le cache de cartes, ni une recette.

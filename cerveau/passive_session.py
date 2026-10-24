@@ -1,4 +1,4 @@
-"""Collecte native passive bornée. Sans --live : préflight local uniquement.
+"""Collecte native passive bornée. Par défaut : préflight local ; --status : disque seul.
 
 Aucun Coach, API, audio, GUI, OCR ou export de lectures brutes.
 """
@@ -256,14 +256,72 @@ def stop_requested(path):
 
 @contextmanager
 def session_lock(path):
+    claim = secrets.token_hex(32)
     handle = path.open('x', encoding='ascii')
+    owned = os.fstat(handle.fileno())
     try:
+        handle.write(claim)
+        handle.flush()
         yield
     finally:
+        handle.close()
+        # Never remove a replaced claim, including a same-file overwrite.
         try:
-            handle.close()
-        finally:
-            path.unlink()
+            current = path.stat()
+            if ((current.st_dev, current.st_ino) == (owned.st_dev, owned.st_ino)
+                    and path.read_bytes() == claim.encode('ascii')):
+                path.unlink()
+        except FileNotFoundError:
+            pass
+
+
+def session_status(output):
+    """Historical disk diagnostic, never a process/ownership/current attestation."""
+    row = {'event': 'session_status', 'state': 'unknown', 'reason': 'ownership_unverified',
+           'reader_active': None, 'recorded_reader_active': None,
+           'current_permission': False, 'basis': 'historical_disk_only',
+           'parent_lock': 'unknown', 'last_event': None}
+
+    def read_record(path):
+        with path.open('rb') as stream:
+            raw = stream.read(65537)
+        if len(raw) > 65536:
+            raise ValueError('record_too_large')
+        result = json.loads(raw)
+        if type(result) is not dict:
+            raise ValueError('invalid_record')
+        return result
+
+    try:
+        row['parent_lock'] = ('present_owner_unverified' if stop_requested(
+            output.parent / 'passive-session.lock') else 'absent')
+        output.stat()
+    except FileNotFoundError:
+        row.update(state='absent', reason='session_absent')
+        return row
+    except OSError:
+        row['reason'] = 'disk_unavailable'
+        return row
+    try:
+        latest = read_record(output / 'status.json')
+        event = latest.get('event')
+        if type(event) is str and event in (
+                'initializing', 'acquisition', 'observation', 'refusal',
+                'source_error', 'error', 'boundary', 'summary'):
+            row['last_event'] = event
+    except (OSError, ValueError, UnicodeError, RecursionError):
+        pass
+    try:
+        summary = read_record(output / 'summary.json')
+        reason = summary.get('reason')
+        if (summary.get('event') == 'summary' and summary.get('reader_active') is False
+                and type(reason) is str and reason in (
+                    'stop_file', 'session_limit', 'session_changed', 'interrupted',
+                    'failure_limit', 'software_error')):
+            row.update(state='recorded_stopped', reason=reason, recorded_reader_active=False)
+    except (OSError, ValueError, UnicodeError, RecursionError):
+        pass
+    return row
 
 
 def bounded(low, high):
@@ -277,9 +335,12 @@ def bounded(low, high):
 
 def parser():
     result = argparse.ArgumentParser(description=__doc__)
-    result.add_argument('--live', action='store_true', help='explicit native read opt-in')
+    mode = result.add_mutually_exclusive_group()
+    mode.add_argument('--live', action='store_true', help='explicit native read opt-in')
+    mode.add_argument('--status', action='store_true', help='historical disk status only; no backend or current permission')
+    mode.add_argument('--preflight', action='store_true', help='local checks only (default)')
     result.add_argument('--player-file', type=Path, help='absolute private UTF8 identity file, not a label')
-    result.add_argument('--output-dir', type=Path, help='new absolute directory; never reused')
+    result.add_argument('--output-dir', type=Path, help='absolute directory: new for --live, existing for --status')
     result.add_argument('--stop-file', type=Path, help='absolute cooperative STOP; never removed')
     result.add_argument('--max-seconds', type=bounded(1, 1800), default=300)
     result.add_argument('--interval', type=bounded(1, 300), default=5)
@@ -294,8 +355,16 @@ def main(argv=None):
                          for p in (args.player_file, args.output_dir, args.stop_file)):
         parser().error('--live requires absolute --player-file, --output-dir and --stop-file')
 
+    if args.status and (args.output_dir is None or not args.output_dir.is_absolute()):
+        parser().error('--status requires absolute --output-dir')
+
     def report(row):
         print(json.dumps(row, ensure_ascii=True, allow_nan=False), flush=True)
+
+    if args.status:
+        row = session_status(args.output_dir)
+        report(row)
+        return 0 if row['state'] == 'recorded_stopped' else 1
 
     try:
         if args.live and stop_requested(args.stop_file):
