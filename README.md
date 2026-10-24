@@ -11,6 +11,11 @@ Chaque brique a son propre projet, ses propres dépendances.
 
 ## Pour démarrer
 
+- **Collecte native passive sans Coach/API/audio** : `python -m cerveau.passive_session`
+  (préflight local, aucune mémoire ouverte). Lancement live explicite, identité
+  privée par fichier, arrêt STOP et nouvelle commande par partie :
+  [`docs/passive-session.md`](docs/passive-session.md).
+
 - `FAISABILITE.md` — l'étude complète : architecture, options techniques,
   risques, roadmap. **À lire en premier.**
 - `IDEA.md` — l'idée de départ, en une ligne.

@@ -123,7 +123,12 @@ class ProcessBackend:
                                       False, pid)
         if not self.handle:
             raise SystemExit(f"OpenProcess impossible ({ctypes.get_last_error()})")
-        self.module_base, self.module_size = self._module_info(exe_name)
+        try:
+            self.module_base, self.module_size = self._module_info(exe_name)
+        except BaseException:
+            # Ownership starts at OpenProcess, before module discovery can fail.
+            self.close()
+            raise
 
     def _module_info(self, exe_name):
         psapi = ctypes.WinDLL("psapi", use_last_error=True)
