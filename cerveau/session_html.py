@@ -109,7 +109,7 @@ dl{display:grid;grid-template-columns:minmax(90px,1fr) 3fr;gap:4px 16px}dt{color
 Inconnue ≠ zéro. Aucun âge actuel calculé, aucun reçu recréé.</p></header>
 <section><h2>Dernière observation et cœur enregistré</h2><pre>'''+summary+'''</pre>
 <p>Refus ou erreur après cette observation : '''+_text(later)+'''.</p>
-<p class="muted">Le cœur lisible est limité aux niveaux publics exportés. Aucun état natif supplémentaire n’est reconstitué.</p></section>
+<p class="muted">Santé et ressource locales : uniquement les paires enregistrées et validées du même événement, avec liaison locale explicite. Type de ressource inconnu, pas nécessairement du mana. Aucun état natif supplémentaire n’est reconstitué.</p></section>
 <section><h2>Sélection et qualification des champs</h2><table>'''+family_rows+'''</table>
 <p class="muted">Ces statuts ne promettent pas une valeur lisible : seuls talents et objectif qualifiés sont exportés.
 Non sélectionné ≠ inconnu ≠ refusé ≠ valeur présente. Une sélection absente ou invalide reste inconnue.</p></section>

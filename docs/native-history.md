@@ -75,6 +75,11 @@ pas. Un hash est une intégrité de ces octets, **pas** leur authentification.
   reste `null`, sans moyenne, maximum ou zéro de substitution. Le journal ne garde
   pas l'âge original du cœur : `original_age_s=null`, explicitement **inconnu**.
   Les indices0/1 ne sont pas des couleurs HUD ni une équipe alliée devinée.
+- Cœur local : `local_core` projette santé/maximum, ressource/maximum et vivant/mort
+  seulement avec liaison locale validée du même événement ; absent/invalide/inconnu/
+  refusé restent distincts. Aucun alias ni âge réutilisé. La ressource générique ne
+  prouve pas du mana. Contrat et exemple réel sans identité :
+  [session-html.md](session-html.md#contrat-json-du-cœur-local).
 - Talents **locaux seulement** : re-sélection par le validateur historique existant,
   build98348/scopes existants, roster/équipe/niveau cohérents, source native et
   âge/fenêtre originaux valides. Héros et niveaux qualifiés, paliers, statut et

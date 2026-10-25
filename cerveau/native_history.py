@@ -108,13 +108,54 @@ def _objective(packet, row):
     return result
 
 
+def _empty_core(status):
+    return dict(status=status, identity_basis=None, original_age_s=None,
+                health=dict(status=status, value=None, maximum=None),
+                resource=dict(status=status, value=None, maximum=None), alive=None)
+
+
+def _core(row, talents):
+    """Local binding from this SAME validated packet, never a first-ally guess.
+
+    The journal records a generic resource, not its kind (mana/fury/etc.).
+    No native receipt is issued and no current catalog is consulted.
+    """
+    result = _empty_core('unknown')
+    if talents['status'] != 'normalized':
+        return result
+    roster = _roster(row)
+    value = row['talents']['value']
+    available = row.get('available_fields')
+    if (roster is None or type(available) is not list or 'heroes' not in available):
+        return _empty_core('invalid')
+    local = roster[value['local_slot']]
+    if (local['team'] != value['team'] or type(local.get('hero')) is not str
+            or not re.fullmatch('hero_[0-9a-f]{12}', local['hero'])):
+        return _empty_core('invalid')
+    result.update(status='recorded', identity_basis='validated_recorded_local_talents')
+    for field, maximum in (('health', 'health_max'), ('resource', 'resource_max')):
+        pair = result[field]
+        pair['status'] = 'absent'
+        # A present but malformed member stays invalid even if its partner is absent.
+        if any(k in local and not _number(local[k], 100000) for k in (field, maximum)):
+            pair['status'] = 'invalid'
+        elif field in local and maximum in local:
+            if local[maximum] <= 0 or local[field] > local[maximum]:
+                pair['status'] = 'invalid'
+            else:
+                pair.update(status='recorded', value=local[field], maximum=local[maximum])
+    if type(local.get('alive')) is bool:
+        result['alive'] = local['alive']
+    return result
+
+
 def _consistent(observations):
     """Check the WHOLE recorded stream, not just a conveniently bound last row.
 
     These are unauthenticated consistency checks, never active identity checks.
     Legacy missing comparison/age cannot be reconstructed from external verdicts.
     """
-    identity = local_identity = previous = None
+    identity = local_identity = previous = core_identity = None
     for row in observations:
         try:
             c = row['comparison']
@@ -163,8 +204,25 @@ def _consistent(observations):
                 if local_identity is not None and local_identity != this_local:
                     return False
                 local_identity = this_local
+                roster = _roster(row)
+                alias = roster[slot].get('hero') if roster else None
+                if type(alias) is str and re.fullmatch('hero_[0-9a-f]{12}', alias):
+                    binding = (team, slot, alias)
+                    if core_identity is not None and binding != core_identity:
+                        return False
+                    core_identity = binding
         except (KeyError, ValueError, TypeError, OverflowError):
             return False
+    if core_identity is not None:
+        team, slot, alias = core_identity
+        for row in observations:
+            roster = _roster(row)
+            # A legacy omission cannot supply a binding, but a recorded change
+            # must not be hidden by a refused/missing optional packet.
+            if roster is not None:
+                local = roster[slot]
+                if local['team'] != team or ('hero' in local and local['hero'] != alias):
+                    return False
     return True
 
 
@@ -180,6 +238,7 @@ def _summarize(rows, integrity):
         authenticated=False, current_permission=False, hud_validated=False,
         current_age_s=None, journal=integrity, state='refused', reason='no_observation',
         map=None, instant=None, public_levels=None, talents=None, objective=None,
+        local_core=_empty_core('refused'),
         families=None, families_basis='recorded_status_only',
         closure=dict(recorded_reason='unknown', reader_active=None),
         identity='not_established', later_refusal_or_error=None,
@@ -234,6 +293,8 @@ def _summarize(rows, integrity):
     packets = {name: _packet(row, name, not_selected) for name in FAMILIES}
     result['families'] = {name: _status(packet) for name,packet in packets.items()}
     result['talents'] = _talents(packets['talents'], row)
+    result['local_core'] = _core(row, result['talents'])
+    result['limitations'].extend(['resource_kind_not_recorded', 'local_binding_requires_recorded_talents'])
     result['objective'] = _objective(packets['objective'], row)
     for name in ('talents', 'objective'):
         result['families'][name] = result[name]['status']
@@ -255,6 +316,19 @@ def readable(result):
         levels = result['public_levels']['by_team']
         lines.append('Niveaux publics enregistrés : ' + ', '.join(
             f"équipe {i} : {v if v is not None else 'inconnu'}" for i,v in enumerate(levels)) + '.')
+        core = result['local_core']
+        labels = dict(recorded='enregistré', absent='absent', invalid='invalide',
+                      unknown='inconnu', refused='refusé')
+        for key, label in (('health', 'Santé locale'), ('resource', 'Ressource locale')):
+            pair = core[key]
+            shown = (f"{pair['value']:.15g} / {pair['maximum']:.15g}"
+                     if pair['status'] == 'recorded' else 'inconnue')
+            lines.append(f"{label} : {shown} ; {labels[pair['status']]}.")
+        life = {True: 'vivant', False: 'mort', None: 'inconnue'}[core['alive']]
+        lines.append('Vie locale : ' + life + ' (enregistrement historique).')
+        lines.append('Type de ressource non enregistré : mana non établi ; aucun âge du cœur enregistré.')
+        lines.append('Liaison locale : ' + ('talents locaux validés du même événement.'
+                     if core['identity_basis'] else 'inconnue ; aucune identité devinée.'))
         talents = result['talents']
         lines.append(f"Talents locaux : {talents['status']} ; âge original à la normalisation : "
                      f"{talents.get('original_age_s')} s (non renouvelé).")
