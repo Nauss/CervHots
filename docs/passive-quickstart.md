@@ -99,8 +99,15 @@ Ne pas supprimer les fichiers d'une ancienne session ni forcer un verrou périm�
 
 Avant toute reprise, vérifier indépendamment que l'ancien collecteur a terminé
 (retour du terminal propriétaire, pas seulement statut historique). Si sa fin
-reste inconnue, ne pas lancer un deuxième lecteur. Un parent distinct n'est pas
-un verrou global ; le claim conservé ne prouve pas une activité actuelle.
+reste inconnue, ne pas lancer un deuxième lecteur. Les nouveaux `NativeSource`
+s'excluent par mutex kernel Windows `Global\CervHots.PassiveNativeReader.v1`, même
+sous parents distincts (acquisition avant probe/backend, libération après fermeture).
+En refus `native_reader_unavailable` (code 1), envoyer le STOP ciblé du collecteur
+connu et attendre son retour terminal ; ne jamais forcer. L'abandon après crash,
+le mutex ou le claim ne donnent aucune permission CURRENT. **Les anciens lecteurs
+sans ce protocole ne sont pas couverts : ne pas les réarmer, vérifier leur arrêt
+indépendamment.** Préflight/status/diagnose n'acquièrent pas de garde native.
+Portée Global intersessions, ACL et refus fail-closed : [détails](passive-session.md#exclusion-système-des-lecteurs-coopérants-windows).
 Ne jamais supprimer/renommer/réécrire un ancien claim pour débloquer une reprise.
 
 Pour la partie suivante, nouvelle commande, **parent neuf**, sortie et STOP neufs :

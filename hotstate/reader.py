@@ -97,6 +97,10 @@ class DumpBackend:
             yield r["addr"], self.data[r["offset"]:r["offset"] + r["size"]]
 
 
+class NativeBackendCloseError(OSError):
+    """OS closure is uncertain; callers must retain native-reader exclusion."""
+
+
 class ProcessBackend:
     """Lit directement la mémoire du processus (en direct)."""
 
@@ -161,7 +165,8 @@ class ProcessBackend:
 
     def close(self):
         if self.handle:
-            self.k32.CloseHandle(self.handle)
+            if not self.k32.CloseHandle(self.handle):
+                raise NativeBackendCloseError('native_backend_close_uncertain')
             self.handle = None
 
     def read_memory(self, address, size):

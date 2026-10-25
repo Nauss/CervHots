@@ -64,6 +64,8 @@ def run_session(source_factory, stopped, emit, *, duration=300, interval=5,
                 clock=time.monotonic, sleep=time.sleep, private_labels=()):
     from hotstate.native import NativeUnavailable
     from hotstate.diagnostics import exception_refusal
+    from hotstate.reader import NativeBackendCloseError
+    from .native_reader_guard import ReaderGuardError
     if any(type(v) not in (int, float) or not math.isfinite(v) or not low <= v <= high
            for v, low, high in ((duration, 1, 1800), (interval, 1, 300))):
         raise ValueError('invalid_limits')
@@ -137,6 +139,13 @@ def run_session(source_factory, stopped, emit, *, duration=300, interval=5,
                     raise Boundary('session_changed')
                 if result['failures'] >= 12:
                     raise Boundary('failure_limit')
+            except NativeBackendCloseError:
+                # The constructor failed after opening a handle and could not
+                # establish closure. STOP must not downgrade this to inactive.
+                raise Boundary('source_close_failed')
+            except ReaderGuardError:
+                boundary()
+                raise Boundary('native_reader_unavailable')
             except Boundary:
                 raise
             except Exception:
@@ -222,12 +231,27 @@ class NativeSource:
         if type(collection) is not str or collection not in ('all', 'talents'):
             raise ValueError('invalid_collection')
         self.collection = collection
+        from .native_reader_guard import NativeReaderGuard
         from hotstate.native_context import NativeContextProbe
-        from hotstate.reader import ProcessBackend
-        self.probe = NativeContextProbe(player)
-        self.backend = ProcessBackend()
+        from hotstate.reader import ProcessBackend, NativeBackendCloseError
+        self.guard = NativeReaderGuard().acquire()
+        self.backend = None
+        self.probe = None
+        try:
+            self.probe = NativeContextProbe(player)
+            self.backend = ProcessBackend()
+        except NativeBackendCloseError:
+            # Partial backend initialization could not establish OS closure.
+            # Keep the kernel handle/local latch until this process exits.
+            self.probe = None
+            raise
+        except BaseException:
+            self.probe = None
+            self.guard.release()
+            raise
 
     def read(self, observe):
+        self.guard.assert_owned()
         from hotstate.live import read_current
         from .state import snapshot
         from .runner import tactical_key
@@ -238,11 +262,15 @@ class NativeSource:
                             project=snapshot, key=tactical_key, observe=observe)
 
     def close(self):
-        owned, self.backend = self.backend, None
-        # Invalidate all in-process native context and acquired readsets, even on IO errors.
+        if self.backend is None and self.guard.handle is None:
+            return
+        self.guard.assert_owned()
+        # Invalidate context first; retain ownership and backend on close failure.
         self.probe = None
-        if owned is not None:
-            owned.close()
+        if self.backend is not None:
+            self.backend.close()
+            self.backend = None
+        self.guard.release()
 
 
 def stop_requested(path):
@@ -312,7 +340,7 @@ def session_status(output):
         if (summary.get('event') == 'summary' and summary.get('reader_active') is False
                 and type(reason) is str and reason in (
                     'stop_file', 'session_limit', 'session_changed', 'interrupted',
-                    'failure_limit', 'software_error')):
+                    'failure_limit', 'software_error', 'native_reader_unavailable')):
             row.update(state='recorded_stopped', reason=reason, recorded_reader_active=False)
     except (OSError, ValueError, UnicodeError, RecursionError):
         pass
@@ -424,6 +452,11 @@ def main(argv=None):
             summary = dict(result, event='summary', collection=args.collection,
                            chat_called=False, audio_enabled=False, single_match=True,
                            finished_at_utc=dt.datetime.now(dt.timezone.utc).isoformat())
+            if result['reason'] == 'native_reader_unavailable':
+                summary.update(current_permission=False, recovery=(
+                    'Envoyer le STOP cible au collecteur connu et attendre son retour terminal ; '
+                    'si son arret est inconnu, suspendre la reprise. Conserver tous les claims ; '
+                    'apres verification independante, utiliser un parent et un STOP neufs.'))
             with (args.output_dir / 'summary.json').open('x', encoding='utf-8') as stream:
                 json.dump(summary, stream, ensure_ascii=True, allow_nan=False)
             status(summary)

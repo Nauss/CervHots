@@ -44,10 +44,55 @@ garantit pas l'ownership face à une substitution concurrente. Aucune expiration
 suppression ou réécriture automatique. Un parent revendiqué refuse une autre
 sortie (code 1), sans identité ni backend. Après arrêt vérifié indépendamment
 par l'opérateur, utiliser un parent neuf, une sortie et un STOP neufs ; ne jamais
-retirer un claim ancien/tiers pour reprendre. Cela ne verrouille ni les anciens
-outils ni les parents différents : l'opérateur garantit un seul lecteur, et
-suspend la reprise si la fin de l'ancien collecteur est inconnue. Le statut
-historique et le claim conservé ne prouvent pas la vie ou la mort du processus.
+retirer un claim ancien/tiers pour reprendre. Ce claim n'est pas un verrou global ;
+la garde système ci-dessous protège les nouveaux `NativeSource`, même sous des
+parents différents. Le statut historique et le claim conservé ne prouvent pas
+la vie ou la mort du processus.
+
+### Exclusion système des lecteurs coopérants (Windows)
+
+`NativeSource` acquiert **avant la création de la probe et l'ouverture du backend**
+le mutex kernel nommé `Global\CervHots.PassiveNativeReader.v1`, avec attente nulle.
+Le nom ne dépend ni du parent, ni du checkout, ni du PID, ni de l'identité joueur.
+Il est global à la machine Windows, à travers les sessions terminales. L'ACL Windows
+par défaut du créateur reste inchangée : même utilisateur normalement admis,
+autre utilisateur/élévation/session selon droits OS ; un accès refusé, un objet
+incompatible, une plateforme non-Windows ou un résultat incertain **refusent**
+l'ouverture. Aucun fallback fichier/PID, aucune permission élargie.
+
+Le mutex appartient à un **thread OS** : ce runtime synchrone impose le thread
+principal pour l'acquisition, et le même thread pour lire/fermer. Une garde locale
+non réentrante empêche aussi deux sources dans un même processus (un mutex Windows
+seul autoriserait la récursion). La propriété est relâchée **après** fermeture du
+backend. Une erreur de fermeture du backend, y compris pendant son initialisation,
+conserve la garde jusqu'à la sortie du processus ; `reader_active` reste inconnu
+si la fermeture de la source n'est pas établie. Les erreurs API/cleanup incertaines
+verrouillent également les nouvelles tentatives du processus.
+
+À la mort du processus, Windows libère sa propriété automatiquement ; aucune
+preuve disque n'est effacée. Si un handle externe maintient l'objet abandonné,
+`WAIT_ABANDONED` est explicitement refusé : pas d'ouverture de backend ni de
+reconstruction d'état. Le handle est libéré/fermé si l'OS le permet. Une invocation
+ultérieure doit refaire tous les contrôles, jamais réutiliser les anciens reçus.
+Ni l'acquisition, ni l'abandon, ni l'absence du mutex ne prouvent une partie active,
+l'absence d'un ancien lecteur ou une permission CURRENT.
+
+En contention : code retour 1, motif `native_reader_unavailable`, résumé avec
+consigne `recovery`. Envoyer le **STOP ciblé du collecteur connu**, attendre son
+retour au terminal et vérifier indépendamment son arrêt. Si le propriétaire ou sa
+fin restent inconnus, suspendre la reprise ; ne pas tuer de processus ni supprimer
+un claim. Après vérification, réserver parent/sortie/STOP neufs. `--status`,
+`--diagnose`, `--preflight` et un STOP préexistant n'acquièrent pas cette garde.
+
+**Limite impérative :** seuls les lecteurs qui implémentent ce protocole commun
+s'excluent. Les anciens outils/anciennes versions, autres lecteurs directs et
+processus hostiles n'en sont pas couverts. La garde n'est ni une preuve d'absence
+de ceux-ci, ni une autorisation de les réarmer. L'opérateur reste responsable de
+leur arrêt indépendant avant toute nouvelle collecte. Aucun claim historique,
+ancien STOP, contexte ou capture n'est réutilisé ou modifié.
+
+Références OS : [mutex et abandon](https://learn.microsoft.com/en-us/windows/win32/sync/mutex-objects),
+[namespace Global](https://learn.microsoft.com/en-us/windows/win32/termserv/kernel-object-namespaces).
 
 ## Arrêt, limites et changement de partie
 

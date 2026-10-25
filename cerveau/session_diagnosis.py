@@ -21,7 +21,7 @@ from .diagnostics import FIELDS
 from .objective_compare import _load, _read, _number
 
 STOP_REASONS = ('stop_file', 'session_limit', 'session_changed', 'interrupted',
-                'failure_limit', 'software_error', 'source_close_failed')
+                'failure_limit', 'software_error', 'source_close_failed', 'native_reader_unavailable')
 
 
 FAMILIES = ('gameplay_clock', 'positions', 'visibility', 'objective', 'talents',
