@@ -115,6 +115,27 @@ class CatalogTests(unittest.TestCase):
                 cli.main(args)
             self.assertEqual(error.exception.code, 2)
 
+    def test_catalog_cli_rejects_explicit_live_options_including_defaults(self):
+        import sys
+        self.journal()
+        helper = Path(__file__).parent/'helpers'/'native_history_offline.py'
+        cases = (('--collection', 'core'), ('--collection', 'all'),
+                 ('--max-seconds', '1800'), ('--max-seconds', '300'),
+                 ('--interval', '300'), ('--interval', '5'))
+        for index, (option, value) in enumerate(cases):
+            for equals in (False, True):
+                with self.subTest(option=option, value=value, equals=equals):
+                    output = self.base/f'rejected-{index}-{equals}'
+                    extra = [f'{option}={value}'] if equals else [option, value]
+                    command = [sys.executable, '-B', str(helper), '--catalog',
+                               '--sessions-root', str(self.root), '--report-dir',
+                               str(output), *extra]
+                    result = subprocess.run(command, check=False, capture_output=True, timeout=30)
+                    self.assertEqual(result.returncode, 2, result.stderr)
+                    self.assertEqual(result.stdout, b'')
+                    self.assertIn(b'--catalog accepts only', result.stderr)
+                    self.assertFalse(output.exists())
+
     def test_partial_write_and_concurrent_target_never_publish_false_index(self):
         from cerveau import session_catalog as cat
         self.journal()

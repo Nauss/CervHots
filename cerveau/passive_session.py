@@ -442,7 +442,11 @@ def main(argv=None):
     if args.sessions_root is not None and not args.catalog:
         parser().error('--sessions-root requires --catalog')
     if args.catalog:
-        if any(p is not None for p in (args.journal, args.player_file, args.output_dir, args.stop_file)) or args.visual_reference:
+        # Presence matters: explicitly passing a live default is still invalid.
+        live_options = {'--collection', '--max-seconds', '--interval'}
+        if (any(p is not None for p in (args.journal, args.player_file, args.output_dir, args.stop_file))
+                or args.visual_reference
+                or any(token.split('=', 1)[0] in live_options for token in raw)):
             parser().error('--catalog accepts only --sessions-root and --report-dir')
         if any(p is None or not p.is_absolute() for p in (args.sessions_root, args.report_dir)):
             parser().error('--catalog requires absolute --sessions-root and --report-dir')

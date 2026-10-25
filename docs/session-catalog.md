@@ -95,7 +95,10 @@ Code **1** : catalogue partiel/refus/absence/incomplétude, ou erreur d’entré
 publication (message fermé `session_catalog_error`). Les rapports réellement
 produits restent inspectables si un catalogue explicatif a été achevé.
 Code **2** : arguments invalides. `--catalog` est exclusif des autres modes et
-n’accepte ni journal unique, référence visuelle, identité privée ni chemins live.
+n’accepte que `--sessions-root` et `--report-dir` : ni journal unique, référence
+visuelle, identité privée, chemins live, `--collection`, `--max-seconds` ou
+`--interval`. Même leurs valeurs par défaut explicitement fournies sont refusées,
+avec ou sans `=` ; aucune sortie n’est créée pour ces arguments invalides.
 
 Toujours **historique NON authentifié**, jamais CURRENT, HUD, reçu, conseil,
 qualification native nouvelle ou permission de reprise. Inconnu n’est pas zéro.
