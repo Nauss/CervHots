@@ -32,6 +32,11 @@ permission current. Dépendances : `hotstate/requirements.txt`.
 
 ## 2. Démarrer une seule session autorisée
 
+Pour le seul socle natif existant, ajouter explicitement `--collection core` :
+aucun lecteur optionnel n'est tenté, contrairement au défaut `all` ;
+`talents` reste cœur + talents. Voir [cœur seul](core-collection.md) pour la
+commande, les statuts `not_selected`, les limites et le smoke SYNTHETIC.
+
 Exemple de chemins absolus à réserver avant usage : `C:/CervHots-private/player.txt`
 est un fichier privé préparé par le propriétaire, **pas** une identité exemple à
 inventer. Ces commandes live ne font pas partie du smoke SYNTHETIC ci-dessous.

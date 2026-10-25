@@ -103,6 +103,8 @@ def _diagnose(rows, integrity):
     measured = [measured_acquisition(dict(r, optional_refusals=(
         r['optional_refusals'] if type(r.get('optional_refusals')) is dict else {})))
         for r in acquisitions]
+    selections = {raw['cycle']: clean.get('not_selected', ())
+                  for raw, clean in zip(acquisitions, measured)}
     codes = {r['cycle']: refusal(r.get('refusal', {}).get('code')
              if type(r.get('refusal')) is dict else None)['code']
              for r in acquisitions if r.get('outcome') == 'refused'}
@@ -156,6 +158,8 @@ def _diagnose(rows, integrity):
         for name in FAMILIES:
             packet = r.get(name)
             packet = packet if type(packet) is dict else {}
+            if name in selections.get(r['cycle'], ()):
+                packet = {'status': 'not_selected'}
             status = packet.get('status') if type(packet) is dict else None
             families[name][status if type(status) is str and status in QUALIFICATIONS else 'unknown'] += 1
             for key, valid in {'source': packet.get('source') == 'native_player',

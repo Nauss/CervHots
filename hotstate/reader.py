@@ -252,7 +252,7 @@ def snapshot(backend, mapping: dict, debug: bool = False, *, context=None,
              native_profile=None) -> dict:
     triggers = mapping["triggers"]
     collection = mapping.get('collection', 'all')
-    if type(collection) is not str or collection not in ('all', 'talents'):
+    if type(collection) is not str or collection not in ('all', 'talents', 'core'):
         raise ValueError('invalid_collection')
     if context is not None:
         context.begin()
@@ -317,7 +317,7 @@ def snapshot(backend, mapping: dict, debug: bool = False, *, context=None,
                 state.update({k: v for k, v in native.items() if k != "meta"})
                 # Independent bounded family acquisitions, not a claim that
                 # camps/structures and the earlier hero core are atomic.
-                if collection == 'talents':
+                if collection != 'all':
                     return state  # Unselected families are NOT acquired or refused.
                 from .battlefield import VolskayaBattlefield
                 try:

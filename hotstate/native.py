@@ -190,7 +190,7 @@ class NativeReader:
         All successful core reads are repeated before issuance. This detects
         torn reads, not an atomic snapshot or an ABA change between samples.
         """
-        if type(collection) is not str or collection not in ('all', 'talents'):
+        if type(collection) is not str or collection not in ('all', 'talents', 'core'):
             raise ValueError('invalid_collection')
         from .positions import AlliedPositions, _RecordedMemory
         from .acquisition import issue
@@ -242,7 +242,7 @@ class NativeReader:
         return result
 
     def _read_state(self, context, *, hero_ids=None, optional_native=None, collection='all'):
-        if type(collection) is not str or collection not in ('all', 'talents'):
+        if type(collection) is not str or collection not in ('all', 'talents', 'core'):
             raise ValueError('invalid_collection')
         if not isinstance(context, dict):
             raise NativeUnavailable("contexte_natif_absent")
@@ -329,12 +329,13 @@ class NativeReader:
                     objective = VolskayaObjective(optional_native).read(context, hero_ids=hero_ids)
             except NativeUnavailable as exc:
                 optional_refusals['objective'] = exception_refusal(exc)['code']
-        from .talents import NativeTalentChoices
         talents = None
-        try:
-            talents = NativeTalentChoices(optional_native).read(context, hero_ids=hero_ids)
-        except NativeUnavailable as exc:
-            optional_refusals['talents'] = exception_refusal(exc)['code']
+        if collection in ('all', 'talents'):
+            from .talents import NativeTalentChoices
+            try:
+                talents = NativeTalentChoices(optional_native).read(context, hero_ids=hero_ids)
+            except NativeUnavailable as exc:
+                optional_refusals['talents'] = exception_refusal(exc)['code']
         local_cooldowns = None
         if collection == 'all':
             from .cooldown_packet import LocalCooldowns
@@ -346,7 +347,8 @@ class NativeReader:
         if not 0 <= finished - started <= 1:
             raise NativeUnavailable("observation_native_non_synchrone")
         meta = {"t_s": finished, "clock_kind": "mission", "native_status": "valide",
-                "native_build": self.profile["build"], 'optional_refusals': optional_refusals}
+                "native_build": self.profile["build"], 'optional_refusals': optional_refusals,
+                'collection': collection}
         if gameplay_clock is not None:
             meta["gameplay_clock"] = gameplay_clock
         result = {"meta": meta,

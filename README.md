@@ -25,6 +25,9 @@ Chaque brique a son propre projet, ses propres dépendances.
   reprise neuve (parent, sortie et STOP neufs ; ancien claim conservé) et codes
   de sortie. Vérifier la fin de l'ancien collecteur avant reprise. Contrat détaillé :
   [`docs/passive-session.md`](docs/passive-session.md).
+  **Cœur natif seul explicite** : `--collection core`, sélection avant toute
+  lecture optionnelle, normalisation et journal sans optionnels :
+  [`docs/core-collection.md`](docs/core-collection.md). Défaut `all` inchangé.
   Diagnostic **hors ligne** d'un journal explicite, JSON + résumé lisible,
   acquisitions/observations/refus/arrêt et preuves non comparables :
   `python -m cerveau.passive_session --diagnose --journal <absolu-events.jsonl> --report-dir <absolu-neuf>`,

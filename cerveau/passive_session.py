@@ -53,10 +53,12 @@ def measured_acquisition(row):
         for name in ('gameplay_clock', 'positions', 'visibility', 'objective',
                      'talents', 'local_cooldowns', 'battlefield') if name in optional}
     collection = row.get('collection')
-    if type(collection) is str and collection in ('all', 'talents'):
+    if type(collection) is str and collection in ('all', 'talents', 'core'):
         result['collection'] = collection
         result['not_selected'] = ([] if collection == 'all' else [
             'gameplay_clock', 'positions', 'visibility', 'objective', 'local_cooldowns', 'battlefield'])
+        if collection == 'core':
+            result['not_selected'].insert(4, 'talents')
     return result
 
 
@@ -170,7 +172,9 @@ def run_session(source_factory, stopped, emit, *, duration=300, interval=5,
                 comparison = {
                     'session_token': session_token,
                     'map_id': ('DragonShire' if any(state.get(family, {}).get('map_id') == 'DragonShire'
-                                                    for family in ('objective', 'talents')) else None),
+                                                    for family in ('objective', 'talents')) else
+                               state['meta'].get('map_id') if state['meta'].get('collection') == 'core'
+                               and state['meta'].get('map_id') in ('DragonShire', 'Volskaya') else None),
                     'perspective': ('native_player' if state['meta'].get('source') == 'live'
                                     and state['meta'].get('native_status') == 'valide'
                                     else 'unknown'),
@@ -228,7 +232,7 @@ def preflight():
 class NativeSource:
     """One process/probe lifetime; no rebinding or receipt caching across sessions."""
     def __init__(self, player, *, collection='all'):
-        if type(collection) is not str or collection not in ('all', 'talents'):
+        if type(collection) is not str or collection not in ('all', 'talents', 'core'):
             raise ValueError('invalid_collection')
         self.collection = collection
         from .native_reader_guard import NativeReaderGuard
@@ -374,8 +378,8 @@ def parser():
     result.add_argument('--stop-file', type=Path, help='absolute cooperative STOP; never removed')
     result.add_argument('--max-seconds', type=bounded(1, 1800), default=300)
     result.add_argument('--interval', type=bounded(1, 300), default=5)
-    result.add_argument('--collection', choices=('all', 'talents'), default='all',
-                        help='talents: core + selected talents only; other optional families not attempted')
+    result.add_argument('--collection', choices=('all', 'talents', 'core'), default='all',
+                        help='core: native core only; talents: core + talents; unselected optional families never attempted')
     return result
 
 
