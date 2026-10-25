@@ -89,9 +89,13 @@ def _journal(path):
 
 
 def diagnose(journal):
+    return _diagnose(*_journal(journal))
+
+
+def _diagnose(rows, integrity):
+    """Aggregate already bounded/parsed records without another disk read."""
     from .passive_session import measured_acquisition
     from hotstate.diagnostics import refusal
-    rows, integrity = _journal(journal)
     acquisitions = [r for r in rows if r['event'] == 'acquisition']
     observations = [r for r in rows if r['event'] == 'observation']
     refusals = [r for r in rows if r['event'] == 'refusal']

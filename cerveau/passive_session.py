@@ -363,8 +363,9 @@ def parser():
     mode.add_argument('--status', action='store_true', help='historical disk status only; no backend or current permission')
     mode.add_argument('--diagnose', action='store_true', help='offline bounded journal diagnosis; never validates HUD')
     mode.add_argument('--summarize', action='store_true', help='offline player summary of recorded native observations; never CURRENT')
+    mode.add_argument('--report-html', action='store_true', help='rapport HTML autonome local et JSON minimisé ; historique uniquement')
     mode.add_argument('--preflight', action='store_true', help='local checks only (default)')
-    result.add_argument('--journal', type=Path, help='absolute existing events.jsonl for --diagnose or --summarize')
+    result.add_argument('--journal', type=Path, help='absolute existing events.jsonl for --diagnose, --summarize or --report-html')
     result.add_argument('--report-dir', type=Path, help='absolute NEW offline report directory')
     result.add_argument('--visual-reference', type=Path, action='append', default=[],
                         help='explicit existing BMP or stored ZIP; diagnostics only, at most 8')
@@ -380,18 +381,20 @@ def parser():
 
 def main(argv=None):
     args = parser().parse_args(argv)
-    if not (args.diagnose or args.summarize) and (args.journal is not None or args.report_dir is not None or args.visual_reference):
-        parser().error('--journal and --report-dir require --diagnose or --summarize')
-    if args.diagnose or args.summarize:
+    if not (args.diagnose or args.summarize or args.report_html) and (args.journal is not None or args.report_dir is not None or args.visual_reference):
+        parser().error('--journal and --report-dir require --diagnose, --summarize or --report-html')
+    if args.diagnose or args.summarize or args.report_html:
         if any(p is not None for p in (args.player_file, args.output_dir, args.stop_file)):
             parser().error('offline journal modes do not accept live/status paths')
         if any(p is None or not p.is_absolute() for p in (args.journal, args.report_dir)):
             parser().error('offline journal modes require absolute --journal and --report-dir')
-        if args.summarize and args.visual_reference:
-            parser().error('--summarize does not accept visual references')
+        if (args.summarize or args.report_html) and args.visual_reference:
+            parser().error('player journal views do not accept visual references')
         if len(args.visual_reference) > 8 or any(not p.is_absolute() for p in args.visual_reference):
             parser().error('--visual-reference requires at most 8 absolute paths')
-        if args.summarize:
+        if args.report_html:
+            from .session_html import run
+        elif args.summarize:
             from .native_history import run
         else:
             from .session_diagnosis import run

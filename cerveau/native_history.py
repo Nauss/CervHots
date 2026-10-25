@@ -170,6 +170,11 @@ def _consistent(observations):
 
 def summarize(path):
     rows, integrity = _journal(path)
+    return _summarize(rows, integrity)
+
+
+def _summarize(rows, integrity):
+    """Project already bounded/parsed records; shared by the local HTML view."""
     observations = [r for r in rows if r['event'] == 'observation']
     result = dict(event='native_history', schema_version=1, basis='historical_not_current',
         authenticated=False, current_permission=False, hud_validated=False,

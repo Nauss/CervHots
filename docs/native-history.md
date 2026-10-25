@@ -1,5 +1,10 @@
 # Relire les observations natives enregistrées (hors ligne)
 
+Pour une lecture directe en navigateur, le nouveau mode explicite
+[`--report-html`](session-html.md) produit un HTML autonome et un JSON minimisé
+dans un dossier neuf, sans ouvrir automatiquement le navigateur. Il compose les
+deux mêmes moteurs historiques sur une seule lecture bornée, sans acquisition.
+
 ## Une commande ponctuelle, pas un service
 
 Depuis le checkout exact à examiner (MAIN **après** revue/intégration) :
@@ -26,9 +31,9 @@ Choisir un **nouveau** `--report-dir` et conserver une sortie partielle éventue
   fermeture enregistrée refusés, ou IO refusée ; **2** = arguments invalides.
   Un code0 ne signifie jamais succès d'une nouvelle collecte ni validation HUD.
 
-`--summarize`, `--diagnose`, `--status`, `--preflight`, `--live` sont exclusifs.
+`--report-html`, `--summarize`, `--diagnose`, `--status`, `--preflight`, `--live` sont exclusifs.
 Le résumé refuse les chemins live/statut et les références visuelles. Les options
-journal/rapport hors des deux modes historiques sont refusées avant préflight.
+journal/rapport hors des modes historiques sont refusées avant préflight.
 Pour démarrer/arrêter une vraie collecte, voir [passive-quickstart.md](passive-quickstart.md) :
 ce résumé n'est ni un contrôle d'activité OS, ni une autorisation de reprise.
 
