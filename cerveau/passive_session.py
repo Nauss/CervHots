@@ -1,4 +1,4 @@
-"""Collecte native passive bornée. Par défaut : préflight local ; --status : disque seul.
+"""Collecte native passive bornée. Défaut : préflight ; --status/--diagnose : disque seul.
 
 Aucun Coach, API, audio, GUI, OCR ou export de lectures brutes.
 """
@@ -333,7 +333,12 @@ def parser():
     mode = result.add_mutually_exclusive_group()
     mode.add_argument('--live', action='store_true', help='explicit native read opt-in')
     mode.add_argument('--status', action='store_true', help='historical disk status only; no backend or current permission')
+    mode.add_argument('--diagnose', action='store_true', help='offline bounded journal diagnosis; never validates HUD')
     mode.add_argument('--preflight', action='store_true', help='local checks only (default)')
+    result.add_argument('--journal', type=Path, help='absolute existing events.jsonl for --diagnose')
+    result.add_argument('--report-dir', type=Path, help='absolute NEW diagnostic output directory')
+    result.add_argument('--visual-reference', type=Path, action='append', default=[],
+                        help='explicit existing BMP or stored ZIP; diagnostics only, at most 8')
     result.add_argument('--player-file', type=Path, help='absolute private UTF8 identity file, not a label')
     result.add_argument('--output-dir', type=Path, help='absolute directory: new for --live, existing for --status')
     result.add_argument('--stop-file', type=Path, help='absolute cooperative STOP; never removed')
@@ -346,6 +351,17 @@ def parser():
 
 def main(argv=None):
     args = parser().parse_args(argv)
+    if not args.diagnose and (args.journal is not None or args.report_dir is not None or args.visual_reference):
+        parser().error('--journal, --report-dir and --visual-reference require --diagnose')
+    if args.diagnose:
+        if any(p is not None for p in (args.player_file, args.output_dir, args.stop_file)):
+            parser().error('--diagnose does not accept live/status paths')
+        if any(p is None or not p.is_absolute() for p in (args.journal, args.report_dir)):
+            parser().error('--diagnose requires absolute --journal and --report-dir')
+        if len(args.visual_reference) > 8 or any(not p.is_absolute() for p in args.visual_reference):
+            parser().error('--visual-reference requires at most 8 absolute paths')
+        from .session_diagnosis import run
+        return run(args)
     if args.live and any(p is None or not p.is_absolute()
                          for p in (args.player_file, args.output_dir, args.stop_file)):
         parser().error('--live requires absolute --player-file, --output-dir and --stop-file')

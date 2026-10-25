@@ -74,6 +74,17 @@ Sans résumé valide, ne jamais interpréter l'absence de verrou comme « arrêt
 
 ## 4. STOP ciblé puis reprise neuve
 
+Le statut ci-dessus ne compte pas les acquisitions. Pour examiner le journal
+historique explicite après collecte, sans backend ni dépendances live :
+
+```bash
+C:/root/dev/AI/CervHots/tts/.venv/Scripts/python.exe -B -m cerveau.passive_session --diagnose --journal C:/root/dev/AI/CervHots/out/passive-operations/run-001/session/events.jsonl --report-dir C:/root/dev/AI/CervHots/out/passive-diagnostic-001
+```
+
+Sortie **neuve**, JSON + résumé lisible, refus dédupliqués par cycle, inconnues et
+absence de preuve HUD explicites : [session-diagnosis.md](session-diagnosis.md).
+Ce diagnostic historique ne prouve pas la fin du processus et n'autorise pas la reprise.
+
 Dans le second terminal bash, seulement pour la session identifiée ci-dessus :
 
 ```bash
@@ -113,7 +124,7 @@ identifiant de comparaison et sel ; aucun reçu/âge ou binding n'est repris.
 | `--status` | fermeture historique enregistrée | absent/inconnu/IO ou résumé invalide | arguments invalides | — |
 | `--live` | STOP, limite durée ou changement de partie | init/IO, erreurs, plafond défaillances, fermeture échouée | arguments invalides | Ctrl+C |
 
-`--live`, `--status`, `--preflight` sont mutuellement exclusifs ; `--status`
+`--live`, `--status`, `--diagnose`, `--preflight` sont mutuellement exclusifs ; `--status`
 exige un `--output-dir` absolu. Le code 0 de statut n'est **pas** une permission
 ni un contrôle de santé current. Détails du journal : [passive-session.md](passive-session.md).
 Aucun smoke synthétique ne qualifie une nouvelle carte, famille ou valeur native.

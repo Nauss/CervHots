@@ -19,6 +19,11 @@ Chaque brique a son propre projet, ses propres dépendances.
   reprise neuve (parent, sortie et STOP neufs ; ancien claim conservé) et codes
   de sortie. Vérifier la fin de l'ancien collecteur avant reprise. Contrat détaillé :
   [`docs/passive-session.md`](docs/passive-session.md).
+  Diagnostic **hors ligne** d'un journal explicite, JSON + résumé lisible,
+  acquisitions/observations/refus/arrêt et preuves non comparables :
+  `python -m cerveau.passive_session --diagnose --journal <absolu-events.jsonl> --report-dir <absolu-neuf>`,
+  [`docs/session-diagnosis.md`](docs/session-diagnosis.md). Ni intégrité ZIP/hash,
+  ni pixels non noirs ne valent validation HUD ; aucune collecte live nécessaire.
   Talents réellement choisis : journal allié durable, âge original, libellés
   inconnus sans provenance et inspection historique sans permission live :
   `python -m cerveau.talents_journal --help`,
