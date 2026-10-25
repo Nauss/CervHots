@@ -205,22 +205,57 @@ def run_session(source_factory, stopped, emit, *, duration=300, interval=5,
     return result
 
 
-def preflight():
-    """Dependencies and product data only; never discover/open a game process."""
-    from .state import snapshot
-    from .runner import tactical_key
-    from hotstate.live import read_current
-    from hotstate.protocols import load_protocol
-    module = importlib.import_module('mpyq')
-    if not callable(getattr(module, 'MPQArchive', None)):
-        raise ValueError('dependency_unavailable')
+def preflight(*, core=False):
+    """Dependencies and product data only; never discover/open a game process.
+
+    Core inspects module availability without importing any live backend. Replay
+    libraries are optional there; the legacy default keeps its replay checks.
+    """
+    dependencies = {}
+    if core:
+        from importlib.util import find_spec
+        import struct
+        import sys
+        def availability(name):
+            try:
+                return 'available' if find_spec(name) is not None else 'missing'
+            except (ImportError, ValueError, AttributeError):
+                return 'missing'
+        required = {name: availability(name)
+                    for name in ('ctypes', 'ctypes.wintypes', 'grocoapi', 'cerveau.state',
+                                 'cerveau.runner', 'cerveau.native_reader_guard',
+                                 'hotstate.live', 'hotstate.reader', 'hotstate.native_context')}
+        optional = {name: availability(name)
+                    for name in ('mpyq', 'heroprotocol')}
+        runtime = (sys.platform == 'win32' and struct.calcsize('P') == 8
+                   and sys.version_info >= (3, 12))
+        dependencies = {'runtime': 'supported' if runtime else 'unsupported',
+                        'required_dependencies': required, 'optional_dependencies': optional}
+    else:
+        from .state import snapshot
+        from .runner import tactical_key
+        from hotstate.live import read_current
+        from hotstate.protocols import load_protocol
+        module = importlib.import_module('mpyq')
+        if not callable(getattr(module, 'MPQArchive', None)):
+            raise ValueError('dependency_unavailable')
     profiles = sorted((ROOT / 'hotstate/profiles').glob('*.json'))
     if not profiles:
         raise ValueError('profiles_unavailable')
     for path in profiles:
         json.loads(path.read_text(encoding='utf-8'))
-    load_protocol()
-    return {'event': 'preflight', 'ready': True, 'memory_opened': False,
+    if core:
+        required_profiles = {'98348.json', '98348-context.json', '98348-match.json'}
+        if not required_profiles.issubset({path.name for path in profiles}):
+            raise ValueError('profiles_unavailable')
+        hero_ids = json.loads((ROOT / 'hotstate/hero_ids.json').read_text(encoding='utf-8'))
+        if type(hero_ids) is not dict or not hero_ids:
+            raise ValueError('hero_ids_unavailable')
+    else:
+        load_protocol()
+    return {'event': 'preflight',
+            'ready': (runtime and all(value == 'available' for value in required.values())) if core else True,
+            **dependencies, 'memory_opened': False,
             'chat_called': False, 'audio_enabled': False,
             'profiles_checked': len(profiles), 'single_match': True,
             'objective_collection': {
@@ -360,8 +395,15 @@ def bounded(low, high):
     return parse
 
 
-def parser():
-    result = argparse.ArgumentParser(description=__doc__)
+class OfflineArgumentParser(argparse.ArgumentParser):
+    def error(self, message):
+        # Never echo arbitrary argv, paths, identity or parser exception text.
+        raise ValueError('invalid_arguments')
+
+
+def parser(*, safe=False):
+    kind = OfflineArgumentParser if safe else argparse.ArgumentParser
+    result = kind(description=__doc__, allow_abbrev=False)
     mode = result.add_mutually_exclusive_group()
     mode.add_argument('--live', action='store_true', help='explicit native read opt-in')
     mode.add_argument('--status', action='store_true', help='historical disk status only; no backend or current permission')
@@ -369,6 +411,7 @@ def parser():
     mode.add_argument('--summarize', action='store_true', help='offline player summary of recorded native observations; never CURRENT')
     mode.add_argument('--report-html', action='store_true', help='rapport HTML autonome local et JSON minimisé ; historique uniquement')
     mode.add_argument('--preflight', action='store_true', help='local checks only (default)')
+    mode.add_argument('--check-ready', action='store_true', help='controle core hors ligne, jamais une permission CURRENT')
     result.add_argument('--journal', type=Path, help='absolute existing events.jsonl for --diagnose, --summarize or --report-html')
     result.add_argument('--report-dir', type=Path, help='absolute NEW offline report directory')
     result.add_argument('--visual-reference', type=Path, action='append', default=[],
@@ -384,7 +427,19 @@ def parser():
 
 
 def main(argv=None):
-    args = parser().parse_args(argv)
+    import sys
+    raw = list(sys.argv[1:] if argv is None else argv)
+    if '--check-ready' in raw:
+        from .session_readiness import invalid_arguments
+        try:
+            args = parser(safe=True).parse_args(raw)
+        except (ValueError, TypeError):
+            return invalid_arguments()
+    else:
+        args = parser().parse_args(raw)
+    if args.check_ready:
+        from .session_readiness import run
+        return run(args, preflight)
     if not (args.diagnose or args.summarize or args.report_html) and (args.journal is not None or args.report_dir is not None or args.visual_reference):
         parser().error('--journal and --report-dir require --diagnose, --summarize or --report-html')
     if args.diagnose or args.summarize or args.report_html:
@@ -422,14 +477,17 @@ def main(argv=None):
         if args.live and stop_requested(args.stop_file):
             report({'event': 'boundary', 'reason': 'stop_file'})
             return 0
-        ready = preflight()
+        ready = preflight(core=True) if args.collection == 'core' else preflight()
     except Exception:
         report({'event': 'preflight', 'ready': False, 'code': 'dependency_or_stop_io',
                 'memory_opened': False, 'chat_called': False, 'audio_enabled': False})
         return 1
     if not args.live:
         report(ready)
-        return 0
+        return 0 if ready['ready'] else 1
+    if not ready['ready']:
+        report(ready)
+        return 1
     try:
         from .player_identity import read_player_label
         if stop_requested(args.stop_file):

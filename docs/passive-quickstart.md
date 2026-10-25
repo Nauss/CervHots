@@ -29,6 +29,12 @@ Aucun argument équivaut aussi au préflight. Sortie réelle (candidat, sans jeu
 
 `ready` valide les dépendances locales, **pas** une partie, un build actif ou une
 permission current. Dépendances : `hotstate/requirements.txt`.
+Pour préparer **core**, le [contrôle de disponibilité hors ligne](core-readiness.md)
+agrège le préflight core et les chemins identité/sortie/STOP :
+`--check-ready --collection core --player-file <absolu-privé> --output-dir <absolu-neuf> --stop-file <absolu-neuf>`.
+Il ne crée rien et ne donne aucune permission CURRENT ; JSON stable sur stdout,
+résumé sur stderr, codes 0 prêt techniquement / 1 indisponible / 2 invalide.
+Les dépendances replay optionnelles absentes ne bloquent pas core.
 
 ## 2. Démarrer une seule session autorisée
 

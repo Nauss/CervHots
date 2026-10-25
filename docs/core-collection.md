@@ -16,6 +16,13 @@ cd C:/root/dev/AI/CervHots
 C:/root/dev/AI/CervHots/tts/.venv/Scripts/python.exe -B -m cerveau.passive_session --preflight --collection core
 ```
 
+## Contrôler la disponibilité avant de collecter
+
+Utiliser `--check-ready --collection core` avec les trois chemins privés/préparés
+pour agréger ce préflight, l'identité, la sortie neuve et le STOP, sans rien créer.
+JSON stable + résumé français, codes 0/1/2 : [contrat et exemple réel](core-readiness.md).
+**Prêt techniquement n'est jamais une permission ni un contexte privé ACTUEL.**
+
 ## Exemple de lancement, STOP et reprise
 
 **Exemple à préparer, pas une autorisation de lancement.** Après intégration
