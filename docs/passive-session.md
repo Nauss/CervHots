@@ -102,9 +102,24 @@ Références OS : [mutex et abandon](https://learn.microsoft.com/en-us/windows/w
 
 ## Arrêt, limites et changement de partie
 
-Créer le fichier STOP convenu (par exemple `New-Item -ItemType File <STOP>` en
-PowerShell, ou `touch <STOP>` en bash). Ne pas le confondre avec le fichier
-d'identité, events.jsonl, summary.json, status.json ou le verrou.
+Publier le STOP exact enregistré par une **nouvelle** session :
+`python -B -m cerveau.passive_session --request-stop --output-dir <session-absolue> --stop-file <STOP-absolu-exact>`.
+Mode disque seul, sans préflight, identité, journal, garde native ou processus :
+il lit seulement le `control.json` minimisé versionné (16KiB maximum, LF final,
+schéma fermé `passive_stop_control_v1`, sortie et STOP absolus exacts).
+Ce fichier est créé exclusivement, flush/fsync avant identité/backend au démarrage ;
+une initialisation interrompue peut le laisser incomplet et donc refusé.
+Les anciennes sessions sans ce lien sont refusées ; aucune preuve ancienne n'est
+complétée. Le parent STOP doit déjà exister ; liens/reparse/jonctions, fichiers
+non réguliers, chemins incohérents ou STOP dans la sortie/claim sont refusés.
+La publication ne crée que le STOP, exclusivement, sans modifier un fichier
+existant. JSON `published`/`already_present` n'atteste que le signal ; activité
+inconnue, `reader_active=null`, `current_permission=false`, jamais ownership
+authentifié ni preuve de fermeture. Code 0 signal seulement, 1 refus/IO incertaine
+(signal éventuellement déjà créé), 2 arguments invalides. Options live même
+explicites par défaut interdites ; aide par `--help` seul.
+Voir les limites filesystem Windows/POSIX et la reprise dans le
+[parcours court](passive-quickstart.md#4-stop-ciblé-puis-reprise-neuve).
 Le collecteur **ne supprime jamais STOP**, y compris au lancement. Un STOP déjà
 présent termine avant lecture de l'identité, création de sortie ou ouverture du
 backend. Une erreur de stat STOP refuse la continuation, même sous Python3.14.

@@ -116,8 +116,40 @@ conseil, une requalification HUD ou une permission CURRENT, même après code0.
 Dans le second terminal bash, seulement pour la session identifiée ci-dessus :
 
 ```bash
-touch C:/root/dev/AI/CervHots/out/passive-operations/run-001.STOP
+C:/root/dev/AI/CervHots/tts/.venv/Scripts/python.exe -B -m cerveau.passive_session --request-stop --output-dir C:/root/dev/AI/CervHots/out/passive-operations/run-001/session --stop-file C:/root/dev/AI/CervHots/out/passive-operations/run-001.STOP
 ```
+
+Commande Python identique sous Windows/POSIX (adapter uniquement les chemins
+absolus et l'interpréteur). **Les deux chemins sont obligatoires** : la sortie
+existante désigne la session ; le STOP doit être exactement celui enregistré
+dans son nouveau `control.json` versionné. Le mode ne cherche jamais une cible
+dans un journal. Une ancienne session sans ce contrôle est **refusée**, sans
+ajout ni réécriture de ses preuves ; ne pas la relancer pour créer le contrôle.
+
+JSON seul sur stdout, sans chemin ni identité : `event="stop_request"`,
+`state="published"` (création exclusive) ou `"already_present"` (fichier régulier
+déjà présent, contenu et date inchangés), `reason="signal_only"`, résumé français
+`summary_fr`, **`reader_active=null` et `current_permission=false` toujours**.
+Ce n'est jamais « lecteur arrêté ». Refus : `state="refused"`, code 1 ; arguments
+invalides/incompatibles : code 2, stdout vide, message fixe sur stderr.
+Code 1 ne garantit pas l'absence du signal si une IO a échoué après sa création.
+
+Seul `control.json` est lu (16KiB maximum, objet fermé avec LF final) ; ni journal,
+ni identité, ni mémoire, ni recherche de PID/processus, préflight ou garde native.
+Le parent du STOP doit déjà exister ; aucun répertoire n'est créé. Contrôle et
+STOP doivent être réguliers, sans lien dur/symbolique ou reparse/jonction ; leurs
+ancêtres sont ouverts sans suivi de lien. STOP hors sortie et distinct du claim.
+Les chemins locaux sont bornés à 2048 caractères/64 composants ; sous Windows,
+UNC/lecteurs réseau, ADS et alias de périphérique sont refusés. Si une ancienne
+recette utilisait un STOP dans la sortie ou un parent STOP absent, préparer les
+**prochaines** sessions avec des chemins conformes, sans changer les anciennes.
+
+Ce lien disque établit seulement une cohérence locale **non authentifiée**, pas
+l'ownership ou la vie du lecteur. Handles Windows sans partage write/delete,
+création `CREATE_NEW` ; POSIX : descripteurs de répertoires, `O_NOFOLLOW|O_EXCL`.
+Ce n'est pas une garantie contre toutes les courses filesystem (notamment le
+renommage hostile d'ancêtres POSIX). Les deux versions Python sont exercées sous
+Windows ; pas de qualification POSIX réelle revendiquée par ces smokes.
 
 Relire son `--status` et la sortie du premier terminal. Le signal seul ne prouve
 pas sa prise en compte ; pas de délai dur si lecture OS/disque bloquée. STOP est
@@ -162,9 +194,14 @@ Il génère un index HTML/JSON et les rapports indépendants, sans ouvrir de nav
 |---|---|---|---|---|
 | préflight | dépendances prêtes | dépendance/IO refusée | arguments invalides | — |
 | `--status` | fermeture historique enregistrée | absent/inconnu/IO ou résumé invalide | arguments invalides | — |
+| `--request-stop` | signal publié ou déjà présent, sans preuve d'arrêt | contrôle/cible refusé ou IO incertaine | arguments invalides/incompatibles | — |
 | `--live` | STOP, limite durée ou changement de partie | init/IO, erreurs, plafond défaillances, fermeture échouée | arguments invalides | Ctrl+C |
 
-`--live`, `--status`, `--diagnose`, `--preflight` sont mutuellement exclusifs ; `--status`
+`--request-stop` est exclusif de tous les autres modes et n'accepte que
+`--output-dir` et `--stop-file`, une fois chacun, tous deux absolus. Même les
+options live explicitement égales au défaut (`--collection core`, `--interval 5`,
+`--max-seconds 300`) sont refusées avant IO/backend. Pour l'aide, utiliser `--help`
+seul. `--live`, `--status`, `--diagnose`, `--preflight` sont mutuellement exclusifs ; `--status`
 exige un `--output-dir` absolu. Le code 0 de statut n'est **pas** une permission
 ni un contrôle de santé current. Détails du journal : [passive-session.md](passive-session.md).
 Aucun smoke synthétique ne qualifie une nouvelle carte, famille ou valeur native.

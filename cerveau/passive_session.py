@@ -1,4 +1,4 @@
-"""Collecte native passive bornée. Défaut : préflight ; --status/--diagnose/--summarize : disque seul.
+"""Collecte native passive bornée. Défaut : préflight ; --request-stop : signal seul, sans preuve d'arrêt.
 
 Aucun Coach, API, audio, GUI, OCR ou export de lectures brutes.
 """
@@ -407,6 +407,7 @@ def parser(*, safe=False):
     mode = result.add_mutually_exclusive_group()
     mode.add_argument('--live', action='store_true', help='explicit native read opt-in')
     mode.add_argument('--status', action='store_true', help='historical disk status only; no backend or current permission')
+    mode.add_argument('--request-stop', action='store_true', help='publish only the exact registered STOP; no backend or closure proof')
     mode.add_argument('--diagnose', action='store_true', help='offline bounded journal diagnosis; never validates HUD')
     mode.add_argument('--summarize', action='store_true', help='offline player summary of recorded native observations; never CURRENT')
     mode.add_argument('--catalog', action='store_true', help='catalogue local borné des sessions ; historique uniquement')
@@ -420,7 +421,7 @@ def parser(*, safe=False):
     result.add_argument('--visual-reference', type=Path, action='append', default=[],
                         help='explicit existing BMP or stored ZIP; diagnostics only, at most 8')
     result.add_argument('--player-file', type=Path, help='absolute private UTF8 identity file, not a label')
-    result.add_argument('--output-dir', type=Path, help='absolute directory: new for --live, existing for --status')
+    result.add_argument('--output-dir', type=Path, help='absolute directory: new for --live, existing for --status/--request-stop')
     result.add_argument('--stop-file', type=Path, help='absolute cooperative STOP; never removed')
     result.add_argument('--max-seconds', type=bounded(1, 1800), default=300)
     result.add_argument('--interval', type=bounded(1, 300), default=5)
@@ -432,6 +433,23 @@ def parser(*, safe=False):
 def main(argv=None):
     import sys
     raw = list(sys.argv[1:] if argv is None else argv)
+    if any(token.split('=', 1)[0] == '--request-stop' for token in raw):
+        # An exclusive disk-only entry, validated before any other mode/backend.
+        try:
+            allowed = {'--request-stop', '--output-dir', '--stop-file'}
+            options = [token.split('=', 1)[0] for token in raw if token.startswith('-')]
+            if any(option not in allowed or options.count(option) != 1 for option in options):
+                raise ValueError('invalid_arguments')
+            args = parser(safe=True).parse_args(raw)
+            if any(p is None or not p.is_absolute() for p in (args.output_dir, args.stop_file)):
+                raise ValueError('invalid_arguments')
+        except (ValueError, TypeError):
+            print('Arguments --request-stop invalides : sortie et STOP absolus explicites requis.', file=sys.stderr)
+            return 2
+        from .session_control import request_stop
+        row = request_stop(args.output_dir, args.stop_file)
+        print(json.dumps(row, ensure_ascii=True, allow_nan=False), flush=True)
+        return 1 if row['state'] == 'refused' else 0
     if '--check-ready' in raw and '--verify-catalog' not in raw:
         from .session_readiness import invalid_arguments
         try:
@@ -523,6 +541,8 @@ def main(argv=None):
         args.output_dir.parent.mkdir(parents=True, exist_ok=True)
         with session_lock(args.output_dir.parent / 'passive-session.lock'):
             args.output_dir.mkdir(exist_ok=False)
+            from .session_control import record_control
+            record_control(args.output_dir, args.stop_file)
             if stop_requested(args.stop_file):
                 report({'event': 'boundary', 'reason': 'stop_file'})
                 return 0

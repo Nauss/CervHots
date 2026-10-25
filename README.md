@@ -21,7 +21,8 @@ Chaque brique a son propre projet, ses propres dépendances.
   (préflight local, aucune mémoire ouverte). Lancement live explicite, identité
   privée par fichier, arrêt STOP et nouvelle commande par partie :
   [`docs/passive-quickstart.md`](docs/passive-quickstart.md) : parcours court avec
-  chemins absolus, préflight, `--status` historique sans backend, STOP ciblé,
+  chemins absolus, préflight, `--status` historique sans backend, `--request-stop`
+  ciblé lié au contrôle des nouvelles sessions (signal ≠ preuve d'arrêt),
   reprise neuve (parent, sortie et STOP neufs ; ancien claim conservé) et codes
   de sortie. Vérifier la fin de l'ancien collecteur avant reprise. Contrat détaillé :
   [`docs/passive-session.md`](docs/passive-session.md).
