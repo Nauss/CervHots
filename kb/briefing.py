@@ -147,6 +147,18 @@ def next_milestone(m: dict, t_s: int | None) -> str | None:
             f"(fenêtre {win_lo}-{win_hi})")
 
 
+def public_facts(map_name: str | None) -> dict:
+    """Fait statique exact, sans DB, conseil ni prédiction de prochain objectif.
+
+    Le consommateur doit fournir une carte déjà reconnue par sa projection.
+    Une carte absente du catalogue reste inconnue, sans résolution approximative.
+    """
+    with open(TIMINGS, encoding="utf-8") as stream:
+        maps = json.load(stream)["maps"]
+    row = maps.get(map_name, {})
+    return {"source": "kb/data/map_timings.json", "objective": row.get("objective")}
+
+
 def build(map_raw: str, allies: list[str], enemies: list[str],
           t_s: int | None) -> str:
     con = sqlite3.connect(DB)
