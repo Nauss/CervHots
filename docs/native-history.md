@@ -84,6 +84,13 @@ pas. Un hash est une intégrité de ces octets, **pas** leur authentification.
   enregistrés (sauf rejet supplémentaire des deux exports), pas une certification
   de positions/cooldowns/visibilité/battlefield : **aucune valeur** de ces familles
   n'est exportée. Un statut normalized forgé sur disque ne devient pas permission.
+  La sélection optionnelle doit être prouvée par `collection=all` ou `talents`
+  dans l'acquisition correspondante. Si `collection` manque ou est invalide,
+  toutes les familles optionnelles restent `unknown`, sans valeur ni âge exporté,
+  avec `selection_metadata_unknown` ; ni `available_fields`, ni une liste
+  `not_selected` déclarée ne remplacent cette preuve. Carte et niveaux publics
+  peuvent rester lisibles si leurs propres contrôles passent ; le code0 ne
+  certifie pas les familles manquantes.
 
 Toujours : `basis=historical_not_current`, `authenticated=false`,
 `hud_validated=false`, `current_permission=false`, `current_age_s=null`,

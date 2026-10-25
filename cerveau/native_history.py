@@ -22,6 +22,8 @@ def _status(packet):
 
 
 def _packet(row, name, not_selected):
+    if not_selected is None:
+        return {'status': 'unknown'}
     raw = row.get(name)
     packet = raw if type(raw) is dict else {}
     available = row.get('available_fields')
@@ -221,7 +223,9 @@ def summarize(path):
     result['public_levels'] = dict(by_team=levels, original_age_s=None, source='recorded_public_levels')
     from .passive_session import measured_acquisition
     acquisition = next((r for r in rows if r['event'] == 'acquisition' and r['cycle'] == row['cycle']), {})
-    not_selected = measured_acquisition({'collection': acquisition.get('collection')}).get('not_selected', [])
+    not_selected = measured_acquisition({'collection': acquisition.get('collection')}).get('not_selected')
+    if not_selected is None:
+        result['limitations'].append('selection_metadata_unknown')
     packets = {name: _packet(row, name, not_selected) for name in FAMILIES}
     result['families'] = {name: _status(packet) for name,packet in packets.items()}
     result['talents'] = _talents(packets['talents'], row)

@@ -30,7 +30,7 @@ if len(sys.argv) > 2 and sys.argv[1] == '--mutate-case':
     case = sys.argv[2]
     del sys.argv[1:3]
     if case not in ('truncated', 'mixed_session', 'missing_binding', 'foreign_perspective',
-                    'unknown_age', 'not_selected'):
+                    'unknown_age', 'not_selected', 'missing_collection', 'unknown_collection'):
         raise ValueError('unknown synthetic adversary')
 import cerveau.session_diagnosis
 bounded = cerveau.session_diagnosis._bounded
@@ -52,6 +52,13 @@ def mutated_read(path, limit):
         observations[-1]['talents']['age_s'] = None
     elif case == 'not_selected':
         observations[-1]['available_fields'] = ['heroes']
+    elif case in ('missing_collection', 'unknown_collection'):
+        acquisition = next(r for r in records if r.get('event') == 'acquisition'
+                           and r['cycle'] == observations[-1]['cycle'])
+        acquisition.pop('collection', None)
+        if case == 'unknown_collection':
+            acquisition['collection'] = 'unknown'
+        acquisition['not_selected'] = []
     return b''.join((json.dumps(r)+'\n').encode() for r in records)
 
 

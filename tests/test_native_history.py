@@ -192,6 +192,45 @@ class NativeHistoryTests(unittest.TestCase):
             self.assertEqual(result['talents']['status'],'not_selected')
             self.assertIsNone(result['talents']['local'])
 
+    def test_absent_or_unknown_collection_never_proves_optional_family_selection(self):
+        for collection in (None, 'unknown', [], True):
+            with self.subTest(collection=collection):
+                obs=observation()
+                obs['available_fields'].append('objective')
+                obs['objective']=dict(status='normalized',source='native_player',
+                    source_mission_t_s=41.,age_s=.02,read_window_s=.01,
+                    family='dragon',value_status='exported',
+                    value=dict(phase='shrines',
+                        shrines=[dict(id=s,owner=None,state='unknown',contested=None)
+                                 for s in ('sun','moon')],
+                        statue=dict(state='unknown',team=None,channeling=None),
+                        dragon=dict(state='unknown',team=None,remaining_s=None),
+                        start=dict(remaining_s=None,paused=False),
+                        respawn=dict(remaining_s=None,paused=False),
+                        warning=dict(remaining_s=None,paused=False)))
+                records=rows(obs)
+                # Neither available_fields nor an untrusted not_selected=[] can
+                # replace a recognized acquisition collection.
+                records[0]['not_selected']=[]
+                if collection is None:
+                    records[0].pop('collection')
+                else:
+                    records[0]['collection']=collection
+                code,result,text=self.invoke(records)
+                self.assertEqual(code,0)
+                self.assertEqual(result['public_levels']['by_team'],[1,2])
+                self.assertEqual(set(result['families'].values()),{'unknown'})
+                self.assertEqual(result['talents']['status'],'unknown')
+                self.assertIsNone(result['talents']['local'])
+                self.assertIsNone(result['talents']['original_age_s'])
+                self.assertEqual(result['objective']['status'],'unknown')
+                self.assertIsNone(result['objective']['value'])
+                self.assertIsNone(result['objective']['original_age_s'])
+                self.assertNotIn('choix natif',text)
+                self.assertNotIn('sanctuaires',text)
+                self.assertIn('selection_metadata_unknown',result['limitations'])
+                self.assertEqual(result,self.invoke(records)[1])
+
     def test_missing_or_misplaced_closure_is_not_a_complete_session(self):
         records=rows(observation())
         code,result,_=self.invoke(records[:-1])
