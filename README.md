@@ -30,6 +30,11 @@ Chaque brique a son propre projet, ses propres dépendances.
   `python -m cerveau.passive_session --diagnose --journal <absolu-events.jsonl> --report-dir <absolu-neuf>`,
   [`docs/session-diagnosis.md`](docs/session-diagnosis.md). Ni intégrité ZIP/hash,
   ni pixels non noirs ne valent validation HUD ; aucune collecte live nécessaire.
+  **Résumé joueur des observations natives déjà enregistrées** :
+  `python -B -m cerveau.passive_session --summarize --journal <absolu-events.jsonl> --report-dir <absolu-neuf>`,
+  [`docs/native-history.md`](docs/native-history.md) : dernier instant cohérent,
+  niveaux publics, talents locaux qualifiés et objectif public disponible ;
+  inconnus/refus explicites, sans conseil, identité authentifiée ni CURRENT.
   **Préflight de qualité visuelle avant recette** :
   `python -B -m cerveau.capture_quality --help`,
   [`docs/capture-quality.md`](docs/capture-quality.md) : ROI explicite,

@@ -91,6 +91,10 @@ C:/root/dev/AI/CervHots/tts/.venv/Scripts/python.exe -B -m cerveau.passive_sessi
 Sortie **neuve**, JSON + résumé lisible, refus dédupliqués par cycle, inconnues et
 absence de preuve HUD explicites : [session-diagnosis.md](session-diagnosis.md).
 Ce diagnostic historique ne prouve pas la fin du processus et n'autorise pas la reprise.
+Pour les **valeurs joueur déjà enregistrées**, utiliser le mode complémentaire
+`--summarize --journal <absolu-events.jsonl> --report-dir <absolu-neuf>` :
+[native-history.md](native-history.md). Résumé français + JSON minimisé ; pas un
+conseil, une requalification HUD ou une permission CURRENT, même après code0.
 
 Dans le second terminal bash, seulement pour la session identifiée ci-dessus :
 
