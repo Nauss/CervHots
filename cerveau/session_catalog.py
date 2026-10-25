@@ -323,6 +323,8 @@ def run(args):
                 # weakening the parent's no-write/no-delete sharing protection.
                 _write(target/'catalog.json', _dump(result))
                 _write(target/'INDEX.html', render(result))
+                from .catalog_integrity import publish
+                publish(target, result)
     except (OSError, ValueError, TypeError, KeyError, RecursionError):
         print(_dump(dict(event='session_catalog_error', code='output_or_input_refused',
                          current_permission=False)).strip())

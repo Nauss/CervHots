@@ -410,6 +410,7 @@ def parser(*, safe=False):
     mode.add_argument('--diagnose', action='store_true', help='offline bounded journal diagnosis; never validates HUD')
     mode.add_argument('--summarize', action='store_true', help='offline player summary of recorded native observations; never CURRENT')
     mode.add_argument('--catalog', action='store_true', help='catalogue local borné des sessions ; historique uniquement')
+    mode.add_argument('--verify-catalog', action='store_true', help='vérification locale en lecture seule, sans authentification')
     result.add_argument('--sessions-root', type=Path, help='absolute local directory for --catalog only')
     mode.add_argument('--report-html', action='store_true', help='rapport HTML autonome local et JSON minimisé ; historique uniquement')
     mode.add_argument('--preflight', action='store_true', help='local checks only (default)')
@@ -431,7 +432,7 @@ def parser(*, safe=False):
 def main(argv=None):
     import sys
     raw = list(sys.argv[1:] if argv is None else argv)
-    if '--check-ready' in raw:
+    if '--check-ready' in raw and '--verify-catalog' not in raw:
         from .session_readiness import invalid_arguments
         try:
             args = parser(safe=True).parse_args(raw)
@@ -439,6 +440,14 @@ def main(argv=None):
             return invalid_arguments()
     else:
         args = parser().parse_args(raw)
+    if args.verify_catalog:
+        allowed = {'--verify-catalog', '--report-dir', '--help', '-h'}
+        if any(token.startswith('-') and token.split('=', 1)[0] not in allowed for token in raw):
+            parser().error('--verify-catalog accepts only --report-dir')
+        if args.report_dir is None or not args.report_dir.is_absolute():
+            parser().error('--verify-catalog requires absolute --report-dir')
+        from .catalog_integrity import run
+        return run(args)
     if args.sessions_root is not None and not args.catalog:
         parser().error('--sessions-root requires --catalog')
     if args.catalog:

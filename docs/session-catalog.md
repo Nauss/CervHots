@@ -16,7 +16,13 @@ sont également vérifiés, y compris ceux de la sortie. Les alias Windows 8.3
 sont résolus après protection des ancêtres pour vérifier les chevauchements.
 Les autres OS refusent ce mode : aucun repli de parcours moins protégé.
 
-Ouvrir **manuellement** `catalogue-001/INDEX.html`. `catalog.json` est le même
+Vérifier **avant** d’ouvrir manuellement `catalogue-001/INDEX.html` :
+
+```bash
+python -B -m cerveau.passive_session --verify-catalog --report-dir C:/CervHots-private/catalogue-001
+```
+
+Cette commande ne crée ni ne répare aucun fichier. `catalog.json` est le même
 index minimisé. Les liens relatifs visent uniquement
 `session-001/REPORT.html`, etc., générés dans la sortie, jamais les entrées.
 Chaque rapport a aussi son `report.json` : ce sont les **mêmes moteurs et
@@ -79,6 +85,14 @@ interdites pendant leur lecture. Cela peut refuser un journal encore ouvert en
 
 Les rapports individuels sont écrits exclusivement, puis `flush`/`fsync`,
 **avant** `catalog.json`, puis `INDEX.html`, également exclusifs et synchronisés.
+Enfin seulement, `COMPLETE.json` inventorie ces fichiers avec leur taille et
+SHA-256. Son handle Windows exclusif reste marqué pour suppression à la fermeture
+jusqu’au succès de son propre `flush`/`fsync` ; une erreur ou une terminaison du
+processus avant ce point ne publie donc pas de marqueur valide. L’engagement final
+retire cette disposition, sans remplacer un fichier existant. Les fichiers
+inventoriés restent ouverts contre écriture/suppression pendant le calcul et
+l’engagement. Ce mécanisme ne garantit pas la durabilité lors d’une panne
+électrique ni le comportement d’un système de fichiers défaillant.
 Une erreur d’écriture d’un rapport ne devient pas une simple erreur d’entrée et
 interrompt la publication des index. Aucun index ne référence un rapport absent
 à cause d’une écriture échouée. Contrairement au rapport individuel, le catalogue
@@ -99,6 +113,63 @@ n’accepte que `--sessions-root` et `--report-dir` : ni journal unique, référ
 visuelle, identité privée, chemins live, `--collection`, `--max-seconds` ou
 `--interval`. Même leurs valeurs par défaut explicitement fournies sont refusées,
 avec ou sans `=` ; aucune sortie n’est créée pour ces arguments invalides.
+
+## Vérification locale : codes distincts de la génération
+
+`--verify-catalog` est exclusif et n’accepte que `--report-dir`, existant, absolu
+et local sous Windows. Toute option live, même explicitement égale à son défaut,
+est une erreur d’arguments. Aucun constructeur natif, réseau, API, audio ou GUI
+n’est appelé. La sortie JSON est fermée, déterministe et sans nom de fichier
+privé, pseudo, identifiant de session ni chemin d’entrée.
+
+| Code vérification | État | Action |
+|---|---|---|
+| **0** | `complete` | Les fichiers inventoriés correspondent au marqueur local ; consulter séparément les refus/valeurs du catalogue. |
+| **3** | `damaged_or_refused` | Fichier absent/modifié/tronqué, format inconnu, lien, entrée supplémentaire, borne, accès ou concurrence refusé ; ne pas considérer la publication comme vérifiée. |
+| **4** | `unverifiable` | `COMPLETE.json` absent dans un répertoire accessible et protégé, notamment ancien catalogue ; aucune conclusion sur la vérité ou l’admissibilité des données. |
+| **2** | arguments invalides | Corriger la commande ; aucune écriture. |
+
+Un catalogue explicatif achevé avec des refus, une absence ou zéro session peut
+être **complet côté publication** (vérification 0) avec une génération **1**.
+La vérification ne change aucun état historique et n’évalue pas de nouveau les
+valeurs. Ne pas confondre absence du marqueur et données fausses, ni existence du
+marqueur et succès des données. Une sortie interrompue est conservée ; générer
+une **nouvelle** sortie, jamais « réparer » un catalogue ancien avec un marqueur
+construit à la main.
+
+### Format fermé v1 et bornes
+
+`COMPLETE.json` contient exactement `event="session_catalog_completion"`,
+`schema_version=1` et `files`, trié lexicalement (ordre des caractères, sensible à
+la casse), sans doublon. Chaque élément contient exactement `path`, `bytes`
+(entier non booléen) et `sha256` (64 chiffres hexadécimaux minuscules). Seuls
+`INDEX.html`, `catalog.json`, puis les paires
+`session-001/REPORT.html` + `session-001/report.json` jusqu’à `session-064/…`
+sont admissibles. Les deux index sont obligatoires ; des ordinaux sans rapport
+peuvent laisser des trous. Ni chemin arbitraire, traversée, ADS, alias de nom,
+champ supplémentaire ni clé JSON répétée n’est accepté. L’encodage est celui du
+producteur : UTF-8 sans BOM, JSON indenté de deux espaces dans l’ordre des clés
+ci-dessus, avec exactement un saut de ligne LF final. Le vérificateur exige ces
+octets canoniques ; retirer seulement le LF final est déjà une troncature refusée.
+
+Bornes non configurables : **32 Kio** de marqueur, **130 fichiers** inventoriés
+(hors marqueur), **4 Mio par fichier**, **64 Mio au total** (hors marqueur).
+La liste est validée entièrement avant toute ouverture de fichier inventorié.
+L’énumération refuse immédiatement une entrée supplémentaire : aucun parcours
+récursif arbitraire. Tous les ancêtres, dossiers de rapport, marqueur et fichiers
+lus sont protégés par les mêmes handles Windows sans suivi de reparse points ;
+liens physiques multiples et écrivain déjà ouvert sont refusés. Les handles de
+fichiers restent détenus jusqu’au résultat ; une seconde énumération contrôle
+les noms après hachage. Deux vérificateurs peuvent lire simultanément.
+
+Ce résultat est une **constatation locale**, pas un verrou permanent : après
+libération des handles, le propriétaire peut modifier les fichiers. L’espace de
+noms du répertoire entier n’est pas un instantané atomique ; les créations
+d’enfants sont contrôlées à l’énumération, pas interdites pour toujours. Une
+empreinte **n’est ni une signature ni une authentification** : quelqu’un pouvant
+réécrire fichiers et marqueur peut fabriquer une autre cohérence locale. Elle ne
+prouve ni origine, ni CURRENT, ni HUD, ni permission. Les anciens catalogues ne
+sont jamais modifiés pour les rendre artificiellement vérifiables.
 
 Toujours **historique NON authentifié**, jamais CURRENT, HUD, reçu, conseil,
 qualification native nouvelle ou permission de reprise. Inconnu n’est pas zéro.
