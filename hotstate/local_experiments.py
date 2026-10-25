@@ -18,7 +18,6 @@ from .native import NativeReader, NativeUnavailable
 from .native_context import NativeContextProbe
 from .positions import AlliedPositions, _RecordedMemory
 from .match import ActiveMatch
-from .reader import ProcessBackend
 
 PROFILE = json.loads((Path(__file__).parent/'profiles/98348-local-experiments.json').read_text(encoding='utf-8'))
 
@@ -180,6 +179,7 @@ def observe(backend, probe, *, clock=None):
     No JSON receipt is issued and no raw addresses/readsets leave this method.
     Live source support still does NOT authorize consumption by the coach.
     """
+    from .reader import ProcessBackend  # Backend OS réservé à l'expérience explicite.
     clock = time.monotonic if clock is None else clock
     row = {'status':'rejected','source':'native_local_experiment_NOT_PRODUCT',
            'execution_kind':('live_diagnostic_NOT_PRODUCT' if isinstance(backend,ProcessBackend)

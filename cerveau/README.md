@@ -6,6 +6,15 @@ Zéro dépendance supplémentaire pour le cerveau. Utiliser l'interpréteur de
 `tts/.venv` pour générer un WAV ou diffuser dans Mumble. **Le mode par défaut
 écrit du JSON dans la console : il ne charge ni TTS, ni Mumble, ni lecteur mémoire.**
 
+## Démonstration hors ligne, sans clé ni son
+
+`python -B -m cerveau.offline_demo --destination C:/chemin/existant/demo-SYNTHETIC-neuve`
+
+Crée uniquement des données **SYNTHETIC** et exerce diagnostic, résumé, HTML,
+catalogue et vérification locale. Destination neuve obligatoire ; aucun jeu,
+Coach, API, navigateur ou audio. [Guide et limites](../docs/offline-demo.md).
+Une démonstration n'est ni un match ni une permission CURRENT.
+
 ## Configuration
 
 Une seule source de clés : `.env` racine, ignoré par Git. Ne pas recopier le token
