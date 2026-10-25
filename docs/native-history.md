@@ -89,8 +89,12 @@ pas. Un hash est une intégrité de ces octets, **pas** leur authentification.
 - Talents **locaux seulement** : re-sélection par le validateur historique existant,
   build98348/scopes existants, roster/équipe/niveau cohérents, source native et
   âge/fenêtre originaux valides. Héros et niveaux qualifiés, paliers, statut et
-  choix natif sont conservés ; pas de catalogue offert ni catalog_id. Les libellés
-  français restent `null` : choix natif2 ≠ nom de talent inventé, ni touche HUD.
+  choix natif sont conservés ; aucun catalogue offert n'est exporté. La nouvelle
+  trace `selected_details` expose uniquement l'identifiant natif réellement choisi,
+  sa provenance dans le journal et une éventuelle correspondance documentaire
+  épinglée ; voir [talents-collection.md](talents-collection.md#restitution-joueur-traçable-hors-ligne).
+  Les libellés choisis restent `null` sans preuve exacte build/palier/slot/langue :
+  choix natif2 ≠ nom de talent inventé, ni touche HUD.
 - Objectif : seulement la projection publique Dragon déjà livrée ; même sélecteur
   fermé, provenance et inconnus conservés. Volskaya/Braxis/autres valeurs ne sont
   pas ouvertes. Le cas positif objectif de la suite est **synthétique**, pas une

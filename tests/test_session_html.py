@@ -68,7 +68,10 @@ class SessionHtmlTests(unittest.TestCase):
                          'Niveaux publics', 'Dernière observation', 'Non sélectionné',
                          'inconnu', 'Jamais CURRENT', 'Activité actuelle inconnue'):
             self.assertIn(expected, html)
-        for forbidden in ('<script', '<img', '<audio', '<iframe', 'https://', 'C:/', 'session_aaaaaaaaaaaa', 'BarbarianWarPaint'):
+        # Exact selected catalog identity is now an intentional, traced field.
+        self.assertIn('BarbarianWarPaint', html)
+        self.assertIn('documentaire seulement', html)
+        for forbidden in ('<script', '<img', '<audio', '<iframe', 'https://', 'C:/', 'session_aaaaaaaaaaaa'):
             self.assertNotIn(forbidden, html)
         self.assertEqual(set(p.name for p in self.output.iterdir()), {'report.json', 'REPORT.html'})
 

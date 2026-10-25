@@ -352,6 +352,22 @@ def _summarize(rows, integrity):
     packets = {name: _packet(row, name, not_selected) for name in FAMILIES}
     result['families'] = {name: _status(packet) for name,packet in packets.items()}
     result['talents'] = _talents(packets['talents'], row)
+    talents = result['talents']
+    talents['selected_details'] = None
+    if talents['status'] == 'normalized':
+        from .talent_labels import resolve_selected, source_bytes
+        value = packets['talents']['value']
+        # Inspect only this validated local actor, never offered options/allies.
+        actor_index, actor = next((i, p) for i, p in enumerate(value['players'])
+                                  if p['slot'] == value['local_slot'])
+        data = source_bytes()
+        talents['selected_details'] = [dict(
+            tier=t['tier'], required_level=t['required_level'], slot=t['slot'], catalog_id=t['catalog_id'],
+            selection_provenance=dict(journal_sha256=integrity.get('sha256'), sequence=row['sequence'],
+                build=value['build'], hero=actor['hero'], basis='recorded_not_authenticated',
+                key=f'/talents/value/players/{actor_index}/tiers/{i}'),
+            resolution=resolve_selected(value['build'], actor['hero'], t, data))
+            for i, t in enumerate(actor['tiers']) if t['status'] == 'selected']
     result['local_core'] = _core(row, result['talents'])
     result['limitations'].extend(['resource_kind_not_recorded', 'local_binding_requires_recorded_talents'])
     result['objective'] = _objective(packets['objective'], row)
@@ -434,6 +450,15 @@ def readable(result, *, include_timeline=True):
                           else 'non sélectionné' if tier['status'] == 'unselected' else 'inconnu')
                 lines.append(f"  palier {tier['tier']} (niveau requis {tier['required_level']}) : "
                              f"{choice} ; libellé inconnu.")
+        details = talents.get('selected_details')
+        if details is not None:
+            from .talent_labels import detail_text
+            lines.append('Talents locaux choisis — traçabilité et limites :')
+            if not details:
+                lines.append('  Aucun choix enregistré à cet instant ; aucune option offerte utilisée.')
+            for detail in details:
+                lines.extend(detail_text(detail))
+            lines.append('Une correspondance statique ne qualifie jamais la lecture native ni le HUD.')
         objective = result['objective']
         lines.append('Objectif : ' + objective['status'] + ' ; absence/refus ≠ zéro.')
         if objective['value'] is not None:

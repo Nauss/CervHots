@@ -85,6 +85,67 @@ une provenance vérifiée. Ainsi `label: null`, `label_status: "unknown"`,
 Ni KB approximative ni catalogue d'offres ne servent de fallback. C'est une
 limite assumée, pas une nouvelle couverture sémantique.
 
+## Restitution joueur traçable hors ligne
+
+Les commandes existantes `--summarize` / `--report-html` de
+`cerveau.passive_session` ajoutent `talents.selected_details` (ou
+`history.talents.selected_details` dans le HTML/JSON). Aucun nouvel argument,
+aucun téléchargement, aucune lecture de KB globale, aucun changement natif.
+Le [guide historique](native-history.md) décrit chemins et codes de sortie.
+
+- `null` : talents locaux non admissibles ; `[]` : paquet local validé mais
+  **aucun choix** enregistré à cet instant. Les options offertes, les alliés et
+  les inconnus ne deviennent jamais des détails choisis. Pas de reprise du
+  dernier choix connu après reset/refus.
+- Chaque choix a palier/niveau requis/slot/`catalog_id`, et
+  `selection_provenance` : SHA256 des octets du journal, séquence, JSON Pointer
+  dans **cette observation**, build/héros et `basis=recorded_not_authenticated`.
+  Les indices du pointeur localisent l'enregistrement, ils ne résolvent pas le
+  choix par ordre catalogue. Aucun chemin privé, token ou alias n'est publié.
+- `resolution.label=null`, `status=unknown` : **aucun libellé choisi qualifié**
+  n'a été établi. `reason` et `missing_provenance` expliquent le refus.
+  Aucun dictionnaire de traduction approximatif n'est utilisé.
+- Seule source documentaire embarquée : copie byte-exacte de
+  `hero/sonya.json` du cache local heroes-talents, commit
+  `2dcbbf65f81bc3ce85926a5f90b6d8b44d1e4027` (source ancienne, 2023).
+  SHA256 `e0b243fa3aa4b9f1cff2f1e0c1e52e0b4d3ed8834723bf4cd85c24dad1559755`.
+  Licence MIT conservée à côté. Le fichier est figé dans
+  `cerveau/data/talent-labels/` avec `* -text` : CRLF originaux préservés,
+  hash distinct du blob Git LF d'origine. Le produit ne consulte jamais le cache.
+- `source_match`, si présent, exige le héros source `shortName=sonya`, l'identité
+  **exacte** `talentTreeId` et le niveau requis, une occurrence unique et le hash
+  du fichier épinglé. Ni `sort`, ni la position dans la liste, ni `tooltipId`
+  ne servent à faire correspondre un choix. Les JSON Pointers `key` et
+  `identity_key` documentent le nom et l'identité après résolution exacte.
+  Le fichier, son hash et sa version sont affichés. Le libellé source est
+  explicitement `language=en`, `basis=documentary_only_not_chosen_label`.
+- Le catalogue ne porte pas de preuve du **build98348** ni de correspondance
+  **palier/slot natif** : même identité exacte et `sort=2` ne suffisent pas.
+  Il ne contient pas de traduction française. Les trois manques sont conservés
+  (`exact_build`, `native_slot_mapping`, `french_label`). Une source altérée,
+  absente, ambiguë, d'un autre héros ou sans clé exacte n'affiche aucun nom.
+  Les erreurs de source documentaire ne retirent pas le choix natif admissible.
+
+### Exemple réel lot7, sans nouvelle partie
+
+Le vrai journal SHA256
+`db2b054b84ec8434e8b2f6974b5ec524158fbbba836a4c77e77b8273ff4a1440`
+contient en dernière observation (séquence110) Sonya/build98348, palier1,
+niveau requis1, slot2, `BarbarianWarPaint`. Le rapport affiche désormais cette
+sélection et sa clé `/talents/value/players/0/tiers/0`, puis séparément le nom
+**documentaire anglais « War Paint »**, clé source `/talents/1/1/name` avec
+identité `/talents/1/1/talentTreeId`. **Le libellé choisi reste inconnu** :
+la source ancienne ne prouve ni le build ni le palier/slot, et le français est
+absent. Ce rapprochement statique ne qualifie jamais la lecture native/HUD.
+Les autres paliers ne reçoivent aucun nom. Les âges originaux, le périmètre
+local, les allowlists et le budget natif sont inchangés.
+
+Tests : `python -B -m unittest tests.test_talent_labels -v` (synthétique),
+puis suites complètes séquentielles3.12/3.14. Les fixtures synthétiques qui
+repinent une source en mémoire ne sont pas des preuves du jeu. Exercices réels,
+commandes, codes, entrées hachées avant/après et limites :
+`out/weekend/2026-10-24/lot23/verification.json` et `HANDOFF.md`.
+
 ## Rejeu et exemple synthétique
 
 ```text

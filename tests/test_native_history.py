@@ -87,7 +87,10 @@ class NativeHistoryTests(unittest.TestCase):
         self.assertFalse(result['hud_validated'])
         self.assertIsNone(result['current_age_s'])
         serialized=json.dumps(result)+text
-        for forbidden in ('PRIVATE_SECRET','BarbarianWarPaint','session_'+'a'*12,'a'*32,'enemy_xy'):
+        # The exact selected ID is now deliberately exposed ONLY with its trace;
+        # arbitrary labels, identity aliases and unrelated data stay stripped.
+        self.assertEqual(result['talents']['selected_details'][0]['catalog_id'], 'BarbarianWarPaint')
+        for forbidden in ('PRIVATE_SECRET','session_'+'a'*12,'a'*32,'enemy_xy'):
             self.assertNotIn(forbidden,serialized)
         self.assertIn('palier 1',text)
         self.assertIn('choix natif 2',text)
