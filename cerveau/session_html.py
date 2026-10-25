@@ -62,6 +62,9 @@ def render(result):
     history, diagnosis = result['history'], result['diagnosis']
     # All dynamic values are text nodes, never attributes, CSS, URLs or markup.
     summary = _text(native_history.readable(history, include_timeline=False))
+    from .cooldowns_journal import readable as cooldowns_readable
+    cooldowns = history.get('local_cooldowns')
+    cooldowns_text = _text(cooldowns_readable(cooldowns) if cooldowns else 'Valeurs refusées : aucune retenue.')
     timeline = history['core_timeline']
     timeline_summary = _text(native_history.timeline_summary(timeline))
     timeline_rows = ''.join('<tr>'+''.join('<td>'+_text(cell)+'</td>' for cell in cells)+'</tr>'
@@ -89,7 +92,7 @@ def render(result):
              'Journal incomplet : préfixe valide seulement ; totaux de session inconnus.')
     later = {True: 'oui', False: 'non', None: 'inconnu'}[history['later_refusal_or_error']]
     timing_rows = ''
-    for name in ('talents', 'objective'):
+    for name in ('talents', 'objective', 'local_cooldowns'):
         packet = history.get(name) or {}
         values = [packet.get(key) for key in ('source_mission_t_s', 'original_age_s', 'read_window_s')]
         timing_rows += '<tr><th>'+_text(FAMILIES[name])+'</th>'+''.join(
@@ -120,8 +123,9 @@ Inconnue ≠ zéro. Aucun âge actuel calculé, aucun reçu recréé.</p></heade
 <thead><tr><th scope="col">Ordre du journal</th><th scope="col">Observation ou rupture</th><th scope="col">PV / maximum</th><th scope="col">Ressource / maximum</th><th scope="col">Vie</th></tr></thead>
 <tbody>'''+timeline_rows+'''</tbody></table></div></section>
 <section><h2>Sélection et qualification des champs</h2><table>'''+family_rows+'''</table>
-<p class="muted">Ces statuts ne promettent pas une valeur lisible : seuls talents et objectif qualifiés sont exportés.
+<p class="muted">Ces statuts ne promettent pas une valeur lisible : seuls talents, objectif et cooldowns locaux qualifiés sont exportés.
 Non sélectionné ≠ inconnu ≠ refusé ≠ valeur présente. Une sélection absente ou invalide reste inconnue.</p></section>
+<section><h2>Cooldowns et charges locaux enregistrés</h2><pre>'''+cooldowns_text+'''</pre><p class="muted">Valeurs de la même observation uniquement ; slot instance natif ≠ bouton HUD ; cooldown_ready ne signifie pas lançable. Charges inconnues/non applicables ≠ disponibles. Aucun cast, reset, continuité ou changement de corps contrôlé déduit.</p></section>
 <section><h2>Objectif historique exporté</h2>'''+objective_value+'''</section>
 <section><h2>Horloges originales des valeurs optionnelles</h2><table><tr><th>Famille</th><th>Mission source (s)</th><th>Âge original (s)</th><th>Fenêtre de lecture originale (s)</th></tr>'''+timing_rows+'''</table>
 <p class="muted">Ces durées ne sont ni un âge actuel ni une nouvelle permission ; inconnu n’est pas zéro.</p></section>

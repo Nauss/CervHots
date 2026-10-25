@@ -172,7 +172,7 @@ def run_session(source_factory, stopped, emit, *, duration=300, interval=5,
                 comparison = {
                     'session_token': session_token,
                     'map_id': ('DragonShire' if any(state.get(family, {}).get('map_id') == 'DragonShire'
-                                                    for family in ('objective', 'talents')) else
+                                                    for family in ('objective', 'talents', 'local_cooldowns')) else
                                state['meta'].get('map_id') if state['meta'].get('collection') == 'core'
                                and state['meta'].get('map_id') in ('DragonShire', 'Volskaya') else None),
                     'perspective': ('native_player' if state['meta'].get('source') == 'live'

@@ -94,6 +94,8 @@ class Journal:
         summary['objective'] = objective_summary(state)
         from .talents_journal import talents_summary
         summary['talents'] = talents_summary(state)
+        from .cooldowns_journal import cooldowns_summary
+        summary['local_cooldowns'] = cooldowns_summary(state)
         self.record('observation', **summary)
 
     def advice(self, text):

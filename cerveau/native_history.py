@@ -42,6 +42,15 @@ def _provenance(packet, row):
             and 0 <= row['mission_t_s'] - packet['source_mission_t_s'] <= 1)
 
 
+def _selection(acquisition):
+    # Lot8 recorded this explicit selection before MAIN gained core/talents.
+    # Recognition here is historical only: no new live CLI/acquisition mode.
+    if acquisition.get('collection') == 'cooldowns':
+        return [name for name in FAMILIES if name != 'local_cooldowns']
+    from .passive_session import measured_acquisition
+    return measured_acquisition({'collection': acquisition.get('collection')}).get('not_selected')
+
+
 def _roster(row):
     heroes = row.get('heroes')
     if type(heroes) is not list or len(heroes) != 10:
@@ -252,7 +261,6 @@ def _empty_timeline():
 
 def _core_timeline(rows, acquisitions):
     """Reuse the same-event local binding and value guards after WHOLE validation."""
-    from .passive_session import measured_acquisition
     result = _empty_timeline()
     result.update(status='recorded', counts_complete=True, total_observations=0,
                   total_points=0, total_entries=0)
@@ -261,7 +269,7 @@ def _core_timeline(rows, acquisitions):
         if row['event'] == 'observation':
             result['total_observations'] += 1
             acquisition = acquisitions[row['cycle']]
-            selection = measured_acquisition({'collection': acquisition.get('collection')}).get('not_selected')
+            selection = _selection(acquisition)
             core = _core(row, _talents(_packet(row, 'talents', selection), row))
             if (core['health']['status'] == 'recorded'
                     or core['resource']['status'] == 'recorded' or core['alive'] is not None):
@@ -295,7 +303,7 @@ def _summarize(rows, integrity):
     result = dict(event='native_history', schema_version=1, basis='historical_not_current',
         authenticated=False, current_permission=False, hud_validated=False,
         current_age_s=None, journal=integrity, state='refused', reason='no_observation',
-        map=None, instant=None, public_levels=None, talents=None, objective=None,
+        map=None, instant=None, public_levels=None, talents=None, objective=None, local_cooldowns=None,
         local_core=_empty_core('refused'), core_timeline=_empty_timeline(),
         families=None, families_basis='recorded_status_only',
         closure=dict(recorded_reason='unknown', reader_active=None),
@@ -313,7 +321,8 @@ def _summarize(rows, integrity):
         result['reason'] = 'session_closure_unknown'
         return result
     result['closure']['recorded_reason'] = boundaries[0]['reason']
-    if not _consistent(observations):
+    from .cooldowns_journal import consistent as cooldowns_consistent
+    if not _consistent(observations) or not cooldowns_consistent(observations):
         result['reason'] = 'identity_or_time_refused'
         return result
     acquisitions = {r['cycle']: r for r in rows if r['event'] == 'acquisition'}
@@ -344,9 +353,8 @@ def _summarize(rows, integrity):
                  and len(set(team_levels)) == 1)
         levels.append(team_levels[0] if valid else None)
     result['public_levels'] = dict(by_team=levels, original_age_s=None, source='recorded_public_levels')
-    from .passive_session import measured_acquisition
     acquisition = next((r for r in rows if r['event'] == 'acquisition' and r['cycle'] == row['cycle']), {})
-    not_selected = measured_acquisition({'collection': acquisition.get('collection')}).get('not_selected')
+    not_selected = _selection(acquisition)
     if not_selected is None:
         result['limitations'].append('selection_metadata_unknown')
     packets = {name: _packet(row, name, not_selected) for name in FAMILIES}
@@ -371,7 +379,14 @@ def _summarize(rows, integrity):
     result['local_core'] = _core(row, result['talents'])
     result['limitations'].extend(['resource_kind_not_recorded', 'local_binding_requires_recorded_talents'])
     result['objective'] = _objective(packets['objective'], row)
-    for name in ('talents', 'objective'):
+    from .cooldowns_journal import historical
+    cooldown_packet = packets['local_cooldowns']
+    optional_refusals = acquisition.get('optional_refusals', {})
+    if (type(optional_refusals) is dict and 'local_cooldowns' in optional_refusals
+            and _status(cooldown_packet) == 'normalized'):
+        cooldown_packet = {'status': 'rejected'}
+    result['local_cooldowns'] = historical(cooldown_packet, row, integrity.get('sha256'))
+    for name in ('talents', 'objective', 'local_cooldowns'):
         result['families'][name] = result[name]['status']
     return result
 
@@ -459,6 +474,8 @@ def readable(result, *, include_timeline=True):
             for detail in details:
                 lines.extend(detail_text(detail))
             lines.append('Une correspondance statique ne qualifie jamais la lecture native ni le HUD.')
+        from .cooldowns_journal import readable as cooldowns_readable
+        lines.append(cooldowns_readable(result['local_cooldowns']))
         objective = result['objective']
         lines.append('Objectif : ' + objective['status'] + ' ; absence/refus ≠ zéro.')
         if objective['value'] is not None:

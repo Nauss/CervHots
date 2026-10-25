@@ -156,9 +156,11 @@ class CurrentVisibilityTests(unittest.TestCase):
             m.fog(phase); raw['visibility'] = m.visibility().diagnose('Volskaya', hero_ids=m.hero_ids)
             state = snapshot(raw)
             self.assertNotIn('visibility', state)
-            self.assertNotIn('cooldowns', str(state))
+            self.assertNotIn('local_cooldowns', state)
+            self.assertEqual(state['cooldowns_qualification']['status'], 'refused')
+            self.assertIsNone(state['cooldowns_qualification']['age_s'])
             for enemy in state['heroes'][:5]:
-                for field in ('x', 'y', 'health', 'resource', 'visible'): self.assertNotIn(field, enemy)
+                for field in ('x', 'y', 'health', 'resource', 'visible', 'cooldowns'): self.assertNotIn(field, enemy)
 
     def test_static_triangle_refinement_and_neighbor_current_sight(self):
         m = VisibilityMemory(); v = m.visibility(); n = v.native

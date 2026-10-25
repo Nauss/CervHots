@@ -278,8 +278,25 @@ def snapshot(raw: dict, *, at: float | None = None, team: int | None = None,
                 result['battlefield'] = battlefield
             from .cooldowns import project_local_cooldowns
             local_cooldowns = project_local_cooldowns(raw, local, team) if collection != 'core' else None
-            if local_cooldowns is not None and (map_name is None or map_name == meta.get('map')):
-                result['local_cooldowns'] = local_cooldowns
+            cooldown_refusal = (meta.get('optional_refusals', {}).get('local_cooldowns')
+                                if collection != 'core' else None)
+            result['cooldowns_qualification'] = {
+                'status': ('refused' if cooldown_refusal is not None else
+                           'rejected' if 'local_cooldowns' in raw and collection != 'core' else 'not_attempted'),
+                'source': 'native_player', 'source_mission_t_s': None,
+                'age_s': None, 'read_window_s': None}
+            if (local_cooldowns is not None and cooldown_refusal is None
+                    and (map_name is None or map_name == meta.get('map'))):
+                import time
+                from hotstate.acquisition import MAX_AGE_S
+                packet = raw['local_cooldowns']
+                age = time.monotonic() - packet['acquisition']['monotonic_s']
+                if 0 <= age <= MAX_AGE_S:
+                    result['local_cooldowns'] = local_cooldowns
+                    result['cooldowns_qualification'].update(
+                        status='normalized', age_s=age,
+                        source_mission_t_s=packet['mission_t_s'],
+                        read_window_s=packet['read_window_s'])
             result["meta"]["native_status"] = "valide"
             from .talents import project_talents
             talents = project_talents(raw, local, team) if collection != 'core' else None
