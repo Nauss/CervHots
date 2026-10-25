@@ -145,6 +145,11 @@ STOP refuse (code 1), comme toute nouvelle sortie sous un parent déjà revendiq
 Nouvelle invocation = nouveau backend/probe, contexte,
 identifiant de comparaison et sel ; aucun reçu/âge ou binding n'est repris.
 
+Pour retrouver les sessions enregistrées sous un répertoire explicite, sans chercher
+chaque `events.jsonl`, utiliser le [catalogue local borné](session-catalog.md) :
+`--catalog --sessions-root <absolu-existant> --report-dir <absolu-neuf>`.
+Il génère un index HTML/JSON et les rapports indépendants, sans ouvrir de navigateur.
+
 ## Codes de sortie
 
 | Mode | 0 | 1 | 2 | 130 |

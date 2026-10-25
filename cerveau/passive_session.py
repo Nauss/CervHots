@@ -409,6 +409,8 @@ def parser(*, safe=False):
     mode.add_argument('--status', action='store_true', help='historical disk status only; no backend or current permission')
     mode.add_argument('--diagnose', action='store_true', help='offline bounded journal diagnosis; never validates HUD')
     mode.add_argument('--summarize', action='store_true', help='offline player summary of recorded native observations; never CURRENT')
+    mode.add_argument('--catalog', action='store_true', help='catalogue local borné des sessions ; historique uniquement')
+    result.add_argument('--sessions-root', type=Path, help='absolute local directory for --catalog only')
     mode.add_argument('--report-html', action='store_true', help='rapport HTML autonome local et JSON minimisé ; historique uniquement')
     mode.add_argument('--preflight', action='store_true', help='local checks only (default)')
     mode.add_argument('--check-ready', action='store_true', help='controle core hors ligne, jamais une permission CURRENT')
@@ -437,6 +439,15 @@ def main(argv=None):
             return invalid_arguments()
     else:
         args = parser().parse_args(raw)
+    if args.sessions_root is not None and not args.catalog:
+        parser().error('--sessions-root requires --catalog')
+    if args.catalog:
+        if any(p is not None for p in (args.journal, args.player_file, args.output_dir, args.stop_file)) or args.visual_reference:
+            parser().error('--catalog accepts only --sessions-root and --report-dir')
+        if any(p is None or not p.is_absolute() for p in (args.sessions_root, args.report_dir)):
+            parser().error('--catalog requires absolute --sessions-root and --report-dir')
+        from .session_catalog import run
+        return run(args)
     if args.check_ready:
         from .session_readiness import run
         return run(args, preflight)

@@ -2,6 +2,10 @@
 
 Depuis le checkout CervHots, sans lancer le jeu, le Coach ou un navigateur :
 
+Pour retrouver plusieurs sessions sans connaître le chemin de chaque journal,
+voir le [catalogue local borné](session-catalog.md) :
+`--catalog --sessions-root <répertoire-absolu> --report-dir <sortie-neuve-absolue>`.
+
 ```bash
 python -B -m cerveau.passive_session --report-html --journal C:/CervHots-private/session/events.jsonl --report-dir C:/CervHots-private/rapport-001
 ```
