@@ -24,6 +24,12 @@ Chaque brique a son propre projet, ses propres dépendances.
   `python -m cerveau.passive_session --diagnose --journal <absolu-events.jsonl> --report-dir <absolu-neuf>`,
   [`docs/session-diagnosis.md`](docs/session-diagnosis.md). Ni intégrité ZIP/hash,
   ni pixels non noirs ne valent validation HUD ; aucune collecte live nécessaire.
+  **Préflight de qualité visuelle avant recette** :
+  `python -B -m cerveau.capture_quality --help`,
+  [`docs/capture-quality.md`](docs/capture-quality.md) : ROI explicite,
+  intégrité BMP/ZIP et temporalité bornées, noir/masquage quantifié,
+  contrat manuel indépendant. Unknown/refus bloque l'usage de la référence ;
+  aucun verdict ne qualifie automatiquement HUD, calibration ou comparaison.
   Talents réellement choisis : journal allié durable, âge original, libellés
   inconnus sans provenance et inspection historique sans permission live :
   `python -m cerveau.talents_journal --help`,

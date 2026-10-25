@@ -8,6 +8,13 @@ est installé dans un worktree.
 
 ## 1. Préflight sans jeu
 
+**Avant une nouvelle recette**, refuser d'abord les références visuelles
+défectueuses ou inconnues : `python -B -m cerveau.capture_quality --help`.
+Le [préflight visuel hors ligne](capture-quality.md) exige une ROI explicite,
+vérifie BMP/ZIP/temps et signale les zones noires sans OCR. Son verdict reste
+non comparable ; une méthode indépendante de comparaison prête et examinée est
+également requise. Aucun match à relancer pour contourner une référence absente.
+
 ```bash
 cd C:/root/dev/AI/CervHots
 C:/root/dev/AI/CervHots/tts/.venv/Scripts/python.exe -B -m cerveau.passive_session --help
