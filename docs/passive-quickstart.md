@@ -21,11 +21,13 @@ C:/root/dev/AI/CervHots/tts/.venv/Scripts/python.exe -B -m cerveau.passive_sessi
 C:/root/dev/AI/CervHots/tts/.venv/Scripts/python.exe -B -m cerveau.passive_session --preflight
 ```
 
-Aucun argument équivaut aussi au préflight. Sortie réelle (candidat, sans jeu) :
-
-```json
-{"event":"preflight","ready":true,"memory_opened":false,"chat_called":false,"audio_enabled":false,"profiles_checked":18,"single_match":true,"objective_collection":{"value_families":["dragon"],"qualification_only_maps":["Volskaya"],"age_basis":"original_receipt_at_normalization","historical_replay_grants_permission":false}}
-```
+Aucun argument équivaut aussi au préflight **core**, sans ouverture mémoire.
+La sortie JSON expose `collection="core"`, les sept familles `not_selected`,
+`memory_opened=false`, `chat_called=false`, `audio_enabled=false`, les dépendances
+requises et les dépendances replay séparées (optionnelles pour core).
+`objective_collection` décrit les capacités historiques du produit, **pas** des
+lectures sélectionnées ; la sélection effective est `collection`/`not_selected`.
+Les nombres de profils et disponibilités dépendent de l'installation.
 
 `ready` valide les dépendances locales, **pas** une partie, un build actif ou une
 permission current. Dépendances : `hotstate/requirements.txt`.
@@ -38,10 +40,14 @@ Les dépendances replay optionnelles absentes ne bloquent pas core.
 
 ## 2. Démarrer une seule session autorisée
 
-Pour le seul socle natif existant, ajouter explicitement `--collection core` :
-aucun lecteur optionnel n'est tenté, contrairement au défaut `all` ;
-`talents` reste cœur + talents. Voir [cœur seul](core-collection.md) pour la
-commande, les statuts `not_selected`, les limites et le smoke SYNTHETIC.
+**Migration du défaut CLI `all` → `core` :** sans `--collection`, le premier
+lancement collecte uniquement le cœur. `--collection core` reste accepté ;
+`--collection talents` ajoute seulement les talents et **`--collection all`**
+rétablit explicitement le parcours composé antérieur. Ajouter ce dernier aux
+scripts qui avaient besoin des familles optionnelles. Les préflights annoncent
+`collection` et `not_selected`, les acquisitions et la synthèse conservent la
+sélection effective. Une famille non sélectionnée n'est ni refusée ni absente du jeu.
+Voir [cœur seul](core-collection.md) pour la migration API/CLI et les limites.
 
 Exemple de chemins absolus à réserver avant usage : `C:/CervHots-private/player.txt`
 est un fichier privé préparé par le propriétaire, **pas** une identité exemple à

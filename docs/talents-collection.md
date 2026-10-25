@@ -27,8 +27,9 @@ optionnelles ne sont pas appelées : chrono HUD, positions, visibilité,
 objectifs, cooldowns et battlefield. Le chrono de mission du cœur reste lu.
 Le journal `acquisition` conserve `collection: "talents"` et `not_selected` ;
 ces six familles sont non sélectionnées, ni refusées ni implicitement réussies.
-La synthèse conserve aussi le mode. `--collection all`, valeur par défaut,
-garde le parcours composé antérieur. Toute autre valeur est rejetée.
+La synthèse conserve aussi le mode. `--collection all`, opt-in explicite,
+garde le parcours composé antérieur. Le défaut CLI est désormais `core` (sans
+talents) ; `--collection talents` reste inchangé. Toute autre valeur est rejetée.
 
 Ce n'est pas une stratégie de retry, un découpage du WHOLE en plusieurs
 budgets ni une publication partielle après dépassement : un refus du budget

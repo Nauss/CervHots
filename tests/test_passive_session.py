@@ -295,7 +295,8 @@ class PassiveCLITests(unittest.TestCase):
         self.assertTrue(backend.closed)
         self.assertIs(read.call_args.kwargs['project'], snapshot)
         self.assertIs(read.call_args.kwargs['key'], tactical_key)
-        self.assertEqual(read.call_args.args[1], {'triggers': {}})
+        self.assertEqual(source.collection, 'all')  # Public API default stays composed.
+        self.assertEqual(read.call_args.args[1], {'triggers': {}, 'collection': 'all'})
 
     def test_process_constructor_closes_handle_when_module_initialization_fails(self):
         from hotstate.reader import ProcessBackend

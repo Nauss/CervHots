@@ -294,9 +294,9 @@ class NativeSource:
         from hotstate.live import read_current
         from .state import snapshot
         from .runner import tactical_key
-        mapping = {'triggers': {}}
-        if self.collection != 'all':
-            mapping['collection'] = self.collection
+        # Include the known selection even for the legacy API default all so
+        # acquisition logs cannot confuse selected families with unknown selection.
+        mapping = {'triggers': {}, 'collection': self.collection}
         return read_current(self.backend, mapping, context=self.probe,
                             project=snapshot, key=tactical_key, observe=observe)
 
@@ -424,8 +424,8 @@ def parser(*, safe=False):
     result.add_argument('--stop-file', type=Path, help='absolute cooperative STOP; never removed')
     result.add_argument('--max-seconds', type=bounded(1, 1800), default=300)
     result.add_argument('--interval', type=bounded(1, 300), default=5)
-    result.add_argument('--collection', choices=('all', 'talents', 'core'), default='all',
-                        help='core: native core only; talents: core + talents; unselected optional families never attempted')
+    result.add_argument('--collection', choices=('all', 'talents', 'core'), default='core',
+                        help='default core: native core only; talents: core + talents; all: all existing families (explicit opt-in); unselected optional families never attempted')
     return result
 
 
@@ -502,6 +502,9 @@ def main(argv=None):
             report({'event': 'boundary', 'reason': 'stop_file'})
             return 0
         ready = preflight(core=True) if args.collection == 'core' else preflight()
+        # CLI selection only: public preflight()/NativeSource defaults stay compatible.
+        ready = dict(ready, collection=args.collection,
+                     not_selected=measured_acquisition({'collection': args.collection})['not_selected'])
     except Exception:
         report({'event': 'preflight', 'ready': False, 'code': 'dependency_or_stop_io',
                 'memory_opened': False, 'chat_called': False, 'audio_enabled': False})

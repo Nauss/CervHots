@@ -190,9 +190,9 @@ class TalentsCollectionModeTests(unittest.TestCase):
 
 
 class TalentsCollectionCLITests(unittest.TestCase):
-    def test_explicit_cli_mode_is_parsed_and_default_remains_all(self):
+    def test_explicit_talents_cli_mode_is_preserved_with_core_default(self):
         from cerveau.passive_session import parser
-        self.assertEqual(getattr(parser().parse_args([]), 'collection', None), 'all')
+        self.assertEqual(getattr(parser().parse_args([]), 'collection', None), 'core')
         self.assertEqual(parser().parse_args(['--collection', 'talents']).collection, 'talents')
 
     def test_talent_only_observation_binds_native_map_without_objective_acquisition(self):

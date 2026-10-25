@@ -29,6 +29,22 @@ class CoreCollectionTests(unittest.TestCase):
             {'triggers': {}, 'collection': collection}, context=self.fixture.memory.probe(),
             project=project, key=tactical_key, observe=observe)
 
+    def test_explicit_all_preserves_legacy_implicit_physical_trace_and_state(self):
+        trace = []
+        original = self.fixture.memory.read_memory
+        def physical(address, size):
+            data = original(address, size)
+            trace.append((address, size, data))
+            return data
+        with patch.object(self.fixture.memory, 'read_memory', physical):
+            legacy = live.read_current(FixtureProcess(self.fixture.memory), {'triggers': {}},
+                context=self.fixture.memory.probe(), project=snapshot, key=tactical_key)
+            legacy_trace = trace[:]
+            trace.clear()
+            explicit = self.take('all')
+        self.assertEqual(trace, legacy_trace)
+        self.assertEqual(explicit, legacy)
+
     def test_core_normalizes_without_entering_any_optional_reader(self):
         from cerveau.passive_session import measured_acquisition
         rows = []
@@ -367,10 +383,11 @@ class CoreCollectionTests(unittest.TestCase):
             with self.assertRaisesRegex(AssertionError, 'legacy normalization'):
                 snapshot(raw)
 
-    def test_cli_accepts_only_explicit_core_and_keeps_all_default(self):
+    def test_cli_defaults_to_core_and_preserves_explicit_opt_ins(self):
         from cerveau.passive_session import parser, measured_acquisition
-        self.assertEqual(parser().parse_args(['--collection', 'core']).collection, 'core')
-        self.assertEqual(parser().parse_args([]).collection, 'all')
+        self.assertEqual(parser().parse_args([]).collection, 'core')
+        for collection in ('core', 'all', 'talents'):
+            self.assertEqual(parser().parse_args(['--collection', collection]).collection, collection)
         for value in (None, 'typo', True, [], {}):
             self.assertNotIn('not_selected', measured_acquisition({'collection': value}))
         self.assertNotIn('not_selected', measured_acquisition({}))

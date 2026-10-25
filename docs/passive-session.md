@@ -4,8 +4,14 @@ Commande produit : `python -m cerveau.passive_session --help`.
 Parcours court démarrer/vérifier/STOP/reprendre :
 [passive-quickstart.md](passive-quickstart.md).
 **Sans option, ou avec `--preflight`, le préflight reste local : aucune ouverture mémoire, découverte
-processus, requête réseau, configuration Coach, API ou audio.** Il importe les
-vrais consommateurs, vérifie les profils JSON, le protocole installé et mpyq.
+processus, requête réseau, configuration Coach, API ou audio.** Le défaut CLI est
+maintenant **core** : découverte des modules sans charger les backends, profils
+JSON et données produit ; `mpyq`/`heroprotocol` sont optionnels pour core.
+`--collection all` rétablit explicitement le parcours composé antérieur ;
+`--collection talents` reste cœur + talents. Ces deux opt-in conservent leur
+préflight historique (consommateurs/protocole/mpyq). Les API Python
+`NativeSource(player)` et `preflight()` gardent leurs défauts historiques ;
+la migration porte sur la CLI, pas sur les appels Python existants.
 Il ne qualifie ni le build du jeu actif, ni le cache de cartes, ni une recette.
 Aucune KB SQLite ni `.env` Coach n'est nécessaire.
 

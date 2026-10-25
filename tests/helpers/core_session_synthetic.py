@@ -19,7 +19,7 @@ from cerveau import passive_session as product
 
 
 @contextmanager
-def mapped_core_source(fixture, *, stop_after_read=None):
+def mapped_core_source(fixture, *, stop_after_read=None, guard_optional=True):
     """Retains the real NativeSource guard/lifecycle; transport is SYNTHETIC."""
     original_source = product.NativeSource
     opened = []
@@ -49,7 +49,7 @@ def mapped_core_source(fixture, *, stop_after_read=None):
         stack.enter_context(patch('socket.socket', side_effect=AssertionError('network forbidden')))
         stack.enter_context(patch('cerveau.brain.Coach', side_effect=AssertionError('Coach forbidden')))
         stack.enter_context(patch.object(product, 'NativeSource', factory))
-        for name in READERS:
+        for name in READERS if guard_optional else ():
             stack.enter_context(patch(name, side_effect=AssertionError('unselected IO SYNTHETIC')))
         yield opened
 

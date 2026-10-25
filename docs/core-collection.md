@@ -7,9 +7,18 @@ Talents, objectifs, positions, visibilité, cooldowns/charges, camps/structures 
 leurs diagnostics optionnels ne sont ni acquis ni projetés par le normaliseur.
 Aucun nouveau champ, carte ou périmètre de visibilité n'est qualifié.
 
-Le défaut reste `all`. `talents` conserve cœur + talents. Il faut écrire `core`
-explicitement ; une sélection inconnue est refusée, une sélection absente ne
-signifie jamais cœur seul. Le préflight ne cherche ni n'ouvre le jeu :
+Le défaut **CLI** est désormais `core` : omettre `--collection` équivaut à
+`--collection core`, y compris pour le préflight et `--check-ready`.
+Migration du défaut `all` → `core` : les scripts qui veulent conserver le parcours
+composé doivent ajouter **`--collection all`** à chaque invocation ;
+`--collection talents` conserve cœur + talents, sans les autres familles.
+Les seules sélections sont `core`, `talents`, `all` ; une sélection inconnue est refusée.
+Les API Python `NativeSource(player)` et `preflight()` gardent leurs défauts
+historiques (`all`, vérifications replay) : seul le parcours CLI devient minimal.
+Les acquisitions source déclarent maintenant aussi explicitement `all` quand
+c'est la sélection effective ; cela ne modifie ni lectures ni normalisation.
+Aucun ancien journal sans sélection n'est réinterprété comme core ou all.
+Le préflight ne cherche ni n'ouvre le jeu :
 
 ```bash
 cd C:/root/dev/AI/CervHots
@@ -38,7 +47,7 @@ C:/root/dev/AI/CervHots/tts/.venv/Scripts/python.exe -B -m cerveau.passive_sessi
 Dans un autre terminal Bash, STOP ciblé (ne jamais effacer un ancien STOP) :
 
 ```bash
-: > C:/root/dev/AI/CervHots/out/core-run-001.STOP
+touch C:/root/dev/AI/CervHots/out/core-run-001.STOP
 ```
 
 Attendre le retour terminal et vérifier indépendamment la fermeture du collecteur.

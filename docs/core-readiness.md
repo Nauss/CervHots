@@ -39,15 +39,17 @@ pas une preuve live, une référence HUD ou une identité réelle.
 
 Le mode réutilise `passive_session.preflight(core=True)` ; il n'y a pas de second
 préflight. Le préflight core est également sélectionné par
-`--preflight --collection core` et avant une collecte explicitement core :
+`--preflight` (sans sélection, donc core), `--preflight --collection core`
+et avant une collecte core, explicite ou par omission :
 
 - Windows, Python >= 3.12, pointeurs 64 bits ; découverte des modules requis
   (`ctypes`, modules produit, `grocoapi` déjà importé par le paquet historique) ;
 - parsing JSON des profils existants, présence des trois profils natifs requis
   et dictionnaire d'identifiants de héros non vide ;
 - découverte séparée de `mpyq`/`heroprotocol`, **optionnels pour core** : leur
-  absence/indisponibilité de découverte ne bloque pas ce mode. Le préflight par
-  défaut `all` conserve ses vérifications replay historiques.
+  absence/indisponibilité de découverte ne bloque pas ce mode. L'opt-in CLI
+  `--collection all` (ou `talents`) et l'API Python `preflight()` sans argument
+  conservent les vérifications replay historiques ; le défaut CLI est core.
 
 La découverte de module n'exécute **pas** le backend ni toutes ses branches et
 ne garantit pas qu'une installation corrompue fonctionnera. Le parsing des
