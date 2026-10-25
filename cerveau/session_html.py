@@ -20,7 +20,7 @@ FAMILIES = {'gameplay_clock': 'Horloge de mission', 'positions': 'Positions',
 
 
 def build(path):
-    # One bounded parser, two unchanged semantic projections of the SAME bytes.
+    # One bounded parser, two semantic projections of the SAME bytes.
     records, integrity = session_diagnosis._journal(path)
     history = native_history._summarize(records, integrity)
     diagnosis = session_diagnosis._diagnose(records, integrity)
@@ -61,7 +61,11 @@ def _objective_value(value):
 def render(result):
     history, diagnosis = result['history'], result['diagnosis']
     # All dynamic values are text nodes, never attributes, CSS, URLs or markup.
-    summary = _text(native_history.readable(history))
+    summary = _text(native_history.readable(history, include_timeline=False))
+    timeline = history['core_timeline']
+    timeline_summary = _text(native_history.timeline_summary(timeline))
+    timeline_rows = ''.join('<tr>'+''.join('<td>'+_text(cell)+'</td>' for cell in cells)+'</tr>'
+                            for cells in native_history.timeline_rows(timeline))
     families = history['families'] or {name: 'unknown' for name in FAMILIES}
     family_rows = ''.join('<tr><th>'+_text(label)+'</th><td>'+_text(STATUS.get(families[name], 'Inconnu'))
                           +'</td></tr>' for name, label in FAMILIES.items())
@@ -110,6 +114,11 @@ Inconnue ≠ zéro. Aucun âge actuel calculé, aucun reçu recréé.</p></heade
 <section><h2>Dernière observation et cœur enregistré</h2><pre>'''+summary+'''</pre>
 <p>Refus ou erreur après cette observation : '''+_text(later)+'''.</p>
 <p class="muted">Santé et ressource locales : uniquement les paires enregistrées et validées du même événement, avec liaison locale explicite. Type de ressource inconnu, pas nécessairement du mana. Aucun état natif supplémentaire n’est reconstitué.</p></section>
+<section><h2>Chronologie historique bornée</h2><p>'''+timeline_summary+'''</p>
+<p class="muted">Ordre ordinal des enregistrements (1 = première ligne du journal), aucune durée ni horloge de jeu déduite. Chaque ligne est indépendante : aucune interpolation ni continuité à travers une rupture, une valeur invalide ou une frontière. Âge du cœur inconnu ; ressource générique, type inconnu.</p>
+<div style="overflow-x:auto"><table><caption>Chronologie du cœur local — historique non authentifié</caption>
+<thead><tr><th scope="col">Ordre du journal</th><th scope="col">Observation ou rupture</th><th scope="col">PV / maximum</th><th scope="col">Ressource / maximum</th><th scope="col">Vie</th></tr></thead>
+<tbody>'''+timeline_rows+'''</tbody></table></div></section>
 <section><h2>Sélection et qualification des champs</h2><table>'''+family_rows+'''</table>
 <p class="muted">Ces statuts ne promettent pas une valeur lisible : seuls talents et objectif qualifiés sont exportés.
 Non sélectionné ≠ inconnu ≠ refusé ≠ valeur présente. Une sélection absente ou invalide reste inconnue.</p></section>

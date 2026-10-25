@@ -67,8 +67,14 @@ manquante ⇒ valeurs nulles/refus, jamais association au plus proche. Les token
 aliases, noms/comptes/chat, chemins source, coordonnées et entrées brutes ne sortent
 pas. Un hash est une intégrité de ces octets, **pas** leur authentification.
 
-- Un seul instant, sans remplir depuis un ancien succès : mission/UTC/elapsed,
+- Le dernier instant, sans remplir depuis un ancien succès : mission/UTC/elapsed,
   séquence/cycle et bracket host sont les **temps enregistrés**, pas un nouveau reçu.
+  En complément, `core_timeline` conserve une chronologie bornée des observations
+  locales et des ruptures : ordre ordinal du journal, aucune durée fabriquée,
+  128 entrées maximum, comptage complet avant limitation d'affichage. Chaque
+  observation exige sa propre liaison locale et ses propres valeurs ; un refus
+  global même tardif retire toute la série. Voir le
+  [contrat et les limites](session-html.md#chronologie-historique-bornée).
 - Carte : identifiant reconnu déjà enregistré, jamais déchiffré depuis un alias.
 - Niveaux publics : uniquement si dix slots distincts, cinq par équipe et cinq
   niveaux valides identiques dans chaque équipe. Une équipe absente/incohérente

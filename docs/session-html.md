@@ -47,6 +47,48 @@ Extrait minimisé d'une sortie sur corpus **réel historique** lot7, mission 97.
 
 Gain : PV et ressource auparavant présents sur disque mais non affichés, désormais lisibles sans réacquisition. Inconnues conservées : type de ressource/mana, âge du cœur et âge actuel. Le journal legacy lot1 reste refusé pour liaison identité/temps insuffisante : pas de récupération opportuniste des PV. Les fixtures de test portent explicitement `SYNTHETIC` ; elles ne sont pas des mesures natives.
 
+## Chronologie historique bornée
+
+Le tableau « Chronologie du cœur local » et `history.core_timeline` montrent les
+observations du cœur local, pas seulement la dernière. La CLI `--summarize` expose
+la même projection et les mêmes cellules en texte. Les gardes historiques globales
+(clôture unique finale, intégrité, identités et temps, acquisitions) restent un
+prérequis : un refus même tardif retire **tous** les points, sans sauver un préfixe.
+Une divergence locale enregistrée reste refusée même si elle déséquilibre le roster.
+
+- `order_basis=journal_ordinal_not_time` : `journal_ordinal` est la position 1-based
+  de l'enregistrement dans le journal complet, pas une seconde ni un cycle de jeu.
+  Aucun âge, delta, DPS, causalité ou conseil n'est calculé ; aucune courbe ni
+  interpolation ne relie les lignes. Les champs temporels du dernier instant
+  restent séparés de cette chronologie.
+- Chaque observation repasse par **les mêmes** `_packet`, `_talents` et `_core` que
+  le dernier instant, avec sa propre acquisition/sélection/liaison. Les valeurs
+  absentes ou invalides et les observations sans liaison restent visibles sans
+  valeurs de remplacement. Aucun souvenir d'identité ne fournit de valeur locale.
+- Les refus, erreurs, erreurs de source, acquisitions explicitement refusées/en
+  erreur et la frontière finale occupent leurs propres lignes, sans valeurs.
+  Deux marqueurs du même cycle restent deux événements, pas deux points locaux.
+- Maximum **128 entrées affichées**, dernières entrées dans l'ordre du journal,
+  ruptures et frontière comprises : donc **au plus 128 points**, généralement moins.
+  `total_entries`, `total_observations`, `total_points` comptent tout le flux
+  admissible, même ce qui n'est plus affiché. Un point est une observation liée
+  ayant au moins une paire PV/ressource valide ou un booléen vivant connu.
+  `displayed_points`, `omitted_entries` et `truncated` rendent la limite explicite.
+  La validation et le comptage ne s'arrêtent jamais au plafond d'affichage.
+- En refus : `status=refused`, entrées vides, `counts_complete=false`, totaux et
+  troncature inconnus (`null`), pas de zéro qui prétendrait compter le flux entier.
+  Les limites du parseur (4 Mio, 10 000 lignes, 64 Kio/ligne) restent inchangées.
+
+Le corpus réel lot7 exercé dans lot22 contient **46 observations locales admissibles**,
+9 acquisitions refusées et leurs 9 événements de refus, puis une frontière :
+65 entrées affichées. Les 46 valeurs sont **constantes** : PV
+2548.095703125 / 2548.095703125, ressource 0 / 100, vivant. Il ne démontre donc
+aucune variation réelle, ni durée ou stabilité entre lectures. Le gain est de
+conserver ces observations et ruptures auparavant perdues par l'affichage du seul
+dernier instant. Les variations et les limites d'affichage sont exercées séparément
+sur des séries **SYNTHETIC**, dont 350 observations. Historique non authentifié,
+aucun reçu/live/HUD.
+
 ## Sécurité et refus
 
 Une seule lecture via le parseur borné existant (4 Mio, 64 Kio par ligne, 10 000 enregistrements) alimente les **deux moteurs historiques existants**. Les données non exportées par ces moteurs ne sont pas relues. Pas de chemin, pseudo, token ou identifiant de session brut dans le rapport ; toutes les valeurs HTML sont échappées. CSS embarqué, politique CSP restrictive, aucun script/image/audio/lien externe.

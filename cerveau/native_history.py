@@ -1,10 +1,12 @@
 """Player view of recorded native observations. No receipt or current permission.
 
-The technical collection diagnosis remains in session_diagnosis. This view selects
-one recorded instant, never fills holes from another observation or a replay.
+The technical collection diagnosis remains in session_diagnosis. This view keeps
+one recorded instant plus a bounded core timeline, never filling holes from
+another observation or a replay.
 """
 from __future__ import annotations
 
+from collections import deque
 import datetime as dt
 import json
 import re
@@ -223,7 +225,63 @@ def _consistent(observations):
                 local = roster[slot]
                 if local['team'] != team or ('hero' in local and local['hero'] != alias):
                     return False
+            else:
+                # A divergent recorded local row can itself invalidate roster
+                # balance. Do not hide that contradiction behind roster=None.
+                heroes = row.get('heroes')
+                if type(heroes) is list:
+                    for local in heroes:
+                        if (type(local) is dict and type(local.get('slot')) is int
+                                and local['slot'] == slot
+                                and (('team' in local and (type(local['team']) is not int
+                                      or local['team'] != team))
+                                     or ('hero' in local and local['hero'] != alias))):
+                            return False
     return True
+
+
+TIMELINE_ENTRY_LIMIT = 128
+
+
+def _empty_timeline():
+    return dict(status='refused', order_basis='journal_ordinal_not_time',
+                counts_complete=False, total_observations=None, total_points=None,
+                entry_limit=TIMELINE_ENTRY_LIMIT, total_entries=None, displayed_points=0,
+                omitted_entries=None, truncated=None, entries=[])
+
+
+def _core_timeline(rows, acquisitions):
+    """Reuse the same-event local binding and value guards after WHOLE validation."""
+    from .passive_session import measured_acquisition
+    result = _empty_timeline()
+    result.update(status='recorded', counts_complete=True, total_observations=0,
+                  total_points=0, total_entries=0)
+    entries = deque(maxlen=TIMELINE_ENTRY_LIMIT)
+    for ordinal, row in enumerate(rows, 1):
+        if row['event'] == 'observation':
+            result['total_observations'] += 1
+            acquisition = acquisitions[row['cycle']]
+            selection = measured_acquisition({'collection': acquisition.get('collection')}).get('not_selected')
+            core = _core(row, _talents(_packet(row, 'talents', selection), row))
+            if (core['health']['status'] == 'recorded'
+                    or core['resource']['status'] == 'recorded' or core['alive'] is not None):
+                result['total_points'] += 1
+            entries.append(dict(journal_ordinal=ordinal, kind='observation', core=core))
+            result['total_entries'] += 1
+        elif row['event'] in ('refusal', 'error', 'source_error', 'boundary'):
+            entries.append(dict(journal_ordinal=ordinal, kind=row['event'], core=None))
+            result['total_entries'] += 1
+        elif row['event'] == 'acquisition' and row.get('outcome') in ('refused', 'error'):
+            entries.append(dict(journal_ordinal=ordinal, kind='acquisition_refused', core=None))
+            result['total_entries'] += 1
+    result['entries'] = list(entries)
+    result['omitted_entries'] = result['total_entries'] - len(entries)
+    result['truncated'] = result['omitted_entries'] > 0
+    result['displayed_points'] = sum(
+        e['core'] is not None and (e['core']['health']['status'] == 'recorded'
+            or e['core']['resource']['status'] == 'recorded' or e['core']['alive'] is not None)
+        for e in entries)
+    return result
 
 
 def summarize(path):
@@ -238,7 +296,7 @@ def _summarize(rows, integrity):
         authenticated=False, current_permission=False, hud_validated=False,
         current_age_s=None, journal=integrity, state='refused', reason='no_observation',
         map=None, instant=None, public_levels=None, talents=None, objective=None,
-        local_core=_empty_core('refused'),
+        local_core=_empty_core('refused'), core_timeline=_empty_timeline(),
         families=None, families_basis='recorded_status_only',
         closure=dict(recorded_reason='unknown', reader_active=None),
         identity='not_established', later_refusal_or_error=None,
@@ -265,6 +323,7 @@ def _summarize(rows, integrity):
            for r in observations):
         result['reason'] = 'acquisition_pair_refused'
         return result
+    result['core_timeline'] = _core_timeline(rows, acquisitions)
     row = observations[-1]
     result['identity'] = 'consistent_recorded_binding_not_authenticated'
     result['later_refusal_or_error'] = any(r['sequence'] > row['sequence']
@@ -301,7 +360,42 @@ def _summarize(rows, integrity):
     return result
 
 
-def readable(result):
+def timeline_summary(timeline):
+    if timeline['status'] != 'recorded':
+        return 'Chronologie refusée : aucune valeur retenue ; totaux admissibles inconnus.'
+    return (f"Points admissibles sur le flux complet : {timeline['total_points']} ; "
+            f"observations : {timeline['total_observations']}. "
+            f"Points affichés : {timeline['displayed_points']} ; "
+            f"plafond : {timeline['entry_limit']} entrées (ruptures comprises). "
+            f"Entrées antérieures omises : {timeline['omitted_entries']}.")
+
+
+def timeline_rows(timeline):
+    """Plain text cells from the minimized projection, shared by text and HTML."""
+    labels = dict(recorded='enregistré', absent='absent', invalid='invalide',
+                  unknown='inconnu', refused='refusé')
+    kinds = dict(observation='Observation', refusal='Refus — rupture',
+                 error='Erreur — rupture', source_error='Erreur de source — rupture',
+                 acquisition_refused='Acquisition refusée — rupture', boundary='Frontière de clôture')
+    for entry in timeline['entries']:
+        core = entry['core']
+        cells = [str(entry['journal_ordinal']), kinds.get(entry['kind'], 'Rupture inconnue')]
+        if core is None:
+            yield cells + ['—', '—', '—']
+            continue
+        if core['status'] != 'recorded':
+            cells[1] += ' — liaison locale inconnue/invalide (rupture)'
+        elif any(core[k]['status'] != 'recorded' for k in ('health', 'resource')):
+            cells[1] += ' — paire absente/invalide (pas de continuité supposée)'
+        for key in ('health', 'resource'):
+            pair = core[key]
+            cells.append(f"{pair['value']:.15g} / {pair['maximum']:.15g}"
+                         if pair['status'] == 'recorded' else labels.get(pair['status'], 'inconnu'))
+        cells.append({True: 'vivant', False: 'mort', None: 'inconnu'}[core['alive']])
+        yield cells
+
+
+def readable(result, *, include_timeline=True):
     lines = ['Observations natives enregistrées — historique NON authentifié.',
              'Jamais CURRENT, ni validation HUD ; aucun conseil ni reçu recréé.',
              'Âge actuel inconnu ; âge du cœur non enregistré (pas zéro).',
@@ -346,6 +440,11 @@ def readable(result):
             phases = dict(waiting='attente', warning='avertissement', shrines='sanctuaires',
                           dragon='dragon', unknown='inconnue')
             lines.append('  Phase publique Dragon : ' + phases[objective['value']['phase']] + '.')
+    if include_timeline:
+        timeline = result['core_timeline']
+        lines.extend(['Chronologie du cœur local — ordre ordinal du journal, aucune durée.',
+                      timeline_summary(timeline)])
+        lines.extend(' | '.join(cells) for cells in timeline_rows(timeline))
     return '\n'.join(lines) + '\n'
 
 
