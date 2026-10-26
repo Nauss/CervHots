@@ -1,0 +1,72 @@
+{
+  "schema": "replay-hero-aliases-fr-v1",
+  "scope": "Historical exact labels only; not current/build certification",
+  "source": {
+    "repository": "HeroesToolChest/heroes-data",
+    "commit": "2a2207d08bdb2bac8038e8bc0e10c13a952ee043",
+    "build": "2.55.16.97039",
+    "locale": "frfr",
+    "license": "MIT",
+    "files": {
+      "gamestrings_97039_frfr.json": {
+        "path": "heroesdata/2.55.16.97039/gamestrings/gamestrings_97039_frfr.json",
+        "sha256": "bf557278e680b7245a5d680327943ff9e9991956a39feb5724a7ce23ce355da7",
+        "git_blob": "635a1e0e8d169f86ede27c14ce578bb8f9436f79",
+        "bytes": 4157615
+      },
+      "herodata_97039_localized.json": {
+        "path": "heroesdata/2.55.16.97039/data/herodata_97039_localized.json",
+        "sha256": "6c9d087468b5f708026972d8e7ebcda66bba9103706a17e89edf16414e4061f1",
+        "git_blob": "b43390aea9ea21d030f973ff227f1d15377db91b",
+        "bytes": 1178882
+      },
+      "LICENSE": {
+        "path": "LICENSE",
+        "sha256": "f3d3b90c6c60be0fd90681ddc54219336039f11a457f25c3c5480a584cab682b",
+        "git_blob": "3169ec329093cf1e67324a75fe75fa3867b4fd38",
+        "bytes": 1075
+      }
+    },
+    "fixture": "tests/fixtures/replay-heroes/frfr/excerpt.json",
+    "fixture_sha256": "16923a99f78afdaa8e1ca5755f494fc14e7ff9a61298725f09319f0c0d7605eb",
+    "extraction": "Six exact gamestrings.unit.name keys joined to same herodata key and hyperlinkId; values copied without normalization. Originals frozen outside repo in lot36/sources."
+  },
+  "aliases": [
+    {
+      "alias": "Anub’arak",
+      "hero": "Anubarak",
+      "alias_pointer": "/gamestrings/unit/name/Anubarak",
+      "identity_pointer": "/Anubarak/hyperlinkId"
+    },
+    {
+      "alias": "Malthaël",
+      "hero": "Malthael",
+      "alias_pointer": "/gamestrings/unit/name/Malthael",
+      "identity_pointer": "/Malthael/hyperlinkId"
+    },
+    {
+      "alias": "Balafré",
+      "hero": "Stitches",
+      "alias_pointer": "/gamestrings/unit/name/Stitches",
+      "identity_pointer": "/Stitches/hyperlinkId"
+    },
+    {
+      "alias": "Bourbie",
+      "hero": "Murky",
+      "alias_pointer": "/gamestrings/unit/name/Murky",
+      "identity_pointer": "/Murky/hyperlinkId"
+    },
+    {
+      "alias": "Tyraël",
+      "hero": "Tyrael",
+      "alias_pointer": "/gamestrings/unit/name/Tyrael",
+      "identity_pointer": "/Tyrael/hyperlinkId"
+    },
+    {
+      "alias": "Impérius",
+      "hero": "Imperius",
+      "alias_pointer": "/gamestrings/unit/name/Imperius",
+      "identity_pointer": "/Imperius/hyperlinkId"
+    }
+  ]
+}

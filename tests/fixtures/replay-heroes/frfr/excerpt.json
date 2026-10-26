@@ -1,0 +1,40 @@
+{
+  "gamestrings": {
+    "unit": {
+      "name": {
+        "Anubarak": "Anub’arak",
+        "Malthael": "Malthaël",
+        "Stitches": "Balafré",
+        "Murky": "Bourbie",
+        "Tyrael": "Tyraël",
+        "Imperius": "Impérius"
+      }
+    }
+  },
+  "heroes": {
+    "Anubarak": {
+      "unitId": "HeroAnubarak",
+      "hyperlinkId": "Anubarak"
+    },
+    "Malthael": {
+      "unitId": "HeroMalthael",
+      "hyperlinkId": "Malthael"
+    },
+    "Stitches": {
+      "unitId": "HeroStitches",
+      "hyperlinkId": "Stitches"
+    },
+    "Murky": {
+      "unitId": "HeroMurky",
+      "hyperlinkId": "Murky"
+    },
+    "Tyrael": {
+      "unitId": "HeroTyrael",
+      "hyperlinkId": "Tyrael"
+    },
+    "Imperius": {
+      "unitId": "HeroImperius",
+      "hyperlinkId": "Imperius"
+    }
+  }
+}

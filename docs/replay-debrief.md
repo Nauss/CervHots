@@ -98,6 +98,17 @@ Conserver l'entrée stable durant la commande.
   local heroes-talents au commit `2dcbbf65f81bc3ce85926a5f90b6d8b44d1e4027`.
   Le blob intégral et sa licence sont épinglés dans `tests/fixtures/replay-heroes/` ;
   SHA256 `17dcbae19c0bdfbbffab49f7d9fe3d5047114f2a3b83cced193383f7b5d9c4fa`.
+  L'extension `cerveau/replay_hero_aliases_fr.json` ajoute six libellés **exacts** :
+  Anub’arak → Anubarak, Malthaël → Malthael, Balafré → Stitches,
+  Bourbie → Murky, Tyraël → Tyrael et Impérius → Imperius.
+  Source primaire statique extraite du jeu : HeroesToolChest/heroes-data (MIT),
+  commit `2a2207d08bdb2bac8038e8bc0e10c13a952ee043`, build documentaire
+  `2.55.16.97039`, locale `frfr`. Jointure exacte entre
+  `gamestrings/unit/name/{ID}` et la même clé `{ID}/hyperlinkId` de herodata ;
+  les six extraits minimaux, licence, pointeurs, SHA et blobs Git sont conservés.
+  Les originaux intégraux sont gelés dans `out/weekend/2026-10-24/lot36/sources/`
+  du dépôt principal (pas sous le worktree). Cette source ancienne ne certifie
+  **ni** le build du replay **ni** les données natives actuelles.
   Aucun téléchargement ni `kb.db` mutable n'est consulté à l'exécution.
   La casse reste ignorée comme auparavant, **sans** suppression d'accents,
   ponctuation, espaces ou préfixes. Une collision d'alias/ID/slug reste inconnue,

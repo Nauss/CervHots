@@ -41,11 +41,12 @@ class ReplayHeroAliasTests(unittest.TestCase):
         catalog = json.loads((ROOT / 'hotstate/hero_ids.json').read_text(encoding='utf-8'))
         self.assertNotIn('Lúcio', catalog)
         base = _hero_vocabulary(catalog, [])
-        self.assertEqual({k: v for k, v in HEROES.items() if k != 'lúcio'}, base)
+        replay_labels = {'lúcio', 'anub’arak', 'malthaël', 'balafré', 'bourbie', 'tyraël', 'impérius'}
+        self.assertEqual({k: v for k, v in HEROES.items() if k not in replay_labels}, base)
         self.assertNotIn('lúcio', base)
 
     def test_unknown_and_unproven_localizations_never_become_aliases(self):
-        for label in ('Malthaël', 'Balafré', 'Bourbie', 'Anub’arak', 'Tyraël', 'Impérius',
+        for label in ('Malthàël', 'Baláfré', 'Bourbié', 'Anub‘arak', 'Tyràël', 'Impèrius',
                       'HeroLucio', 'Lùcio', ' Lúcio', 'Lúcio ', 'Lu\u0301cio', 'Lúci',
                       'SYNTHETIC_UNKNOWN', None, {}, 1):
             with self.subTest(label=label):

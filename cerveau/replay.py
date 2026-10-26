@@ -42,7 +42,8 @@ def _hero_vocabulary(catalog, aliases):
 
 
 _REPLAY_ALIASES = json.loads(Path(__file__).with_name('replay_hero_aliases.json').read_text(encoding='utf-8'))
-HEROES = _hero_vocabulary(_HERO_IDS, _REPLAY_ALIASES['aliases'])
+_REPLAY_FR = json.loads(Path(__file__).with_name('replay_hero_aliases_fr.json').read_text(encoding='utf-8'))
+HEROES = _hero_vocabulary(_HERO_IDS, _REPLAY_ALIASES['aliases'] + _REPLAY_FR['aliases'])
 _MAPS = json.loads((ROOT / 'kb/data/map_timings.json').read_text(encoding='utf-8'))['maps']
 MAPS = {s.casefold(): name for name, row in _MAPS.items()
         for s in (name, row['slug'], *row.get('aliases_fr', []))}
