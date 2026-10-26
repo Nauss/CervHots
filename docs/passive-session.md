@@ -297,6 +297,44 @@ Régression ciblée :
 
 ## Vérification et recette privée opérateur
 
+### Cycle de vie en vrais processus, sans jeu (Windows)
+
+Depuis le checkout, avec Python 3.12 ou 3.14 et les dépendances de test installées :
+
+```bash
+export TMPDIR='C:/Users/Nauss/AppData/Local/hermes/cache/scratch'
+export TEMP="$TMPDIR" TMP="$TMPDIR" PYTHONDONTWRITEBYTECODE=1
+python -B -m unittest discover -s tests -p test_passive_lifecycle_process.py -v
+```
+
+Le dossier scratch doit exister. Exécuter séquentiellement : les tests utilisent
+le vrai mutex Windows partagé. `CERVHOTS_LIFECYCLE_EVIDENCE`, facultatif, désigne
+un dossier de preuves neuf où conserver les journaux et identités PID/création
+avant le nettoyage du seul scratch propre aux tests.
+
+Cette recette ajoute aux tests en mémoire et aux tests de mutex isolés un
+collecteur enfant passant par `main`, `NativeSource`, `run_session` et les vrais
+consommateurs, avec transport **SYNTHETIC injecté uniquement dans les tests**.
+Un autre processus invoque `--request-stop` via `session_control/control_io` ;
+le test attend le retour terminal et atteste fermeture backend/source/garde.
+La reprise utilise une invocation, un parent, un STOP, une probe, une identité
+synthétique de partie et un token neufs. Les contrôles anciens/copiés ne peuvent
+cibler le nouveau STOP ; le vieux STOP reste intact et une deuxième observation
+confirme que le successeur continue. Un reçu étranger est refusé même avec un
+âge de test forcé à zéro ; un reçu émis dans le nouveau processus reste admis.
+
+Deux interruptions déterministes injectent `KeyboardInterrupt` avant publication
+ou après écriture partielle du contrôle (ce n'est pas un Ctrl+C console réel).
+Une erreur de fermeture injectée laisse l'activité inconnue et bloque un autre
+collecteur jusqu'à la sortie du propriétaire. Les timeouts du banc de test et son
+cleanup par handles exacts/PID/création ne sont pas une garantie de latence STOP
+live. La sortie processus ne transforme pas un close incertain en close attesté ;
+les fichiers de contrôle ne sont pas une authentification contre un écrivain
+hostile. Aucune qualification live, coût physique, HUD, carte, Braxis ou nouvelle
+permission CURRENT n'en découle ; aucune option synthétique produit n'est ajoutée.
+
+### Suites et recette privée
+
 Tests synthétiques : `python -B -m unittest discover -s tests -p test_passive_session.py -v`.
 Ils ne sont **jamais** une validation live. Pour la suite complète, créer le dossier
 ignoré `out/` dans le checkout (précondition des tests historiques de discovery),
