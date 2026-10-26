@@ -1,0 +1,15 @@
+{
+  "schema": "replay-hero-aliases-v1",
+  "scope": "Historical replay display labels only; no native catalog or build qualification",
+  "source": {
+    "repository": "heroespatchnotes/heroes-talents",
+    "commit": "2dcbbf65f81bc3ce85926a5f90b6d8b44d1e4027",
+    "path": "hero/lucio.json",
+    "sha256": "17dcbae19c0bdfbbffab49f7d9fe3d5047114f2a3b83cced193383f7b5d9c4fa",
+    "git_blob": "d96a4ac9dd13bf0e7125986f3e11a69f484802f9",
+    "fixture": "tests/fixtures/replay-heroes/lucio.json",
+    "pointers": {"alias": "/name", "hero": "/cHeroId"},
+    "excerpt": {"shortName": "lucio", "cHeroId": "Lucio", "name": "Lúcio"}
+  },
+  "aliases": [{"alias": "Lúcio", "hero": "Lucio"}]
+}

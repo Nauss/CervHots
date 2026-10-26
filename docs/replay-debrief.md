@@ -92,10 +92,22 @@ Conserver l'entrée stable durant la commande.
 
 - Aucun nom, compte, chat, résultat final, métrique finale, événement futur ou
   XY (même allié) exporté. Seuls les événements projetés à `t <= --at` restent.
-- Les héros et cartes passent les **catalogues existants**, non élargis ici.
-  Une carte inconnue reste `map=null`, sans rappel KB ; un héros non reconnu
-  est omis et la composition est explicitement **incomplète**. La taille du
-  roster et le nombre de héros reconnus sont exposés, pas les identités omises.
+- Les héros passent le catalogue existant et une extension **replay seulement**,
+  `cerveau/replay_hero_aliases.json`. Celle-ci ajoute uniquement **Lúcio → Lucio**,
+  établi par `/name` et `/cHeroId` du même fichier `hero/lucio.json` dans le clone
+  local heroes-talents au commit `2dcbbf65f81bc3ce85926a5f90b6d8b44d1e4027`.
+  Le blob intégral et sa licence sont épinglés dans `tests/fixtures/replay-heroes/` ;
+  SHA256 `17dcbae19c0bdfbbffab49f7d9fe3d5047114f2a3b83cced193383f7b5d9c4fa`.
+  Aucun téléchargement ni `kb.db` mutable n'est consulté à l'exécution.
+  La casse reste ignorée comme auparavant, **sans** suppression d'accents,
+  ponctuation, espaces ou préfixes. Une collision d'alias/ID/slug reste inconnue,
+  indépendamment de l'ordre ; cible absente du catalogue = refus de chargement.
+  Les noms/comptes des joueurs ne sont jamais une source d'identité de héros.
+  `hotstate/hero_ids.json` et les allowlists natives ne changent pas.
+  Les cartes passent le catalogue inchangé. Une carte inconnue reste `map=null`,
+  sans rappel KB ; un héros non reconnu est omis et la composition reste
+  explicitement **incomplète**. La taille du roster et le nombre de héros reconnus
+  sont exposés, pas les identités omises.
 - Niveau/vie sont les derniers événements reconnus, pas une mesure continue
   ni des PV ; `null` veut dire inconnu, jamais zéro/vivant par défaut. Un cycle
   de vie incomplet/ambigu reste inconnu selon les refus du projecteur existant.
@@ -118,11 +130,20 @@ python -B -m cerveau.replay_debrief \
   --team 0 --perspective player-team --at 60 --allow-protocol-shim --format text
 ```
 
-Sur ce corpus, build98348/protocol91756 SHIM, 5 héros reconnus sur10 ; Jaina,
-Ana, Yrel côté0, Genji et Medivh côté1, derniers niveaux observés1, vies inconnues.
+Sur ce corpus, build98348/protocol91756 SHIM, **6 héros reconnus sur10**
+(avant lot35 : 5/10). Équipe0 : 3/5 (Jaina, Ana, Yrel), inchangée ; équipe1 :
+**3/5 au lieu de2/5** (Lucio ajouté à Genji et Medivh). Derniers niveaux observés1,
+vies inconnues. Anub’arak, Malthaël, Balafré et Bourbie restent inconnus :
+aucune équivalence locale épinglée n'est ajoutée pour ces graphies.
 Le rappel KB des balises reste **statique**, l'objectif observé inconnu. Sur
-`lot1/operator-recovery/PRIVATE/recipe-001.StormReplay`, 8 héros reconnus sur10,
-carte inconnue (`Garden of Terror Classic` n'est pas ajoutée au catalogue).
+`lot1/operator-recovery/PRIVATE/recipe-001.StormReplay`, **8/10 inchangé**
+(4/5 par équipe) : Tyraël et Impérius restent inconnus, carte inconnue
+(`Garden of Terror Classic` n'est pas ajoutée au catalogue).
+Les mêmes deux fichiers inchangés sont exercés à60s, perspectives0 et1,
+sous Python3.12 et3.14 en JSON/texte/HTML ; refus strict SHIM code1, opt-in code0.
+Preuves avant/après, commandes et SHA : `out/weekend/2026-10-24/lot35/`.
+Gain documentaire exact d'un héros, pas une traduction générale ni une
+qualification de protocole/build ; couverture native inchangée.
 Ces sorties partielles sont des débriefs historiques, pas une recette native.
 
 Le rendu HTML du même corpus `causal-001.StormReplay` a été exercé à **60 s**

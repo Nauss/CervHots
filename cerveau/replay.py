@@ -12,7 +12,37 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 _HERO_IDS = json.loads((ROOT / 'hotstate/hero_ids.json').read_text(encoding='utf-8'))
-HEROES = {s.casefold(): s for s in (*_HERO_IDS.values(), *_HERO_IDS)}
+
+
+def _hero_vocabulary(catalog, aliases):
+    """Extend replay labels only; contradictory aliases remain unknown.
+
+    Preserve existing case-insensitive catalog spellings. Never strip accents,
+    punctuation, whitespace or unit prefixes. An alias must target an exact
+    catalog ID; collisions with IDs/slugs or other aliases cannot win by order.
+    """
+    vocabulary = {s.casefold(): s for s in (*catalog.values(), *catalog)}
+    identities = {s.casefold(): key for key, slug in catalog.items() for s in (slug, key)}
+    ambiguous = set()
+    for row in aliases:
+        alias, hero = row.get('alias'), row.get('hero')
+        if (type(alias) is not str or not 0 < len(alias) <= 80
+                or type(hero) is not str or hero not in catalog):
+            raise ValueError('alias_replay_invalide')
+        key = alias.casefold()
+        if key in ambiguous:
+            continue
+        if key in identities and identities[key] != hero:
+            ambiguous.add(key)
+            vocabulary.pop(key, None)
+            continue
+        identities[key] = hero
+        vocabulary.setdefault(key, hero)
+    return vocabulary
+
+
+_REPLAY_ALIASES = json.loads(Path(__file__).with_name('replay_hero_aliases.json').read_text(encoding='utf-8'))
+HEROES = _hero_vocabulary(_HERO_IDS, _REPLAY_ALIASES['aliases'])
 _MAPS = json.loads((ROOT / 'kb/data/map_timings.json').read_text(encoding='utf-8'))['maps']
 MAPS = {s.casefold(): name for name, row in _MAPS.items()
         for s in (name, row['slug'], *row.get('aliases_fr', []))}
