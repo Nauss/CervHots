@@ -1,7 +1,9 @@
 # CervHots
 
-Le coach IA de Heroes of the Storm : état de jeu (mémoire ou replay), savoir
-de la KB, décision via l'API Groco, TTS local et diffusion dans Mumble.
+Outils Heroes of the Storm : démonstration hors ligne, débrief replay et
+inspection de journaux natifs, **sans Coach/API/audio par défaut**. Le pipeline
+historique de coach (KB → API Groco → TTS → Mumble) reste une voie distincte,
+à activation explicite, pas le parcours de démarrage recommandé.
 
 ## Ce repo
 
@@ -9,7 +11,28 @@ Monorepo : il accueille tous les briques du projet, chacune dans son
 répertoire (capture, perception, cerveau, TTS, bot Mumble, outils…).
 Chaque brique a son propre projet, ses propres dépendances.
 
-## Pour démarrer
+## Pour démarrer en cinq minutes
+
+**[Choisir son parcours : `docs/start-here.md`](docs/start-here.md)** — commandes
+Windows absolues réellement exercées depuis le candidat lot33, sorties et limites :
+
+1. [Démo SYNTHETIC silencieuse](docs/start-here.md#1-démo-silencieuse-sans-jeu-ni-replay-recommandé) : aucune donnée personnelle ni jeu requis.
+2. [Débrief d'un vrai replay historique](docs/start-here.md#2-vrai-replay-conservé-à-60-secondes) : SHIM uniquement sur opt-in indicatif explicite, composition partielle.
+3. [Inspection d'un journal natif conservé](docs/start-here.md#3-journal-natif-existant--distinguer-état-et-contenu) : statut/diagnostic/HTML, jamais CURRENT.
+4. [Préflight core sans backend](docs/start-here.md#4-préflight-sans-backend--live-uniquement-sur-autorisation-distincte) : préparation technique, pas autorisation live.
+
+**STOP week-end maintenu : aucune activation par cette documentation.**
+Arrêt/reprise native : signal ciblé ≠ lecteur arrêté ; confirmer le retour du
+terminal propriétaire, puis parent/sortie/STOP neufs, anciens claims/STOP conservés.
+La [matrice honnête des familles](docs/start-here.md#familles--ce-que-les-preuves-permettent-réellement-de-dire)
+ne généralise aucune qualification carte × famille ; Braxis reste non débloqué.
+
+### Références détaillées et anciens exemples
+
+Les commandes abrégées et chemins entre chevrons ci-dessous sont des **modèles
+non exécutés pour lot33**, pas des lanceurs prêts à copier. Utiliser le parcours
+consolidé ci-dessus pour les recettes réellement exercées ; les voies API/voix
+historiques ne font pas partie de son smoke silencieux.
 
 - **Débrief replay local déterministe, sans Coach/API/audio** :
   `python -B -m cerveau.replay_debrief --replay <fichier.StormReplay> --team 0 --perspective player-team --at 60`.
@@ -113,7 +136,30 @@ Chaque brique a son propre projet, ses propres dépendances.
   Détails et activations explicites du live/de la voix : `cerveau/README.md`.
   Étude et mesures : `etudes/cerveau/ETUDE.md`.
 
-## État
+## État au 26/10/2026 — base locale lot32
+
+MAIN local vérifié à `e29dc18348693024f0654cbb88ed244659953b39` : collecte
+passive durable et opérations ciblées, défaut CLI core, préflight/readiness hors
+ligne, diagnostic et restitution HTML de journaux, chronologie/trace des talents,
+cooldowns historiques, catalogue/complétude et démonstration SYNTHETIC intégrés.
+Le débrief replay JSON/texte/HTML est intégré aussi, sans Coach/API/audio.
+Cela ne transforme pas leurs tests hors ligne en qualification native indépendante.
+Le guide lot33 reste candidat jusqu'à revue et intégration distinctes.
+
+Objectif Dragon : exports/rejeu acquis avec limites ; Volskaya objectif reste
+qualification seulement ; Braxis toujours fermé. Cooldown zéro historique ne
+prouve ni cycle actif ni reset, charges inconnues ; noms choisis de talents non
+qualifiés, camps/structures/visibilité ennemie non ouverts. Voir la
+[matrice et ses preuves](docs/start-here.md#familles--ce-que-les-preuves-permettent-réellement-de-dire).
+Les recettes opérateurs lot19/lot28 ont refusé le live (contexte privé actuel
+inconnu) : aucun gain core/all réel ni STOP produit live n'en est déduit.
+Les compteurs ambigus ne sont pas convertis en total de matchs.
+
+### Historique conservé — état au 17/10 et ajout du 18/10
+
+Le paragraphe suivant conserve l'état ancien, **pas la description actuelle de
+MAIN** ; notamment « objectifs hors collecte » est daté et doit être lu avec la
+matrice actuelle ci-dessus.
 
 Au 17/10/2026 : couches stats (`hotstate/`), savoir (`kb/`), voix (`tts/`) et
 diffusion (`mumblebot/`) reliées par `cerveau/`. L'API Groco est provisionnée et
