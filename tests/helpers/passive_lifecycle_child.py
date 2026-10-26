@@ -16,9 +16,6 @@ from unittest.mock import patch
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / 'tests'))
-from core_session_synthetic import mapped_core_source
-from test_core_collection_mode import CoreCollectionTests
-from cerveau import passive_session as product
 
 
 def publish(path, row):
@@ -60,6 +57,10 @@ def receipt_check(parent, old):
 
 
 def main():
+    from core_session_synthetic import mapped_core_source
+    from test_core_collection_mode import CoreCollectionTests
+    from cerveau import passive_session as product
+
     parent, mode = Path(sys.argv[1]), sys.argv[2]
     old = sys.argv[3] if len(sys.argv) > 3 else None
     assert parent.is_absolute() and parent.is_dir()
