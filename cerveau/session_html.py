@@ -58,7 +58,9 @@ def _objective_value(value):
     return _text(words.get(value, value))
 
 
-def render(result):
+def render(result, *, synthetic=False):
+    from .report_context import synthetic_notice
+    notice = synthetic_notice(synthetic)
     history, diagnosis = result['history'], result['diagnosis']
     # All dynamic values are text nodes, never attributes, CSS, URLs or markup.
     summary = _text(native_history.readable(history, include_timeline=False))
@@ -105,12 +107,15 @@ def render(result):
 <style>
 :root{color-scheme:dark}*{box-sizing:border-box}body{margin:0;background:#11151d;color:#e6ebf4;font:16px/1.6 system-ui,sans-serif}
 main{max-width:960px;margin:auto;padding:32px 20px 60px}h1{font-size:1.9rem;line-height:1.2}h2{font-size:1.15rem;color:#a9c9ff;margin:0 0 12px}
-p{margin:10px 0}.notice{border-left:4px solid #f4c673;padding:12px 18px;background:#252218}.muted{color:#bcc6d7}
+p{margin:10px 0;overflow-wrap:anywhere}.notice{border-left:4px solid #f4c673;padding:12px 18px;background:#252218}.muted{color:#bcc6d7}
 section{background:#1b2230;border:1px solid #344055;border-radius:12px;padding:20px;margin:18px 0}pre{white-space:pre-wrap;overflow-wrap:anywhere;font:inherit;margin:0}
 table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:7px 8px;border-bottom:1px solid #344055}th{font-weight:500}td{color:#d9e6ff}li{overflow-wrap:anywhere}
+.table-scroll{max-width:100%;min-width:0;overflow-x:auto}
+.table-scroll:focus-visible{outline:2px solid #a9c9ff;outline-offset:2px}
+.table-scroll table{min-width:36rem}th,td{overflow-wrap:anywhere}
 dl{display:grid;grid-template-columns:minmax(90px,1fr) 3fr;gap:4px 16px}dt{color:#bcc6d7}dd{margin:0;overflow-wrap:anywhere}dd dl{margin:0}
 @media(max-width:600px){main{padding:20px 12px}section{padding:14px}th,td{padding:6px 3px}}
-</style></head><body><main>
+</style></head><body>'''+notice+'''<main>
 <header><p class="muted">CervHots · Lecture locale pour l’aventurier</p><h1>Votre session enregistrée</h1>
 <p class="notice">Historique NON authentifié. Jamais CURRENT, ni validation HUD, ni conseil.
 Inconnue ≠ zéro. Aucun âge actuel calculé, aucun reçu recréé.</p></header>
@@ -119,17 +124,18 @@ Inconnue ≠ zéro. Aucun âge actuel calculé, aucun reçu recréé.</p></heade
 <p class="muted">Santé et ressource locales : uniquement les paires enregistrées et validées du même événement, avec liaison locale explicite. Type de ressource inconnu, pas nécessairement du mana. Aucun état natif supplémentaire n’est reconstitué.</p></section>
 <section><h2>Chronologie historique bornée</h2><p>'''+timeline_summary+'''</p>
 <p class="muted">Ordre ordinal des enregistrements (1 = première ligne du journal), aucune durée ni horloge de jeu déduite. Chaque ligne est indépendante : aucune interpolation ni continuité à travers une rupture, une valeur invalide ou une frontière. Âge du cœur inconnu ; ressource générique, type inconnu.</p>
-<div style="overflow-x:auto"><table><caption>Chronologie du cœur local — historique non authentifié</caption>
+<p class="muted">Tableaux larges : défilement horizontal au toucher ou au clavier après mise au point du tableau.</p>
+<div class="table-scroll" role="region" tabindex="0" aria-label="Chronologie du cœur local — défilement horizontal"><table><caption>Chronologie du cœur local — historique non authentifié</caption>
 <thead><tr><th scope="col">Ordre du journal</th><th scope="col">Observation ou rupture</th><th scope="col">PV / maximum</th><th scope="col">Ressource / maximum</th><th scope="col">Vie</th></tr></thead>
 <tbody>'''+timeline_rows+'''</tbody></table></div></section>
-<section><h2>Sélection et qualification des champs</h2><table>'''+family_rows+'''</table>
+<section><h2>Sélection et qualification des champs</h2><div class="table-scroll" role="region" tabindex="0" aria-label="Sélection des champs — défilement horizontal"><table>'''+family_rows+'''</table></div>
 <p class="muted">Ces statuts ne promettent pas une valeur lisible : seuls talents, objectif et cooldowns locaux qualifiés sont exportés.
 Non sélectionné ≠ inconnu ≠ refusé ≠ valeur présente. Une sélection absente ou invalide reste inconnue.</p></section>
 <section><h2>Cooldowns et charges locaux enregistrés</h2><pre>'''+cooldowns_text+'''</pre><p class="muted">Valeurs de la même observation uniquement ; slot instance natif ≠ bouton HUD ; cooldown_ready ne signifie pas lançable. Charges inconnues/non applicables ≠ disponibles. Aucun cast, reset, continuité ou changement de corps contrôlé déduit.</p></section>
 <section><h2>Objectif historique exporté</h2>'''+objective_value+'''</section>
-<section><h2>Horloges originales des valeurs optionnelles</h2><table><tr><th>Famille</th><th>Mission source (s)</th><th>Âge original (s)</th><th>Fenêtre de lecture originale (s)</th></tr>'''+timing_rows+'''</table>
+<section><h2>Horloges originales des valeurs optionnelles</h2><div class="table-scroll" role="region" tabindex="0" aria-label="Horloges originales — défilement horizontal"><table><tr><th>Famille</th><th>Mission source (s)</th><th>Âge original (s)</th><th>Fenêtre de lecture originale (s)</th></tr>'''+timing_rows+'''</table></div>
 <p class="muted">Ces durées ne sont ni un âge actuel ni une nouvelle permission ; inconnu n’est pas zéro.</p></section>
-<section><h2>Collecte réellement enregistrée et refus</h2><p>'''+_text(scope)+'''</p><table>'''+count_rows+'''</table>
+<section><h2>Collecte réellement enregistrée et refus</h2><p>'''+_text(scope)+'''</p><div class="table-scroll" role="region" tabindex="0" aria-label="Décomptes enregistrés — défilement horizontal"><table>'''+count_rows+'''</table></div>
 <p>Champs normalisés enregistrés (pas une qualification HUD) : '''+_text(fields)+'''</p>
 <h3>Refus du cœur</h3><ul>'''+(refusals or '<li>Aucun refus enregistré dans le périmètre lu ; pas une preuve d’absence ailleurs.</li>')+'''</ul>
 <h3>Refus optionnels</h3><ul>'''+(optional or '<li>Aucun refus optionnel enregistré dans le périmètre lu.</li>')+'''</ul></section>

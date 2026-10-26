@@ -53,6 +53,12 @@ Gain : PV et ressource auparavant présents sur disque mais non affichés, déso
 
 ## Chronologie historique bornée
 
+Sur écran étroit (notamment390px), chaque tableau reste dans une région nommée
+à défilement horizontal, atteignable au clavier (`Tab`, puis flèches) ou au toucher.
+Toutes les colonnes, dont « Vie », restent accessibles sans tronquer les valeurs
+ni masquer le débordement du document. La chronologie conserve son titre, ses
+en-têtes et son ordre ; aucun champ/format JSON n'est modifié par cette présentation.
+
 Le tableau « Chronologie du cœur local » et `history.core_timeline` montrent les
 observations du cœur local, pas seulement la dernière. La CLI `--summarize` expose
 la même projection et les mêmes cellules en texte. Les gardes historiques globales

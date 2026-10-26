@@ -14,10 +14,10 @@ Chaque brique a son propre projet, ses propres dépendances.
 ## Pour démarrer en cinq minutes
 
 **[Choisir son parcours : `docs/start-here.md`](docs/start-here.md)** — commandes
-Windows absolues réellement exercées depuis le candidat lot33, sorties et limites :
+Windows absolues de la recette hors ligne, sorties neuves et limites :
 
 1. [Démo SYNTHETIC silencieuse](docs/start-here.md#1-démo-silencieuse-sans-jeu-ni-replay-recommandé) : aucune donnée personnelle ni jeu requis.
-2. [Débrief d'un vrai replay historique](docs/start-here.md#2-vrai-replay-conservé-à-60-secondes) : SHIM uniquement sur opt-in indicatif explicite, composition partielle.
+2. [Débrief d'un vrai replay historique](docs/start-here.md#2-vrai-replay-conservé-à-60-secondes) : SHIM non certifié sur opt-in explicite ; 10/10 héros reconnus sur les deux corpus historiques exercés, aucun gain live/HUD.
 3. [Inspection d'un journal natif conservé](docs/start-here.md#3-journal-natif-existant--distinguer-état-et-contenu) : statut/diagnostic/HTML, jamais CURRENT.
 4. [Préflight core sans backend](docs/start-here.md#4-préflight-sans-backend--live-uniquement-sur-autorisation-distincte) : préparation technique, pas autorisation live.
 
@@ -136,15 +136,18 @@ historiques ne font pas partie de son smoke silencieux.
   Détails et activations explicites du live/de la voix : `cerveau/README.md`.
   Étude et mesures : `etudes/cerveau/ETUDE.md`.
 
-## État au 26/10/2026 — base locale lot32
+## État au 26/10/2026 — base de recette locale lots33–36 intégrés
 
-MAIN local vérifié à `e29dc18348693024f0654cbb88ed244659953b39` : collecte
+Base MAIN locale vérifiée à `0573b30fdb213ad449eb9172a35ea3093769c05d` : collecte
 passive durable et opérations ciblées, défaut CLI core, préflight/readiness hors
 ligne, diagnostic et restitution HTML de journaux, chronologie/trace des talents,
 cooldowns historiques, catalogue/complétude et démonstration SYNTHETIC intégrés.
 Le débrief replay JSON/texte/HTML est intégré aussi, sans Coach/API/audio.
 Cela ne transforme pas leurs tests hors ligne en qualification native indépendante.
-Le guide lot33 reste candidat jusqu'à revue et intégration distinctes.
+Le guide de démarrage et les alias replay historiques sont intégrés. Les deux
+corpus exercent désormais 10/10 héros reconnus, sous SHIM indicatif non certifié ;
+la vie n'est affichée que lorsqu'un événement reconnu l'établit. Carte inconnue
+et objectif inconnu restent inconnus ; aucune nouvelle qualification native/live/HUD.
 
 Objectif Dragon : exports/rejeu acquis avec limites ; Volskaya objectif reste
 qualification seulement ; Braxis toujours fermé. Cooldown zéro historique ne

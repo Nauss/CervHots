@@ -56,8 +56,13 @@ Sorties : `SYNTHETIC.txt` décrit la provenance fictive ; `synthetic-sessions/`
 contient les cas ; `reports/<cas>/{diagnosis,summary,html}/` contient JSON, texte
 et HTML existants ; `catalog/INDEX.html` relie les rapports de catalogue et
 `catalog/COMPLETE.json` inventorie les octets. Ouvrir les HTML **manuellement** si
-souhaité, en conservant ce contexte SYNTHETIC : leurs schémas minimisés restent les
-schémas historiques existants et ne constituent aucune attestation de provenance.
+souhaité : **chacun des huit HTML** (index, trois rapports liés et quatre rapports
+autonomes) affiche dès le haut une bannière persistante **SYNTHETIC — données
+fictives**, y compris en ouverture directe. Le compositeur transmet explicitement
+ce contexte de présentation fermé aux rendus ; ni le nom du dossier, ni une clé
+du journal, ni la réussite du vérificateur ne le déduisent. Les schémas minimisés
+restent les schémas historiques existants et ne constituent aucune attestation de
+provenance. Les vrais historiques ne reçoivent pas cette bannière.
 `demo.json` récapitule les codes et la vérification. Les chemins source/identités
 ne sont pas réimprimés ; aucune copie de données privées n'entre dans Git.
 

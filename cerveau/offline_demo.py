@@ -139,14 +139,16 @@ def demonstrate(destination):
             args.report_dir.mkdir()
             guards.enter_context(catalog._pin(args.report_dir, directory=True))
             catalog._write(args.report_dir/'report.json', _dump(html_result))
-            catalog._write(args.report_dir/'REPORT.html', session_html.render(html_result))
+            catalog._write(args.report_dir/'REPORT.html', session_html.render(html_result, synthetic=True))
             code = 0 if html_result['history']['state'] == 'recorded_observation' else 1
             commands.append(dict(mode='--report-html', case=case, exit_code=code,
                 expected_code=expected, api='session_html.build/render'))
             if code != expected:
                 raise ValueError('unexpected_html_state')
         args = SimpleNamespace(sessions_root=sources, report_dir=target/'catalog')
-        exercise('--catalog', catalog.run, args, 1)  # Absence et refus sont voulus.
+        exercise('--catalog', lambda a: catalog.run(a, synthetic=True), args, 1)
+        # Absence et refus sont voulus. Presentation context is explicit, not
+        # inferred from directory names, journal data_kind or generic schemas.
         verification = exercise('--verify-catalog', catalog_integrity.run, args, 0)
         result = dict(event='offline_demo', schema_version=1, data_kind='SYNTHETIC',
             basis='synthetic_historical_not_current', current_permission=False,

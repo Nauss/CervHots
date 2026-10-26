@@ -153,7 +153,9 @@ def _dump(value):
     return json.dumps(value, ensure_ascii=True, allow_nan=False, indent=2)+'\n'
 
 
-def render(result):
+def render(result, *, synthetic=False):
+    from .report_context import synthetic_notice
+    notice = synthetic_notice(synthetic)
     rows = []
     for entry in result['sessions']:
         # URL is reconstructed from our ordinal, NEVER from any input text.
@@ -171,7 +173,7 @@ def render(result):
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'">
 <title>Catalogue local des sessions</title>
 <style>body{background:#11151d;color:#e6ebf4;font:16px/1.6 system-ui;margin:2em auto;padding:0 1em;max-width:960px}table{border-collapse:collapse;width:100%}td,th{padding:.5em;text-align:left;border-bottom:1px solid #465268}a{color:#adcfff}.notice{border-left:4px solid #f4c673;padding:1em}td{overflow-wrap:anywhere}</style>
-</head><body><h1>Sessions enregistrées — catalogue local</h1>
+</head><body>'''+notice+'''<h1>Sessions enregistrées — catalogue local</h1>
 <p class="notice">Historique NON authentifié. Jamais CURRENT, ni validation HUD, ni conseil.
 Chaque session est indépendante ; un succès n’autorise aucune autre session. Activité actuelle inconnue.</p>
 <p>Découverte complète : '''+('oui' if discovery['complete'] else 'non')+'''. Limites : '''+escape(limits)+'''.</p>
@@ -193,7 +195,7 @@ def _write(path, text):
         os.fsync(stream.fileno())
 
 
-def _catalog(root, stage, output_guards):
+def _catalog(root, stage, output_guards, *, synthetic=False):
     entries = []
     reports = []
     budget = {'entries': 0, 'bytes': 0}
@@ -277,7 +279,7 @@ def _catalog(root, stage, output_guards):
         folder.mkdir()
         output_guards.enter_context(_pin(folder, directory=True))
         _write(folder/'report.json', _dump(report))
-        _write(folder/'REPORT.html', session_html.render(report))
+        _write(folder/'REPORT.html', session_html.render(report, synthetic=synthetic))
     return dict(event='session_catalog', schema_version=1, basis='historical_not_current',
                 authenticated=False, current_permission=False, hud_validated=False,
                 discovery=dict(complete=not limits and not refusals,
@@ -296,7 +298,9 @@ def _reserve(target):
     target.mkdir()
 
 
-def run(args):
+def run(args, *, synthetic=False):
+    from .report_context import synthetic_notice
+    synthetic_notice(synthetic)  # Validate before reserving any output.
     try:
         root, target = _absolute(args.sessions_root), _absolute(args.report_dir)
         if root.is_relative_to(target) or target.is_relative_to(root):
@@ -316,13 +320,13 @@ def run(args):
                 raise ValueError('output_exists')
             _reserve(target)
             with _pin(target, directory=True):
-                result = _catalog(root, target, guards)
+                result = _catalog(root, target, guards, synthetic=synthetic)
                 # All referenced individual files have completed write + fsync.
                 # Indexes are exclusive and last. They never claim absent reports,
                 # even if a crash interrupts their own writes. No rename requires
                 # weakening the parent's no-write/no-delete sharing protection.
                 _write(target/'catalog.json', _dump(result))
-                _write(target/'INDEX.html', render(result))
+                _write(target/'INDEX.html', render(result, synthetic=synthetic))
                 from .catalog_integrity import publish
                 publish(target, result)
     except (OSError, ValueError, TypeError, KeyError, RecursionError):
