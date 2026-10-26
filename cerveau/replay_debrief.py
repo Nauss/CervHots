@@ -106,6 +106,8 @@ def main(argv=None):
     parser.add_argument('--allow-protocol-shim', action='store_true',
                         help='autoriser un décodage indicatif non certifié pour ce build')
     parser.add_argument('--format', choices=('json', 'text'), default='json')
+    parser.add_argument('--report-dir', type=Path,
+                        help='HTML + JSON locaux : dossier absolu neuf, parent existant (Windows)')
     args = parser.parse_args(argv)
     try:
         before = source_hash(args.replay)
@@ -117,13 +119,20 @@ def main(argv=None):
         if source_hash(args.replay) != before:
             raise ValueError('replay_modifie_pendant_lecture')
         report['provenance']['replay_sha256'] = before
+        if args.report_dir is not None:
+            from cerveau.replay_html import publish
+            try:
+                publish(report, args.report_dir)
+            except (OSError, ValueError):
+                raise ValueError('sortie_rapport_refusee') from None
     except Exception as exc:
         # Les décodeurs peuvent inclure des données personnelles dans leurs
         # exceptions : ni message brut, traceback, chemin, ni nom de fichier.
         reason = str(exc) if isinstance(exc, ValueError) else ''
         if reason not in {'fichier_replay_invalide', 'taille_replay_invalide',
                           'protocole_exact_indisponible', 'duree_replay_inconnue',
-                          'protocole_inconnu', 'replay_modifie_pendant_lecture'}:
+                          'protocole_inconnu', 'replay_modifie_pendant_lecture',
+                          'sortie_rapport_refusee'}:
             reason = 'lecture_ou_projection_refusee'
         print(json.dumps({'status': 'refused', 'reason': reason}), file=sys.stderr)
         return 1

@@ -13,7 +13,9 @@ Chaque brique a son propre projet, ses propres dépendances.
 
 - **Débrief replay local déterministe, sans Coach/API/audio** :
   `python -B -m cerveau.replay_debrief --replay <fichier.StormReplay> --team 0 --perspective player-team --at 60`.
-  JSON minimisé avec résumé français ; refus du shim par défaut, opt-in indicatif
+  JSON minimisé avec résumé français ; ajouter `--report-dir C:/rapports/debrief-neuf`
+  (Windows, parent existant) pour obtenir `REPORT.html` autonome sombre et `report.json`,
+  puis ouvrir manuellement le HTML hors ligne. Refus du shim par défaut, opt-in indicatif
   explicite, inconnues préservées et aucune position exportée :
   [`docs/replay-debrief.md`](docs/replay-debrief.md).
 

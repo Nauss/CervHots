@@ -25,10 +25,37 @@ limité à la durée décodée et à 21600 s ; durée inconnue = refus.
   `state` (projection existante sans aucune coordonnée), `provenance`, `coverage`,
   `map` et `knowledge` (rappel statique du briefing KB, pas observation).
 - `--format text` : uniquement le même débrief français, sans JSON.
-- Aucune écriture par la commande. Pour conserver les deux, rediriger le JSON
-  vers un **nouveau fichier distinct du replay**, puis lire `debrief_fr` dans le
-  JSON, ou exécuter à nouveau avec `--format text`. Ne jamais rediriger sur la
-  source : le shell la tronquerait avant le démarrage de Python.
+- Sans `--report-dir`, aucune écriture par la commande ; JSON et codes par défaut
+  inchangés. Ne jamais rediriger stdout sur la source : le shell la tronquerait
+  avant le démarrage de Python.
+- **HTML consultable hors ligne (Windows)** : ajouter un dossier absolu **neuf**,
+  dont le parent local existe déjà. Aucun navigateur n'est ouvert automatiquement :
+
+  ```bash
+  python -B -m cerveau.replay_debrief \
+    --replay "C:/archives/partie.StormReplay" \
+    --team 0 --perspective player-team --at 60 \
+    --report-dir "C:/rapports/debrief-neuf"
+  ```
+
+  Ouvrir ensuite **manuellement** `C:/rapports/debrief-neuf/REPORT.html` dans un
+  navigateur local : tout est inclus, sans JS, réseau, police ou ressource externe.
+  Le dossier contient aussi `report.json` (même JSON minimisé que stdout, UTF-8/LF).
+  `--format text` ne change que stdout ; le fichier JSON reste disponible.
+  Le HTML sépare résumé, faits autorisés, inconnues/refus, rappel KB statique et
+  protocole/limites. Le SHIM, s'il est explicitement accepté, reste un avertissement
+  visible ; ce n'est jamais une nouvelle qualification native/HUD/CURRENT.
+
+  Refus fermé `sortie_rapport_refusee` (code1, stdout vide) si dossier déjà présent,
+  parent absent, chemin relatif/réseau ou lien/junction dans le parcours de sortie.
+  Le parcours local Windows réutilise les handles protégés du catalogue de sessions,
+  sans suivre les reparse points ; sur les autres systèmes, ce mode refuse faute de
+  garde équivalente (JSON/texte restent utilisables). Les fichiers sont créés
+  exclusivement et flush/fsync, sans remplacer ni supprimer une preuve. La sortie
+  n'est **pas une transaction atomique** : un échec peut laisser un dossier partiel,
+  à conserver ; recommencer dans un **autre dossier neuf**, jamais par reprise.
+  Aucun fichier n'est écrit dans le replay source ; le SHA avant/après reste le
+  contrôle existant, pas une protection contre toute substitution concurrente.
 - Codes : **0** débrief produit (éventuellement partiel/non certifié) ; **1**
   fichier/décodage/projection/fidélité refusés, motif fermé JSON sur stderr,
   stdout vide ; **2** arguments absents/invalides (aide argparse). Les erreurs
@@ -98,10 +125,20 @@ Le rappel KB des balises reste **statique**, l'objectif observé inconnu. Sur
 carte inconnue (`Garden of Terror Classic` n'est pas ajoutée au catalogue).
 Ces sorties partielles sont des débriefs historiques, pas une recette native.
 
+Le rendu HTML du même corpus `causal-001.StormReplay` a été exercé à **60 s**
+avec `--allow-protocol-shim --report-dir` sous Python3.12 puis3.14 ; les sorties
+minimisées et logs exacts sont conservés dans
+`out/weekend/2026-10-24/lot32/python-3.12/html-1/` (et `python-3.14/html-1/`).
+`REPORT.html` est directement consultable localement. Les dossiers de preuve existent
+et ne doivent pas être réutilisés/écrasés : choisir un nouveau dossier pour rejouer.
+Les deux rendus HTML ont les mêmes bytes ; pas d'identité personnelle ni de chemin
+source dans le HTML ou son JSON, protocole indicatif et composition partielle visibles.
+Cette vérification de restitution ne prouve ni HUD, ni lecteur natif Braxis, ni live.
+
 ## Tests sans audio ni réseau
 
 ```bash
-python -B -m unittest tests.test_replay_debrief -v
+python -B -m unittest tests.test_replay_debrief tests.test_replay_html -v
 # Prérequis de deux tests historiques de découverte : répertoire out/ existant.
 mkdir -p out
 PYTHONDONTWRITEBYTECODE=1 python -B -m unittest discover -s tests -v
@@ -115,5 +152,6 @@ Le helper exécute le vrai module et le vrai décodeur ; seules les opérations
 interdites sont remplacées par des exceptions. Les fixtures unitaires sont
 explicitement synthétiques. Les tests existants de voix utilisent des doubles,
 pas un périphérique audio. Logs RED/GREEN, exécutions réelles 3.12/3.14 et hashes
-sont conservés dans `out/weekend/2026-10-24/lot15/` ; intégration main et revue
+du débrief initial sont conservés dans `out/weekend/2026-10-24/lot15/` ; ceux du
+rendu HTML sont dans `out/weekend/2026-10-24/lot32/`. Intégration main et revue
 indépendante restent des étapes séparées de l'implémentation.
