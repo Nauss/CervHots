@@ -21,7 +21,9 @@ Windows absolues de la recette hors ligne, sorties neuves et limites :
 3. [Inspection d'un journal natif conservé](docs/start-here.md#3-journal-natif-existant--distinguer-état-et-contenu) : statut/diagnostic/HTML, jamais CURRENT.
 4. [Préflight core sans backend](docs/start-here.md#4-préflight-sans-backend--live-uniquement-sur-autorisation-distincte) : préparation technique, pas autorisation live.
 
-**STOP week-end maintenu : aucune activation par cette documentation.**
+**Aucune activation native par cette documentation : elle ne confère pas CURRENT
+et n'annule aucun STOP.** Le mot STOP dans un guide ne prouve pas l'existence
+d'un marqueur STOP week-end ; son absence ne donne pas davantage permission.
 Arrêt/reprise native : signal ciblé ≠ lecteur arrêté ; confirmer le retour du
 terminal propriétaire, puis parent/sortie/STOP neufs, anciens claims/STOP conservés.
 La [matrice honnête des familles](docs/start-here.md#familles--ce-que-les-preuves-permettent-réellement-de-dire)
@@ -36,7 +38,7 @@ historiques ne font pas partie de son smoke silencieux.
 
 - **Débrief replay local déterministe, sans Coach/API/audio** :
   `python -B -m cerveau.replay_debrief --replay <fichier.StormReplay> --team 0 --perspective player-team --at 60`.
-  JSON minimisé avec résumé français ; ajouter `--report-dir C:/rapports/debrief-neuf`
+  JSON minimisé avec résumé français ; ajouter `--report-dir <absolu-neuf>`
   (Windows, parent existant) pour obtenir `REPORT.html` autonome sombre et `report.json`,
   puis ouvrir manuellement le HTML hors ligne. Refus du shim par défaut, opt-in indicatif
   explicite, inconnues préservées et aucune position exportée :
@@ -100,14 +102,14 @@ historiques ne font pas partie de son smoke silencieux.
   async. Test : `python grocoapi/smoke.py`.
 - `hotstate/` — **la couche stats** : tout ce qui sort de HotS (niveaux, talents,
   morts, XP, objectifs, positions) normalisé pour l'agent de décision.
-  Extracteur de replays (vérité terrain), trois compteurs mémoire validés,
+  Extracteur de replays historiques (fidélité à qualifier), trois compteurs mémoire validés,
   contexte initData et lecteur natif (`native.py`, profil build 98348) :
   horloge, dix héros, niveaux, état de vie, PV/ressources alliés. Les dix héros,
   équipes, niveaux et états de vie sont recoupés avec le replay de la capture.
   Timers de mort validés en partie puis contre le tracker ; positions natives
   alliées vivantes sur Volskaya (build98348, joueur local prouvé, fraîcheur1s).
   Recette/limites : `etudes/rea/P2-POSITIONS-RECETTE.md`. Objectifs, camps,
-  structures, visibilité/positions ennemies restent hors collecte live.
+  structures, visibilité/positions ennemies ne sont pas ouvertes par ce parcours.
   Talents natifs choisis : sélection persistée, pas possessions/options offertes.
   Portée build98348/DragonShire : Sonya locale ; alliés Arthas, Dehaka,
   LtMorales et Tassadar. Autres héros/rôles/cartes inconnus, aucune généralisation.
@@ -136,17 +138,24 @@ historiques ne font pas partie de son smoke silencieux.
   Détails et activations explicites du live/de la voix : `cerveau/README.md`.
   Étude et mesures : `etudes/cerveau/ETUDE.md`.
 
-## État au 26/10/2026 — base de recette locale lots33–36 intégrés
+## État au 26/10/2026 — base vérifiée, lot38 intégré localement
 
-Base MAIN locale vérifiée à `0573b30fdb213ad449eb9172a35ea3093769c05d` : collecte
+Base MAIN locale vérifiée à `09bf4cdc03272001e605fb70d94ec402d2664472` : collecte
 passive durable et opérations ciblées, défaut CLI core, préflight/readiness hors
 ligne, diagnostic et restitution HTML de journaux, chronologie/trace des talents,
 cooldowns historiques, catalogue/complétude et démonstration SYNTHETIC intégrés.
 Le débrief replay JSON/texte/HTML est intégré aussi, sans Coach/API/audio.
 Cela ne transforme pas leurs tests hors ligne en qualification native indépendante.
-Le guide de démarrage et les alias replay historiques sont intégrés. Les deux
+Le lot38 est intégré, revue indépendante et recette depuis MAIN comprises :
+preuve locale durable `C:/root/dev/AI/CervHots/out/weekend/2026-10-24/lot38/integration/verification.json`
+(verdict PASS, MAIN/candidat exacts, revue ROGER SAME-CARD run745).
+Cette base vérifiée n'est pas le hash du futur commit documentaire. Les dossiers
+`out/` sont ignorés par Git : ne pas supposer leur présence sur une autre installation.
+Le dossier lot39 est une préparation mutable hors ligne, pas une livraison produit
+ni un gel. Le guide de démarrage et les alias replay historiques sont intégrés. Les deux
 corpus exercent désormais 10/10 héros reconnus, sous SHIM indicatif non certifié ;
-la vie n'est affichée que lorsqu'un événement reconnu l'établit. Carte inconnue
+la perspective d'équipe reste hypothétique et la vie n'est affichée que lorsqu'un
+événement reconnu l'établit. Carte inconnue
 et objectif inconnu restent inconnus ; aucune nouvelle qualification native/live/HUD.
 
 Objectif Dragon : exports/rejeu acquis avec limites ; Volskaya objectif reste
@@ -157,6 +166,14 @@ qualifiés, camps/structures/visibilité ennemie non ouverts. Voir la
 Les recettes opérateurs lot19/lot28 ont refusé le live (contexte privé actuel
 inconnu) : aucun gain core/all réel ni STOP produit live n'en est déduit.
 Les compteurs ambigus ne sont pas convertis en total de matchs.
+
+**Ordre actuel : voies natives ciblées prioritaires**, avec leurs contrôles de
+build, contexte, perspective, fraîcheur et coûts inchangés. La vision n'est qu'un
+recours explicitement autorisé ; les captures sont des références indépendantes
+à qualifier, pas un nouveau producteur de statistiques. Un replay peut être un
+préfixe partiel : ni sa lisibilité ni son intégrité ne qualifient une source live.
+Aucune garantie juridique, EULA/ToS, anti-cheat ou de sécurité du compte n'est
+apportée, même en privé/IA. Voir le [contrat de priorité](hotstate/README.md#priorité-actuelle-et-limites-du-direct).
 
 ### Historique conservé — état au 17/10 et ajout du 18/10
 

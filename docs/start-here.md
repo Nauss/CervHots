@@ -1,10 +1,20 @@
 # CervHots en cinq minutes — choisir le bon parcours
 
-**État documentaire : 26 octobre 2026, base MAIN locale
-`0573b30fdb213ad449eb9172a35ea3093769c05d` (lots33–36 intégrés).**
-La recette de restitution lot38 reste distincte de sa revue et de son intégration.
-**STOP week-end : aucune activation native autorisée par ce
-guide.** Ni ancien job ni ancienne partie ne doivent être réarmés.
+**État documentaire : 26 octobre 2026, base MAIN locale vérifiée
+`09bf4cdc03272001e605fb70d94ec402d2664472` (lot38 intégré).**
+Preuve durable locale : `C:/root/dev/AI/CervHots/out/weekend/2026-10-24/lot38/integration/verification.json`
+(PASS, intégration locale fast-forward, revue ROGER SAME-CARD run745 et recette depuis MAIN).
+Ce SHA désigne la base vérifiée, pas le futur commit documentaire. Lot39 prépare
+un dossier hors ligne mutable ; ce n'est ni une livraison produit ni un gel.
+**Aucune activation native autorisée par ce guide : aucun droit CURRENT et aucune
+annulation de STOP.** Le mot STOP ici n'atteste pas un marqueur STOP week-end
+existant ; son absence ne vaut pas autorisation. Ni ancien job ni ancienne partie
+ne doivent être réarmés.
+
+Les **voies natives ciblées sont prioritaires**, sans élargissement de qualification.
+Vision seulement en recours explicitement autorisé ; captures de référence à
+qualifier, pas producteur de statistiques. Aucune garantie juridique/EULA/ToS,
+anti-cheat ou de sécurité du compte, même en privé/IA.
 
 | Je veux… | Choix | Ce que j'obtiens |
 | --- | --- | --- |
@@ -31,10 +41,12 @@ export TMPDIR=C:/Users/Nauss/AppData/Local/hermes/cache/scratch
 export TEMP="$TMPDIR" TMP="$TMPDIR" PYTHONDONTWRITEBYTECODE=1 PYTHONIOENCODING=utf-8
 ```
 
-Le `cd` ci-dessus est le **modèle MAIN après intégration**. La recette lot38 a
-réellement exercé les commandes sûres suivantes depuis
-`C:/root/dev/AI/CervHots/.worktrees/t_9b43acb6`, avec le même interpréteur absolu
-et ces trois variables temporaires. Choisir **un** parcours ; pas besoin de tout
+Le `cd` ci-dessus est le **cwd réellement exercé lors de l'intégration lot38**.
+Les commandes sûres suivantes correspondent aux argv conservés dans
+`C:/root/dev/AI/CervHots/out/weekend/2026-10-24/lot38/integration/recipe-3.12/COMMANDS.json`,
+avec codes et empreintes des logs. La recette auteur avait été exercée auparavant
+depuis `C:/root/dev/AI/CervHots/.worktrees/t_9b43acb6`, dans des destinations distinctes.
+Même interpréteur absolu et trois variables temporaires. Choisir **un** parcours ; pas besoin de tout
 exécuter. Les parents de sortie doivent exister. Les destinations lot38 ci-dessous
 sont les preuves de cette recette : **déjà présentes après exécution, ne pas les
 réutiliser**. Pour réessayer, choisir un autre nom de sortie neuf, sans effacer
@@ -42,11 +54,11 @@ l'ancien ni toucher aux sources.
 
 ## 1. Démo silencieuse, sans jeu ni replay (recommandé)
 
-**Commandes réellement exercées lot38**, données explicitement **SYNTHETIC** :
+**Commandes réellement exercées à l'intégration lot38**, données explicitement **SYNTHETIC** :
 
 ```bash
-C:/root/dev/AI/CervHots/tts/.venv/Scripts/python.exe -B -m cerveau.offline_demo --destination C:/root/dev/AI/CervHots/out/weekend/2026-10-24/lot38/recipe-3.12/demo-SYNTHETIC
-C:/root/dev/AI/CervHots/tts/.venv/Scripts/python.exe -B -m cerveau.offline_demo --verify C:/root/dev/AI/CervHots/out/weekend/2026-10-24/lot38/recipe-3.12/demo-SYNTHETIC
+C:/root/dev/AI/CervHots/tts/.venv/Scripts/python.exe -B -m cerveau.offline_demo --destination C:/root/dev/AI/CervHots/out/weekend/2026-10-24/lot38/integration/recipe-3.12/demo-SYNTHETIC
+C:/root/dev/AI/CervHots/tts/.venv/Scripts/python.exe -B -m cerveau.offline_demo --verify C:/root/dev/AI/CervHots/out/weekend/2026-10-24/lot38/integration/recipe-3.12/demo-SYNTHETIC
 ```
 
 Exiger **code 0 de la génération ET de la vérification** ; un HTML ou un marqueur
@@ -59,7 +71,7 @@ réelle n'est démontré. Détails et codes 3/4 de vérification : [démo](offli
 **Commande réellement exercée lot38** sur le même fichier autorisé que lot32 :
 
 ```bash
-C:/root/dev/AI/CervHots/tts/.venv/Scripts/python.exe -B -m cerveau.replay_debrief --replay C:/root/dev/AI/CervHots/out/weekend/2026-10-24/lot2/operator/PRIVATE/causal-001.StormReplay --team 0 --perspective player-team --at 60 --allow-protocol-shim --report-dir C:/root/dev/AI/CervHots/out/weekend/2026-10-24/lot38/recipe-3.12/replay-60s
+C:/root/dev/AI/CervHots/tts/.venv/Scripts/python.exe -B -m cerveau.replay_debrief --replay C:/root/dev/AI/CervHots/out/weekend/2026-10-24/lot2/operator/PRIVATE/causal-001.StormReplay --team 0 --perspective player-team --at 60 --allow-protocol-shim --report-dir C:/root/dev/AI/CervHots/out/weekend/2026-10-24/lot38/integration/recipe-3.12/replay-60s
 ```
 
 Lire `replay-60s/REPORT.html` ou `report.json` : **historique indicatif SHIM non certifié**,
@@ -69,6 +81,9 @@ Les anciens fichiers lot33 restent inchangés et peuvent refléter l'ancienne co
 La vie n'est affichée que si un événement reconnu l'établit ; sinon elle reste
 inconnue. L'objectif reste inconnu ; la carte recipe reste inconnue. Ce gain est
 documentaire/historique, sans qualification native/live/HUD.
+Un replay peut contenir un **préfixe partiel**, sans résultat final ; cela ne
+qualifie pas sa lecture comme source live. La perspective `player-team` est
+hypothétique, pas une preuve de ce que voyait le joueur local.
 L'opt-in `--allow-protocol-shim` n'est pas une certification ;
 sans lui, ce corpus est refusé (code 1). `--team 0` est un indice, pas une couleur
 HUD ni une identité locale. `60` désigne le temps de **mission**, préparation
@@ -84,8 +99,8 @@ explicitement autorisé ; sorties neuves seulement :
 
 ```bash
 C:/root/dev/AI/CervHots/tts/.venv/Scripts/python.exe -B -m cerveau.passive_session --status --output-dir C:/root/dev/AI/CervHots/out/weekend/2026-10-24/lot7/operator-revision2/PRIVATE/talents-session-002
-C:/root/dev/AI/CervHots/tts/.venv/Scripts/python.exe -B -m cerveau.passive_session --diagnose --journal C:/root/dev/AI/CervHots/out/weekend/2026-10-24/lot7/operator-revision2/PRIVATE/talents-session-002/events.jsonl --report-dir C:/root/dev/AI/CervHots/out/weekend/2026-10-24/lot38/recipe-3.12/native-diagnosis
-C:/root/dev/AI/CervHots/tts/.venv/Scripts/python.exe -B -m cerveau.passive_session --report-html --journal C:/root/dev/AI/CervHots/out/weekend/2026-10-24/lot7/operator-revision2/PRIVATE/talents-session-002/events.jsonl --report-dir C:/root/dev/AI/CervHots/out/weekend/2026-10-24/lot38/recipe-3.12/native-history
+C:/root/dev/AI/CervHots/tts/.venv/Scripts/python.exe -B -m cerveau.passive_session --diagnose --journal C:/root/dev/AI/CervHots/out/weekend/2026-10-24/lot7/operator-revision2/PRIVATE/talents-session-002/events.jsonl --report-dir C:/root/dev/AI/CervHots/out/weekend/2026-10-24/lot38/integration/recipe-3.12/native-diagnosis
+C:/root/dev/AI/CervHots/tts/.venv/Scripts/python.exe -B -m cerveau.passive_session --report-html --journal C:/root/dev/AI/CervHots/out/weekend/2026-10-24/lot7/operator-revision2/PRIVATE/talents-session-002/events.jsonl --report-dir C:/root/dev/AI/CervHots/out/weekend/2026-10-24/lot38/integration/recipe-3.12/native-history
 ```
 
 - `--status` : statut **disque historique**, `reader_active=null` toujours.
@@ -119,7 +134,7 @@ Le [contrôle core prêt](core-readiness.md) inspecte aussi identité/sortie/STO
 sans création ni test d'écriture ; lui non plus n'autorise pas une collecte.
 
 **Procédure de démarrage / arrêt / reprise : modèles NON exécutés lot33.**
-Le STOP week-end interdit de les lancer ici. Lors d'une future autorisation
+Ce guide ne permet pas de les lancer ici, ni de lever un STOP éventuel. Lors d'une autorisation
 indépendante seulement, suivre les [commandes absolues du quickstart](passive-quickstart.md#2-démarrer-une-seule-session-autorisée) :
 
 1. Confirmer la fin effective de tout ancien collecteur (retour du terminal
@@ -147,8 +162,9 @@ ancienne session n'a été exécutée pour lot33.
 
 Portée **carte × famille × build/héros**, jamais « toutes cartes ». Base documentaire :
 `C:/root/dev/AI/CervHots/out/weekend/2026-10-24/coverage.json`, complétée par les
-preuves d'intégration lot32 (le champ lot32 de coverage était encore en retard
-lors de sa lecture). Les dossiers `out/` sont locaux ignorés, pas des fichiers
+preuves d'intégration lot32 et lot38 (les statuts de coverage sont des instantanés,
+pas l'autorité d'intégration ; ne pas les corriger depuis ce guide).
+Les dossiers `out/` sont locaux ignorés, pas des fichiers
 distribués par Git ni recopiés dans le worktree. Leur absence ailleurs n'est pas
 une preuve négative.
 

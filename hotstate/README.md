@@ -1,11 +1,65 @@
 # hotstate — la couche stats de CervHots
 
-**Mission :** fournir à l'agent de décision (le cerveau du coach) **toutes les
-stats de la partie en cours**, quel que soit le moyen de les obtenir. Une seule
-sortie, un seul contrat : `schema/game_state.schema.json`. La source (replay,
-mémoire, vision) est un détail d'implémentation derrière ce contrat.
+**Mission :** normaliser les seuls champs établis, avec leurs inconnus, refus et
+provenance. Le [schéma historique](schema/game_state.schema.json) ne rend pas les
+sources interchangeables : replay historique, référence visuelle et acquisition
+native actuelle n'ont ni la même perspective ni les mêmes permissions.
 
-**État (17/10/2026) :** lecture mémoire des trois compteurs validée en partie
+## État courant vérifié — 26/10/2026
+
+Base MAIN locale vérifiée : `09bf4cdc03272001e605fb70d94ec402d2664472`, lot38
+intégré ; preuve durable locale :
+`C:/root/dev/AI/CervHots/out/weekend/2026-10-24/lot38/integration/verification.json`
+(PASS, revue indépendante ROGER SAME-CARD run745, recettes depuis MAIN).
+Ce hash désigne la base vérifiée, pas le futur commit documentaire. Le dossier
+lot39 est une préparation mutable hors ligne, pas une livraison produit ni un gel.
+Les preuves `out/` sont ignorées par Git et ne sont pas distribuées avec ce guide.
+
+Parcours livré sans Coach/API/audio : [guide de démarrage](../docs/start-here.md),
+démo SYNTHETIC, débrief replay JSON/texte/HTML, inspection historique des journaux
+et préflight core sans backend. Collecte passive durable intégrée, **core par
+défaut CLI**, optionnels sur opt-in : [contrat core](../docs/core-collection.md).
+La [matrice actuelle et ses limites](../docs/start-here.md#familles--ce-que-les-preuves-permettent-réellement-de-dire)
+fait la distinction avec les résultats anciens ci-dessous : objectif Dragon
+exporté/rejoué avec limites, Volskaya objectif qualification seulement, Braxis
+non débloqué. Aucun nouveau gain live/native/HUD déduit du lot38 ou de ce guide.
+
+## Priorité actuelle et limites du direct
+
+1. **Voies natives ciblées prioritaires**, sans élargir les allowlists ni affaiblir
+   build, contexte, perspective, fraîcheur, WHOLE ou contrôles de cohérence.
+2. **Vision seulement en recours explicitement autorisé.** Les captures sont
+   des références indépendantes à qualifier (identité, temps, qualité, perspective),
+   pas un nouveau producteur de statistiques. Aucun OCR/modèle vision implicite.
+3. **Replay historique distinct.** Un fichier peut être un **préfixe partiel**,
+   sans score final : ne pas déclarer qu'un replay est forcément final. Cela ne
+   qualifie ni un fichier temporaire ni le replay comme source live. Les événements
+   absents restent inconnus ; données omniscientes et données joueur ne se confondent pas.
+
+Le débrief livré refuse par défaut un protocole exact indisponible. Sur les corpus
+98348 exercés avec protocole91756, `--allow-protocol-shim` est un opt-in **SHIM non
+certifié** ; reconnaissance historique de 10/10 héros ≠ fidélité du protocole.
+La perspective `player-team` est **hypothétique**, pas une identité locale prouvée.
+Voir le [contrat replay](../docs/replay-debrief.md) et les argv réellement exercés
+dans le guide, sans réutiliser leurs sorties existantes.
+
+**Ce guide ne confère jamais CURRENT et n'annule aucun STOP.** La mention STOP
+dans le texte ne prouve pas l'existence d'un STOP week-end ; l'absence d'un marqueur
+ne donne aucune permission. Préflight technique, statut disque historique et
+code0 ne prouvent ni contexte privé actuel ni fin d'un ancien lecteur. Démarrage,
+arrêt et reprise restent une [procédure soumise à autorisation distincte](../docs/passive-quickstart.md),
+avec parent/sortie/STOP neufs et anciens claims/STOP conservés.
+
+**Aucune garantie juridique, EULA/ToS, anti-cheat ou de sécurité du compte**, même
+en privé/IA. Lecture seule et absence d'injection ne suppriment pas ces risques.
+
+## Historique conservé — 17 au 19/10/2026, pas l'état courant de MAIN
+
+Les validations ci-dessous sont bornées à leurs captures/build/cartes. Le mot
+CURRENT y décrit un contrôle de l'époque, pas une permission actuelle. Les
+commandes anciennes sont des modèles non exécutés lot40, pas le quickstart livré.
+
+**État historique (17/10/2026) :** lecture mémoire des trois compteurs validée en partie
 IA jusqu'à Groco et Mumble. Le lecteur natif de simulation fournit maintenant
 le chronomètre, les dix héros (IA comprises), leurs niveaux et états de vie,
 ainsi que les PV/ressources alliés. Les dix choix, équipes, niveaux et états
@@ -20,7 +74,8 @@ ouvrir d'autre champ ennemi ; voir `etudes/rea/P2-VISIBILITE-VALIDATION.md`.
 Recette et limites pixels : `etudes/rea/P2-POSITIONS-RECETTE.md` depuis la racine.
 Les positions nécessitent lecteur et normaliseur dans le même processus live ;
 un JSON `--state` interprocessus ou un dump historique ne les autorise pas.
-Le reste de cette note conserve l'historique initial du 10 octobre.
+Les sections techniques suivantes conservent aussi des éléments du 10 octobre ;
+elles ne remplacent pas les priorités et limites actuelles ci-dessus.
 
 Lot visibilité : `visibility.py` est un lecteur conservateur, activé uniquement
 pour le booléen courant Volskaya après deux cycles joueur recoupés. Positions,
@@ -33,12 +88,12 @@ La lecture native est aussi soumise à une relecture intégrale et125ms murales.
 
 ---
 
-## Ce que HotS nous donne déjà (validé sur pièces)
+## Inventaire historique des replays testés (10/10/2026)
 
 Un `.StormReplay` contient un flux d'événements bien plus riche que le HUD.
 Inventaire réellement observé sur les replays testés :
 
-| Famille | Événements | Ce que ça donne au coach |
+| Famille | Événements | Contenu historique observé, pas des champs live autorisés |
 |---|---|---|
 | Héros | `spawn`, `death`, `respawn` (+ position, tueur) | qui est vivant, où, qui vient de mourir |
 | Progression | `LevelUp`, `TalentChosen`, `SUpgradeEvent` | niveaux d'équipe, talents choisis (dont les ults) |
@@ -49,10 +104,11 @@ Inventaire réellement observé sur les replays testés :
 | Communication | pings, chat | ce que l'équipe demande |
 | Fin de partie | `SScoreResultEvent`, `EndOfGame*` | dégâts, soins, temps mort, score final |
 
-Pas besoin de lire la mémoire du jeu pour tout ça **si le fichier est lisible
-pendant la partie** — c'est exactement ce que teste `live_probe.py`.
+Cet inventaire ne prouve ni disponibilité pendant une partie ni adéquation à la
+perspective du joueur. `live_probe.py` est une sonde historique, pas une source
+live qualifiée ni le parcours de collecte recommandé.
 
-## Utilisation
+## Ancien exemple d'extraction — modèle non exécuté lot40
 
 ```bash
 cd hotstate
@@ -66,28 +122,16 @@ uv pip install --python .venv/Scripts/python.exe heroprotocol
 Sortie : JSON conforme à `schema/game_state.schema.json`
 (`meta`, `players`, `timeline`, `position_snapshots`, `final_score`, `available`).
 
-## Les chemins vers le « en direct » — dans l'ordre
+## Ancienne piste replay en direct — constat borné du 10/10/2026
 
-**Vérifié (10/10/2026) : le `.StormReplay` n'existe qu'après la partie.** Il
-n'arrive dans `Documents\...\Replays\` qu'une fois l'écran MVP passé ; pendant
-la partie, les données vivent dans des fichiers temporaires de reconnexion
-(`%LOCALAPPDATA%\Temp\Heroes of the Storm\TempWriteReplayP1\`), au format blob
-non documenté, effacés à la fermeture du jeu. Le forum Blizzard est explicite :
-*« Replay files aren't created until after the match has finished, so there
-isn't a way to get replay data during a live match without breaking the EULA. »*
-→ la piste « parser le replay en cours de partie » est **abandonnée**.
-
-1. **Vision (plan A).** Capture de la minimap + du bandeau, analysée par le
-   modèle vision. Légal, testable tout de suite. Les replays deviennent alors
-   **vérité terrain** : `extract.py` produit l'état réel d'une partie passée,
-   pour mesurer ce que la vision en lit vraiment (phase 2 de la roadmap).
-2. **Mémoire (plan B).** REA + Ghidra pour localiser l'état dans le binaire,
-   puis petit lecteur. Décision **ToS/Warden** requise avant toute lecture live.
-3. **Bonus gratuit, en direct** : pendant la partie, `replay.server.battlelobby`
-   (fichier temporaire, parsable — cf. Heroes.StormReplayParser) donne map,
-   compositions et identités de joueurs. C'est ce que lit HotsStats. Utile pour
-   le contexte du coach (qui joue quoi, sur quelle map), pas pour les stats de
-   match.
+L'observation ancienne portait sur la publication d'un replay final dans le
+répertoire utilisateur après l'écran MVP, et sur des fichiers temporaires de
+reconnexion. Elle ne démontre pas l'impossibilité générale d'un préfixe partiel.
+Aucun de ces temporaires n'est qualifié ici comme source actuelle de statistiques.
+Un contexte de lobby ne prouve ni valeurs tactiques, ni fraîcheur, ni perspective
+active. L'ancien ordre vision d'abord/mémoire ensuite est remplacé par la
+[priorité native actuelle](#priorité-actuelle-et-limites-du-direct), sans garantie
+juridique ou compte tirée d'un forum ou d'une technique de capture.
 
 ## Lecteur natif de simulation
 
@@ -194,12 +238,10 @@ Les captures brutes restent privées sous `out/`, ignoré par Git.
   l'échelle exacte varie selon l'événement, ne pas en dériver de temps —
   `_gameloop` fait foi.
 
-## Prochaines étapes
+## Roadmap historique remplacée — aucune activation par cette note
 
-1. **Corpus d'évaluation de la vision** : sur N replays, capturer les crops du
-   HUD (rejoués dans le client) et comparer ce que le modèle vision en lit à
-   l'état réel d'`extract.py` — LA mesure de la phase 2.
-2. Brancher le format `game_state` sur l'agent de décision (côté vision) +
-   exploiter `replay.server.battlelobby` pour le contexte (comps, map).
-3. Si la vision ne suffit pas : plan B mémoire (REA + Ghidra, `etudes/rea/`),
-   décision ToS/Warden au préalable.
+La roadmap initiale d'évaluation vision puis mémoire ne fixe plus l'ordre de
+travail. Revenir au [guide livré](../docs/start-here.md) et à sa matrice bornée :
+natif ciblé prioritaire, vision seulement recours autorisé, références non
+productrices. Aucun nouveau match, scan, téléchargement ou appel API n'est
+nécessaire pour lire les preuves hors ligne conservées.
