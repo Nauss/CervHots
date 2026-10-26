@@ -64,13 +64,21 @@ class PassiveLifecycleProcessTests(unittest.TestCase):
 
     def wait_file(self, path, child, timeout=12):
         deadline = time.perf_counter() + timeout
-        while not path.is_file():
+        last_error = None
+        while True:
+            # Existence is not readiness: Windows can deny the actual open.
+            # Retry only handshake absence/access, never malformed JSON or CLI IO.
+            try:
+                return json.loads(path.read_text(encoding='utf-8'))
+            except (FileNotFoundError, PermissionError) as error:
+                last_error = error
             if child.poll() is not None:
-                self.fail('child exited before %s: %s' % (path.name, self.diagnostics()))
+                self.fail('child exited before %s (last read: %r): %s' %
+                          (path.name, last_error, self.diagnostics()))
             if time.perf_counter() >= deadline:
-                self.fail('bounded handshake expired for %s: %s' % (path.name, self.diagnostics()))
+                self.fail('bounded handshake expired for %s (last read: %r): %s' %
+                          (path.name, last_error, self.diagnostics()))
             time.sleep(.02)
-        return json.loads(path.read_text(encoding='utf-8'))
 
     def diagnostics(self):
         return {p.name: p.read_text(encoding='utf-8', errors='replace')[-4096:]
