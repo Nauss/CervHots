@@ -5,6 +5,7 @@ Depuis la racine du dépôt, sous **Windows local**, Python 3.12 ou 3.14 :
 ```bash
 python -B -m cerveau.offline_demo --help
 python -B -m cerveau.offline_demo --destination C:/chemin/existant/demo-SYNTHETIC-neuve
+python -B -m cerveau.offline_demo --verify C:/chemin/existant/demo-SYNTHETIC-neuve
 ```
 
 Le **parent doit déjà exister**. La destination doit être absolue, locale et
@@ -81,7 +82,63 @@ Octets déterministes entre destinations neuves et Python 3.12/3.14 ; aucune
 métadonnée variable dans les fichiers (horloges fixes documentaires, pas l'heure
 courante). Les timestamps du système de fichiers ne font pas partie de ce contrat.
 Publication exclusive fichier par fichier, **pas de transaction atomique du dossier**.
-Seul le marqueur du catalogue bénéficie du protocole d'intégrité existant.
+Les HTML peuvent exister dans une sortie interrompue : **ni un HTML lisible, ni
+`demo.json`, ni `catalog/COMPLETE.json` ne signifient que la démo entière a réussi**.
+Exiger la vérification explicite ci-dessus avec code **0** avant de présenter la démo.
+
+## Protocole de complétude v1 (lot31)
+
+`DEMO_COMPLETE.json` est créé **en dernier**, après tous les codes attendus et
+la vérification du catalogue. Son schéma fermé est `event=offline_demo_completion`,
+`schema_version=1`, `data_kind=SYNTHETIC`, `files`. Chaque entrée possède exactement
+`path`, `bytes`, `sha256` ; ordre lexical, 43 noms fixes, aucun chemin arbitraire.
+L'inventaire couvre **tous** les fichiers produits hors marqueur lui-même :
+notices, journaux inventés, status, diagnostics/résumés texte/JSON, HTML,
+rapports du catalogue, son propre marqueur et `demo.json`. Le reçu `demo.json`
+reste au schéma v1 lot30 ; le protocole de complétude est versionné séparément.
+
+Bornes de la vérification : 43 fichiers non vides, 256 Kio par fichier,
+512 Kio cumulés, marqueur 16 Kio maximum. Les clés dupliquées, fichiers/dossiers
+supplémentaires, noms manquants, inventaire réordonné/incomplet, version inconnue,
+liens physiques, liens/jonctions/reparse, chemins réseau/ADS/`..` et fichiers
+ouverts en écriture sont refusés. JSON canonique UTF-8 ASCII échappé, indentation
+2 espaces et LF final obligatoire : une troncature laissant du JSON valide
+reste refusée. Tous les noms sont validés **avant** toute ouverture d'un fichier
+inventorié ; aucune extraction ou découverte au-delà du vocabulaire fermé.
+
+Le protocole réutilise les primitives du catalogue : ancêtres et sous-dossiers
+épinglés no-follow, tous les fichiers ouverts sans partage écriture/suppression
+jusqu'au résultat, SHA256 sur handles bornés, réénumération finale contre l'ajout
+de noms pendant le hachage. Le marqueur utilise `CREATE_NEW`, sans aucun partage,
+et reste delete-pending jusqu'à son flush/fsync réussi. Un arrêt du processus
+avant ce point supprime le marqueur incomplet ; toute sortie partielle restante
+est **conservée** et sa reprise est refusée. Aucun rollback, nettoyage ou
+réparation des sorties utilisateur. Une concurrence sur la même destination
+ne peut réserver le dossier qu'une fois. Ces protections ne sont pas un verrou
+global sur les autres démonstrations.
+
+`--verify CHEMIN` est en lecture seule, sans backend, réseau, API, audio ni
+sites/dépendances replay nécessaires. Sortie JSON fermée sur stdout :
+
+| Code | État | Sens |
+| --- | --- | --- |
+| 0 | `complete` | Complétude et cohérence SHA locale SYNTHETIC de cet instant |
+| 3 | `damaged_or_refused` | Octets/noms invalides, manquants, altérés, tronqués ou accès refusé |
+| 4 | `unverifiable` | Marqueur absent : ancienne démo lot30 **ou** exécution interrompue ; impossible de trancher |
+| 2 | aucun JSON | Arguments invalides, notamment mélange `--verify`/`--destination` |
+
+Une ancienne démo lot30 est diagnostiquée sans la modifier ; ne jamais lui
+ajouter un marqueur après coup. Générer une autre démo dans un dossier neuf.
+Le marqueur n'est ni une signature ni une preuve de vérité des contenus : un
+acteur pouvant réécrire tous les fichiers et recalculer les SHA peut forger une
+cohérence locale. La protection ne couvre pas une modification **après** la
+fermeture des handles ; relancer `--verify` après toute copie/modification et
+avant usage. Aucun engagement d'atomicité globale ni de durabilité face à une
+panne électrique : les CLI diagnostic/résumé existantes ferment leurs fichiers
+sans fsync par fichier, contrairement aux écritures catalogue/démo et au
+marqueur. La vérification refuse les octets manquants après une telle panne ;
+la présence du marqueur seule n'est **jamais** le verdict.
+
 
 ## Ce qui n'est JAMAIS démontré
 

@@ -14,13 +14,19 @@ class _Parser(argparse.ArgumentParser):
 
 def main(argv=None):
     parser = _Parser(description=__doc__, allow_abbrev=False)
-    parser.add_argument('--destination', type=Path, required=True,
+    mode = parser.add_mutually_exclusive_group(required=True)
+    mode.add_argument('--destination', type=Path,
         help='répertoire local absolu NEUF, parent existant (Windows)')
+    mode.add_argument('--verify', type=Path,
+        help='vérifier en lecture seule une démonstration complète (Windows)')
     try:
         args = parser.parse_args(argv)
     except ValueError:
         print('Arguments invalides ; utiliser --help.', file=sys.stderr)
         return 2
+    if args.verify is not None:
+        from .demo_integrity import run
+        return run(args.verify)
     try:
         result = demonstrate(args.destination)
     except (OSError, ValueError, TypeError, KeyError, RecursionError):
@@ -146,6 +152,8 @@ def demonstrate(destination):
             basis='synthetic_historical_not_current', current_permission=False,
             authenticated=False, hud_validated=False, commands=commands, verification=verification)
         catalog._write(target/'demo.json', _dump(result))
+        from .demo_integrity import publish
+        publish(target)
     # Toutes les références/handles sont libérés ici. Aucun backend n'a été ouvert.
     return result
 
@@ -157,6 +165,9 @@ Braxis non qualifié ; contexte hérité inconnu. Aucune permission CURRENT.
 Ne démontre ni lecture native réelle, STOP réel, HUD, carte/build réels ou coût réel.
 Aucun navigateur, Coach, API, réseau ou audio ; aucun conseil de jeu.
 La fermeture session_limit du journal est fictive, pas un arrêt de processus réel.
+Un HTML ou catalog/COMPLETE.json seul ne prouve PAS la complétude de cette démo.
+Exiger DEMO_COMPLETE.json et python -B -m cerveau.offline_demo --verify DESTINATION.
+Sans vérification code 0 : sortie ancienne, partielle, altérée ou refusée ; ne pas reprendre ici.
 '''
 
 
