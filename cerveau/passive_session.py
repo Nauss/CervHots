@@ -53,12 +53,15 @@ def measured_acquisition(row):
         for name in ('gameplay_clock', 'positions', 'visibility', 'objective',
                      'talents', 'local_cooldowns', 'battlefield') if name in optional}
     collection = row.get('collection')
-    if type(collection) is str and collection in ('all', 'talents', 'core'):
+    if type(collection) is str and collection in ('all', 'talents', 'core', 'positions'):
         result['collection'] = collection
         result['not_selected'] = ([] if collection == 'all' else [
             'gameplay_clock', 'positions', 'visibility', 'objective', 'local_cooldowns', 'battlefield'])
         if collection == 'core':
             result['not_selected'].insert(4, 'talents')
+        if collection == 'positions':
+            result['not_selected'] = ['gameplay_clock', 'visibility', 'objective',
+                                      'talents', 'local_cooldowns', 'battlefield']
     return result
 
 
@@ -173,7 +176,7 @@ def run_session(source_factory, stopped, emit, *, duration=300, interval=5,
                     'session_token': session_token,
                     'map_id': ('DragonShire' if any(state.get(family, {}).get('map_id') == 'DragonShire'
                                                     for family in ('objective', 'talents', 'local_cooldowns')) else
-                               state['meta'].get('map_id') if state['meta'].get('collection') == 'core'
+                               state['meta'].get('map_id') if state['meta'].get('collection') in ('core', 'positions')
                                and state['meta'].get('map_id') in ('DragonShire', 'Volskaya') else None),
                     'perspective': ('native_player' if state['meta'].get('source') == 'live'
                                     and state['meta'].get('native_status') == 'valide'
@@ -267,7 +270,7 @@ def preflight(*, core=False):
 class NativeSource:
     """One process/probe lifetime; no rebinding or receipt caching across sessions."""
     def __init__(self, player, *, collection='all'):
-        if type(collection) is not str or collection not in ('all', 'talents', 'core'):
+        if type(collection) is not str or collection not in ('all', 'talents', 'core', 'positions'):
             raise ValueError('invalid_collection')
         self.collection = collection
         from .native_reader_guard import NativeReaderGuard
@@ -425,7 +428,7 @@ def parser(*, safe=False):
     result.add_argument('--stop-file', type=Path, help='absolute cooperative STOP; never removed')
     result.add_argument('--max-seconds', type=bounded(1, 1800), default=300)
     result.add_argument('--interval', type=bounded(1, 300), default=5)
-    result.add_argument('--collection', choices=('all', 'talents', 'core'), default='core',
+    result.add_argument('--collection', choices=('all', 'talents', 'core', 'positions'), default='core',
                         help='default core: native core only; talents: core + talents; all: all existing families (explicit opt-in); unselected optional families never attempted')
     return result
 
@@ -519,7 +522,7 @@ def main(argv=None):
         if args.live and stop_requested(args.stop_file):
             report({'event': 'boundary', 'reason': 'stop_file'})
             return 0
-        ready = preflight(core=True) if args.collection == 'core' else preflight()
+        ready = preflight(core=True) if args.collection in ('core', 'positions') else preflight()
         # CLI selection only: public preflight()/NativeSource defaults stay compatible.
         ready = dict(ready, collection=args.collection,
                      not_selected=measured_acquisition({'collection': args.collection})['not_selected'])

@@ -252,7 +252,7 @@ def snapshot(backend, mapping: dict, debug: bool = False, *, context=None,
              native_profile=None) -> dict:
     triggers = mapping["triggers"]
     collection = mapping.get('collection', 'all')
-    if type(collection) is not str or collection not in ('all', 'talents', 'core'):
+    if type(collection) is not str or collection not in ('all', 'talents', 'core', 'positions'):
         raise ValueError('invalid_collection')
     if context is not None:
         context.begin()

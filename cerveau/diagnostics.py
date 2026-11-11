@@ -104,6 +104,9 @@ class Journal:
         folded = text.casefold()
         if any(label in folded for label in self.private_labels):
             return ''
+        from .macro import TEXT
+        if text == TEXT:
+            return TEXT  # Closed CODE-rendered macro, not model free text.
         if not re.fullmatch(r"[A-Za-zÀ-ÖØ-öø-ÿ '\-.,!?;:]+", text):
             return ''
         words = re.findall(r'[a-zà-öø-ÿ]+', folded)
@@ -114,6 +117,16 @@ class Journal:
                     text_withheld=bool(decision.texte) and not bool(self.advice(decision.texte)),
                     speaking=decision.parler, confidence=decision.confiance,
                     priority=decision.priorite, reason=decision_reason(decision.raison))
+
+    def coach_input(self, state, *, mode='free', cycle_age_s=None):
+        """Exact selected public positions at the Coach boundary, never receipts."""
+        if mode == 'macro':
+            from .macro import facts
+            self.record('coach_input', mode='macro', coverage=coach_coverage(state), facts=facts(state),
+                        cycle_age_s=cycle_age_s if number(cycle_age_s) else None)
+        else:
+            self.record('coach_input', mode='free', coverage=coach_coverage(state),
+                        cycle_age_s=cycle_age_s if number(cycle_age_s) else None)
 
     def freshness(self, original, current, age, max_age):
         import json
@@ -132,9 +145,61 @@ class Journal:
         self.record('outcome', speaking=decision.parler, reason=decision_reason(decision.raison))
 
 
+def coach_coverage(state):
+    """Closed public schema for the normalized input, NOT a replay permission."""
+    from .passive_session import measured_acquisition
+    from hotstate.diagnostics import refusal
+    meta = state.get('meta', {})
+    team = state.get('ally_team')
+    allies = [h for h in state.get('heroes', []) if type(h) is dict
+              and type(team) is int and team in (0, 1) and h.get('team') == team]
+    q = state.get('positions_qualification', {})
+    status = q.get('status')
+    status = status if status in ('normalized', 'not_selected', 'refused', 'rejected') else 'unknown'
+    reason = q.get('reason')
+    positions = None
+    if status == 'normalized':
+        p = state.get('positions', {})
+        try:
+            if (p.get('map_id') != 'Volskaya' or not number(p.get('t'))
+                    or not number(q.get('age_s'), 0, 1)
+                    or not number(q.get('read_window_s'), 0, .125)
+                    or len(allies) != 5):
+                raise ValueError('invalid_positions')
+            samples, seen = [], set()
+            from hotstate.positions import playable_bounds
+            xmin, ymin, xmax, ymax = playable_bounds('Volskaya')
+            for h in p['heroes']:
+                member = next(a for a in allies if a.get('id') == h.get('id'))
+                if (type(h.get('id')) is not int or h['id'] in seen
+                        or member.get('alive') is not True or h.get('team') != team
+                        or not number(h.get('x'), xmin, xmax) or not number(h.get('y'), ymin, ymax)
+                        or not number(h.get('u'), 0, 1) or not number(h.get('v'), 0, 1)):
+                    raise ValueError('invalid_positions')
+                seen.add(h['id'])
+                samples.append(dict(slot=h['id'], team=team, **{k: h[k] for k in ('x', 'y', 'u', 'v')}))
+            positions = dict(map_id='Volskaya', t=p['t'], team=team, heroes=samples)
+        except (KeyError, TypeError, ValueError, StopIteration):
+            status = 'rejected'
+    selected = measured_acquisition({'collection': meta.get('collection')}).get('not_selected')
+    return dict(basis='normalized_coach_input_historical_only',
+        collection=meta.get('collection') if meta.get('collection') in ('core', 'positions', 'talents', 'all') else None,
+        allies_expected=5 if len(allies) == 5 else None,
+        allies_alive=sum(h.get('alive') is True for h in allies) if len(allies) == 5 else None,
+        positions_acquired=len(positions['heroes']) if positions is not None else None,
+        positions_status=status, positions=positions,
+        positions_reason=refusal(reason.get('code')) if type(reason) is dict else None,
+        source_age_s=q.get('age_s') if positions is not None else None,
+        read_window_s=q.get('read_window_s') if positions is not None else None,
+        map_supported=meta.get('map_id') == 'Volskaya', not_selected=selected,
+        unknown_families=[name for name in ('positions', 'visibility', 'objective', 'talents',
+                                          'local_cooldowns', 'battlefield') if name not in state])
+
+
 def decision_reason(reason):
     known = {'cooldown', 'périmé', 'non_diffusé', 'conseil', 'silence',
-             'réponse_invalide', 'confiance_insuffisante', 'répétition'}
+             'réponse_invalide', 'confiance_insuffisante', 'répétition',
+             'faits_macro_inconnus', 'intention_non_autorisee'}
     if type(reason) is str and reason in known:
         return reason
     if type(reason) is str and re.fullmatch(r'erreur_api_(?:[1-5][0-9]{2}|None)', reason):

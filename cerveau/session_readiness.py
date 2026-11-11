@@ -66,7 +66,7 @@ def inspect_paths(args):
     return checks
 
 
-def emit(checks, preflight_row, code):
+def emit(checks, preflight_row, code, *, collection='core'):
     # Projection closed at this public boundary, even if preflight later grows.
     details = None
     if preflight_row is not None:
@@ -82,7 +82,8 @@ def emit(checks, preflight_row, code):
             original = preflight_row.get(category, {})
             details[category] = {name: original.get(name) if original.get(name) in (
                 'available', 'missing') else 'unknown' for name in names}
-    row = {'schema_version': 1, 'event': 'core_readiness', 'collection': 'core',
+    row = {'schema_version': 1, 'event': 'core_readiness' if collection == 'core' else 'positions_readiness',
+           'collection': collection,
            'technical_ready': code == 0, 'current_permission': False,
            'current_context': 'unattested', 'reader_active': None,
            'basis': 'offline_inspection_only', 'checks': checks, 'exit_code': code,
@@ -99,7 +100,7 @@ def invalid_arguments():
 
 
 def run(args, preflight):
-    if (args.collection != 'core' or args.journal is not None
+    if (args.collection not in ('core', 'positions') or args.journal is not None
             or args.report_dir is not None or args.visual_reference):
         return invalid_arguments()
     checks = inspect_paths(args)
@@ -112,4 +113,4 @@ def run(args, preflight):
     ready = checks == {'paths': 'valid', 'identity': 'valid_private_file',
                        'output': 'new', 'stop': 'absent', 'preflight': 'ready'}
     code = 0 if ready else 2 if checks['paths'] == 'invalid' else 1
-    return emit(checks, preflight_row, code)
+    return emit(checks, preflight_row, code, collection=args.collection)

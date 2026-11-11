@@ -188,7 +188,7 @@ def snapshot(raw: dict, *, at: float | None = None, team: int | None = None,
         from .replay import project
         return project(raw, at=at, team=team, map_name=map_name, allies=allies, enemies=enemies)
     collection = meta.get('collection', 'all')
-    if type(collection) is not str or collection not in ('all', 'talents', 'core'):
+    if type(collection) is not str or collection not in ('all', 'talents', 'core', 'positions'):
         raise ValueError('invalid_collection')
     local = raw.get("local_player")
     if local is not None:
@@ -240,22 +240,37 @@ def snapshot(raw: dict, *, at: float | None = None, team: int | None = None,
                          if collection != 'core' else None)
             if positions is not None and (map_name is None or map_name == meta.get("map")):
                 result["positions"] = positions
+            from hotstate.diagnostics import refusal
+            position_refusal = (meta.get('optional_refusals', {}).get('positions')
+                                if collection != 'core' else None)
+            result['positions_qualification'] = {
+                'status': ('not_selected' if collection == 'core' else
+                           'normalized' if 'positions' in result else
+                           'refused' if position_refusal is not None else 'rejected'),
+                'reason': refusal(position_refusal) if position_refusal is not None and 'positions' not in result else None,
+                'age_s': None, 'read_window_s': None}
+            if 'positions' in result:
+                import time
+                packet = raw['positions']
+                result['positions_qualification'].update(
+                    age_s=time.monotonic() - packet['acquisition']['monotonic_s'],
+                    read_window_s=packet['read_window_s'])
             visibility = (_native_visibility(raw, result['heroes'], local, team)
-                          if collection != 'core' else None)
+                          if collection not in ('core', 'positions') else None)
             if visibility is not None and (map_name is None or map_name == meta.get('map')):
                 result['visibility'] = visibility
             from .objectives import project_objective
-            objective = project_objective(raw, local, team) if collection != 'core' else None
+            objective = project_objective(raw, local, team) if collection not in ('core', 'positions') else None
             if objective is not None and (map_name is None or map_name == meta.get('map')):
                 result['objective'] = objective
             from hotstate.diagnostics import refusal
             objective_refusal = (meta.get('optional_refusals', {}).get('objective')
-                                 if collection != 'core' else None)
+                                 if collection not in ('core', 'positions') else None)
             result['objective_qualification'] = {
                 'status': ('refused' if objective_refusal is not None else
-                           'rejected' if 'objective' in raw and collection != 'core' else 'not_attempted'),
+                           'rejected' if 'objective' in raw and collection not in ('core', 'positions') else 'not_attempted'),
                 'reason': (refusal(objective_refusal) if objective_refusal is not None else
-                           refusal('objective_packet_rejected') if 'objective' in raw and collection != 'core' else None),
+                           refusal('objective_packet_rejected') if 'objective' in raw and collection not in ('core', 'positions') else None),
                 'source': 'native_player', 'source_mission_t_s': None,
                 'age_s': None, 'read_window_s': None}
             if 'objective' in result:
@@ -273,16 +288,16 @@ def snapshot(raw: dict, *, at: float | None = None, team: int | None = None,
                 else:
                     result.pop('objective')
             from .battlefield import project_battlefield
-            battlefield = project_battlefield(raw,local,team) if collection != 'core' else None
+            battlefield = project_battlefield(raw,local,team) if collection not in ('core', 'positions') else None
             if battlefield is not None and (map_name is None or map_name == meta.get('map')):
                 result['battlefield'] = battlefield
             from .cooldowns import project_local_cooldowns
-            local_cooldowns = project_local_cooldowns(raw, local, team) if collection != 'core' else None
+            local_cooldowns = project_local_cooldowns(raw, local, team) if collection not in ('core', 'positions') else None
             cooldown_refusal = (meta.get('optional_refusals', {}).get('local_cooldowns')
-                                if collection != 'core' else None)
+                                if collection not in ('core', 'positions') else None)
             result['cooldowns_qualification'] = {
                 'status': ('refused' if cooldown_refusal is not None else
-                           'rejected' if 'local_cooldowns' in raw and collection != 'core' else 'not_attempted'),
+                           'rejected' if 'local_cooldowns' in raw and collection not in ('core', 'positions') else 'not_attempted'),
                 'source': 'native_player', 'source_mission_t_s': None,
                 'age_s': None, 'read_window_s': None}
             if (local_cooldowns is not None and cooldown_refusal is None
@@ -299,10 +314,10 @@ def snapshot(raw: dict, *, at: float | None = None, team: int | None = None,
                         read_window_s=packet['read_window_s'])
             result["meta"]["native_status"] = "valide"
             from .talents import project_talents
-            talents = project_talents(raw, local, team) if collection != 'core' else None
+            talents = project_talents(raw, local, team) if collection not in ('core', 'positions') else None
             result['talents_qualification'] = {
-                'status': ('refused' if collection != 'core' and meta.get('optional_refusals', {}).get('talents') is not None
-                           else 'rejected' if 'talents' in raw and collection != 'core' else 'not_attempted'),
+                'status': ('refused' if collection not in ('core', 'positions') and meta.get('optional_refusals', {}).get('talents') is not None
+                           else 'rejected' if 'talents' in raw and collection not in ('core', 'positions') else 'not_attempted'),
                 'source': 'native_player', 'source_mission_t_s': None,
                 'age_s': None, 'read_window_s': None}
             if talents is not None and (map_name is None or map_name == meta.get('map')):
@@ -317,7 +332,7 @@ def snapshot(raw: dict, *, at: float | None = None, team: int | None = None,
                         status='normalized', age_s=age,
                         source_mission_t_s=packet['mission_t_s'],
                         read_window_s=packet['read_window_s'])
-            gameplay_clock = validated_gameplay_clock(meta) if collection != 'core' else None
+            gameplay_clock = validated_gameplay_clock(meta) if collection not in ('core', 'positions') else None
             if gameplay_clock is not None:
                 result["meta"]["gameplay_clock"] = gameplay_clock
             if type(meta.get("native_build")) is int:
@@ -335,7 +350,7 @@ def snapshot(raw: dict, *, at: float | None = None, team: int | None = None,
             result['meta']['collection'] = collection
         # Core has no objective/talent packet from which to retain the already
         # established map binding. Keep only the existing historical vocabulary.
-        if collection == 'core' and meta.get('map_id') in ('DragonShire', 'Volskaya'):
+        if meta.get('map_id') in ('DragonShire', 'Volskaya'):
             result['meta']['map_id'] = meta['map_id']
         if meta.get("context_source") in ("initdata_memory", "initdata_native_fields"):
             result["meta"]["context_source"] = meta["context_source"]

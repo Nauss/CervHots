@@ -190,7 +190,7 @@ class NativeReader:
         All successful core reads are repeated before issuance. This detects
         torn reads, not an atomic snapshot or an ABA change between samples.
         """
-        if type(collection) is not str or collection not in ('all', 'talents', 'core'):
+        if type(collection) is not str or collection not in ('all', 'talents', 'core', 'positions'):
             raise ValueError('invalid_collection')
         from .positions import AlliedPositions, _RecordedMemory
         from .acquisition import issue
@@ -242,7 +242,7 @@ class NativeReader:
         return result
 
     def _read_state(self, context, *, hero_ids=None, optional_native=None, collection='all'):
-        if type(collection) is not str or collection not in ('all', 'talents', 'core'):
+        if type(collection) is not str or collection not in ('all', 'talents', 'core', 'positions'):
             raise ValueError('invalid_collection')
         if not isinstance(context, dict):
             raise NativeUnavailable("contexte_natif_absent")
@@ -305,7 +305,7 @@ class NativeReader:
             except NativeUnavailable as exc:
                 optional_refusals['gameplay_clock'] = exception_refusal(exc)['code']
         positions = None
-        if collection == 'all':
+        if collection in ('all', 'positions'):
             from .positions import AlliedPositions
             try:
                 positions = AlliedPositions(optional_native).read(context, hero_ids=hero_ids)

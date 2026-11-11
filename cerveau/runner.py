@@ -92,7 +92,8 @@ def tactical_key(state: dict) -> str:
 class Pipeline:
     def __init__(self, coach: Coach, read_state, *, knowledge=knowledge_for,
                  synthesize=None, deliver=None, clock=time.monotonic,
-                 cooldown: float = 15.0, max_age: float = 20.0, journal=None, checkpoint=None):
+                 cooldown: float = 15.0, max_age: float = 20.0, journal=None, checkpoint=None,
+                 intent_policy=None):
         self.coach = coach
         self.read_state = read_state
         self.knowledge = knowledge
@@ -104,6 +105,7 @@ class Pipeline:
         self.last_delivery = float("-inf")
         self.journal = journal
         self.checkpoint = checkpoint
+        self.intent_policy = intent_policy
 
     def cycle(self) -> Decision:
         if self.clock() - self.last_delivery < self.cooldown:
@@ -132,20 +134,58 @@ class Pipeline:
                     self.journal.record('freshness_overrun', cause='age_during_journal',
                                         age_s=round(final_age, 6))
                 age = final_age
-            return age <= self.max_age and current_key == key
+            # No global key weakening: a policy must authenticate an exact
+            # deterministic intent and its original/current complete life facts.
+            if self.intent_policy is not None:
+                accepted = self.intent_policy.revalidate(state, current, decision)
+                if self.journal is not None:
+                    self.journal.record('macro_revalidation', accepted=accepted,
+                                        age_s=round(age, 6))
+                if self.checkpoint is not None:
+                    self.checkpoint()
+                return 0 <= self.clock() - started <= self.max_age and accepted
+            if self.checkpoint is not None:
+                self.checkpoint()
+            return 0 <= self.clock() - started <= self.max_age and current_key == key
 
         if self.journal is not None:
             self.journal.set_phase('knowledge')
         knowledge = self.knowledge(state)
+        if not 0 <= self.clock() - started <= self.max_age:
+            if self.journal is not None:
+                self.journal.record('input_expired', cause='age_before_coach')
+            return Decision(raison='périmé')
         if self.journal is not None:
             self.journal.set_phase('api')
         if self.checkpoint is not None:
             self.checkpoint()
-        decision = self.coach.decide(state, knowledge)
+        if self.journal is not None:
+            self.journal.coach_input(state, mode='macro' if self.intent_policy is not None else 'free',
+                                     cycle_age_s=self.clock() - started)
+        if self.checkpoint is not None:
+            self.checkpoint()
+        if self.journal is not None:
+            self.journal.record('coach_attempt', stage='prepared')
+        if self.checkpoint is not None:
+            self.checkpoint()
+        if not 0 <= self.clock() - started <= self.max_age:
+            if self.journal is not None:
+                self.journal.record('input_expired', cause='age_during_preparation_journal')
+            return Decision(raison='périmé')
+        api_started = self.clock()
+        try:
+            decision = self.coach.decide(state, knowledge)
+        finally:
+            if self.journal is not None:
+                self.journal.record('coach_response', stage='completed',
+                                    latency_s=round(self.clock() - api_started, 6))
         if self.checkpoint is not None:
             self.checkpoint()
         if self.journal is not None:
             self.journal.proposal(decision)
+            if self.intent_policy is not None:
+                authorized = self.intent_policy.revalidate(state, state, decision)
+                self.journal.record('macro_proposal', intent='outnumbered' if authorized else None)
         if not decision.parler:
             return decision
         if not fresh():

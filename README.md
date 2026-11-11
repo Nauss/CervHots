@@ -5,6 +5,22 @@ inspection de journaux natifs, **sans Coach/API/audio par défaut**. Le pipeline
 historique de coach (KB → API Groco → TTS → Mumble) reste une voie distincte,
 à activation explicite, pas le parcours de démarrage recommandé.
 
+**Test de partie préparé, voix lancée manuellement** :
+[`docs/playtest.md`](docs/playtest.md), `python -B -m cerveau.playtest`
+(préflight sans mémoire/API/son). `--live` seul autorise la session silencieuse ;
+`--mumble` est un opt-in manuel distinct. Positions alliées Volskaya par défaut,
+`--collection all` pour tenter le composé existant ; premier vocal = macro
+factuelle bornée, pas coach spatial complet. Candidat testé SYNTHETIC, aucune
+partie live validée par ces fixtures. **Panneau manuel Windows à boutons** :
+double-clic `tools/playtest-panel.cmd` (aucun démarrage au chargement).
+Lanceur CLI : `tools/playtest.cmd`. Serveur Mumble à démarrer manuellement avant voix.
+
+**Relais après le test live du 11 novembre 2026 :**
+[`docs/RELAIS-POSITIONS.md`](docs/RELAIS-POSITIONS.md). Une annonce Mumble entendue
+est confirmée par le propriétaire ; aucune position disponible sur cette partie.
+Priorité suivante : acquisition et qualification natives des positions, sans
+élargir implicitement la couverture Volskaya/build98348.
+
 ## Ce repo
 
 Monorepo : il accueille tous les briques du projet, chacune dans son

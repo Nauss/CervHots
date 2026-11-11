@@ -101,7 +101,7 @@ def read_current(backend, mapping, *, context, project=None, key=None, clock=Non
             observe({'event': 'acquisition', 'stage': stage, 'outcome': outcome,
                      **({'collection': mapping['collection']} if
                         type(mapping.get('collection')) is str and
-                        mapping['collection'] in ('all', 'talents', 'core') else {}),
+                        mapping['collection'] in ('all', 'talents', 'core', 'positions') else {}),
                      'elapsed_ms': round((memory.clock() - memory.started) * 1000, 3),
                      'reads': memory.reads, 'bytes_requested': memory.bytes_requested,
                      'refusal': code,
