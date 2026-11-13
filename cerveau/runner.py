@@ -93,7 +93,7 @@ class Pipeline:
     def __init__(self, coach: Coach, read_state, *, knowledge=knowledge_for,
                  synthesize=None, deliver=None, clock=time.monotonic,
                  cooldown: float = 15.0, max_age: float = 20.0, journal=None, checkpoint=None,
-                 intent_policy=None):
+                 intent_policy=None, mode=None, request_budget=None):
         self.coach = coach
         self.read_state = read_state
         self.knowledge = knowledge
@@ -106,6 +106,17 @@ class Pipeline:
         self.journal = journal
         self.checkpoint = checkpoint
         self.intent_policy = intent_policy
+        self.mode = mode or ('macro' if intent_policy is not None else 'free')
+        self.request_budget = request_budget
+
+    def _timed(self, stage, operation, *args):
+        started = self.clock()
+        try:
+            return operation(*args)
+        finally:
+            if self.journal is not None:
+                self.journal.record('stage_timing', stage=stage,
+                                    latency_s=round(self.clock() - started, 6))
 
     def cycle(self) -> Decision:
         if self.clock() - self.last_delivery < self.cooldown:
@@ -139,8 +150,9 @@ class Pipeline:
             if self.intent_policy is not None:
                 accepted = self.intent_policy.revalidate(state, current, decision)
                 if self.journal is not None:
-                    self.journal.record('macro_revalidation', accepted=accepted,
-                                        age_s=round(age, 6))
+                    event = 'macro_revalidation' if self.mode == 'macro' else 'intent_revalidation'
+                    self.journal.record(event, accepted=accepted,
+                                        intent=decision.intent, age_s=round(age, 6))
                 if self.checkpoint is not None:
                     self.checkpoint()
                 return 0 <= self.clock() - started <= self.max_age and accepted
@@ -148,23 +160,28 @@ class Pipeline:
                 self.checkpoint()
             return 0 <= self.clock() - started <= self.max_age and current_key == key
 
-        if self.journal is not None:
-            self.journal.set_phase('knowledge')
-        knowledge = self.knowledge(state)
-        if not 0 <= self.clock() - started <= self.max_age:
+        if self.checkpoint is not None:
+            self.checkpoint()
+        prepare = getattr(self.coach, 'prepare', None)
+        decision = prepare(state) if prepare is not None else None
+        if decision is None:
             if self.journal is not None:
-                self.journal.record('input_expired', cause='age_before_coach')
-            return Decision(raison='périmé')
+                self.journal.set_phase('knowledge')
+            knowledge = self._timed('knowledge', self.knowledge, state)
+            if not 0 <= self.clock() - started <= self.max_age:
+                if self.journal is not None:
+                    self.journal.record('input_expired', cause='age_before_coach')
+                return Decision(raison='périmé')
         if self.journal is not None:
-            self.journal.set_phase('api')
+            self.journal.set_phase('api' if decision is None else 'facts')
         if self.checkpoint is not None:
             self.checkpoint()
         if self.journal is not None:
-            self.journal.coach_input(state, mode='macro' if self.intent_policy is not None else 'free',
+            self.journal.coach_input(state, mode=self.mode,
                                      cycle_age_s=self.clock() - started)
         if self.checkpoint is not None:
             self.checkpoint()
-        if self.journal is not None:
+        if self.journal is not None and decision is None:
             self.journal.record('coach_attempt', stage='prepared')
         if self.checkpoint is not None:
             self.checkpoint()
@@ -172,28 +189,42 @@ class Pipeline:
             if self.journal is not None:
                 self.journal.record('input_expired', cause='age_during_preparation_journal')
             return Decision(raison='périmé')
-        api_started = self.clock()
-        try:
-            decision = self.coach.decide(state, knowledge)
-        finally:
-            if self.journal is not None:
-                self.journal.record('coach_response', stage='completed',
-                                    latency_s=round(self.clock() - api_started, 6))
+        if decision is None:
+            remaining = self.max_age - (self.clock() - started)
+            if self.request_budget is not None:
+                remaining = min(remaining, self.request_budget())
+            if remaining <= 0:
+                if self.journal is not None:
+                    self.journal.record('input_expired', cause='no_api_budget')
+                return Decision(raison='périmé')
+            configured_timeout = self.coach.timeout
+            self.coach.timeout = min(configured_timeout, remaining)
+            api_started = self.clock()
+            try:
+                decision = self.coach.decide(state, knowledge)
+            finally:
+                self.coach.timeout = configured_timeout
+                if self.journal is not None:
+                    self.journal.record('coach_response', stage='completed',
+                                        latency_s=round(self.clock() - api_started, 6))
+        elif self.journal is not None:
+            self.journal.record('fact_decision', intent=decision.intent,
+                                speaking=decision.parler)
         if self.checkpoint is not None:
             self.checkpoint()
         if self.journal is not None:
             self.journal.proposal(decision)
-            if self.intent_policy is not None:
+            if self.mode == 'macro' and self.intent_policy is not None:
                 authorized = self.intent_policy.revalidate(state, state, decision)
                 self.journal.record('macro_proposal', intent='outnumbered' if authorized else None)
         if not decision.parler:
             return decision
         if not fresh():
             return Decision(raison="périmé")
-        speech = self.synthesize(decision) if self.synthesize else None
+        speech = self._timed('synthesis', self.synthesize, decision) if self.synthesize else None
         if not fresh():
             return Decision(raison="périmé")
-        if not self.deliver(decision, speech, fresh):
+        if not self._timed('delivery_complete', self.deliver, decision, speech, fresh):
             return Decision(raison="non_diffusé")
         if self.checkpoint is not None:
             self.checkpoint()

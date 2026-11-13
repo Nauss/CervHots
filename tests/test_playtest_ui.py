@@ -22,6 +22,11 @@ class PanelTests(unittest.TestCase):
         self.stop = Mock(return_value={'state': 'published'})
         self.panel = Controller(self.root, self.python, self.root/'scratch',
                                 popen=self.spawn, request_stop=self.stop)
+        self.addCleanup(self.close_panel)
+
+    def close_panel(self):
+        self.child.poll.return_value = 0
+        self.panel.poll()
 
     def test_no_autostart_and_preflight_has_no_live_or_identity(self):
         self.spawn.assert_not_called()
@@ -47,6 +52,7 @@ class PanelTests(unittest.TestCase):
         self.assertIn('--mumble', argv)
         self.assertIn('--player-file', argv)
         self.assertEqual(argv[argv.index('--max-seconds')+1], '1800')
+        self.assertEqual(argv[argv.index('--coach-mode')+1], 'reactive')
         self.assertNotIn('SYNTHETIC-PRIVATE', ' '.join(argv))
         first = self.panel.output
         self.assertFalse(self.panel.start(self.identity, confirm=lambda: True))

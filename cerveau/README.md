@@ -72,6 +72,15 @@ options `--map`, `--allies`, `--enemies` peuvent les préciser pour la mémoire.
 
 ## Décision et garde-fous
 
+Le parcours manuel `cerveau.playtest`/panneau utilise désormais `reactive` :
+alerte d'infériorité numérique codée, sans KB/API, à partir des dix états de vie
+natifs complets et d'une perspective courante sur les cartes reconnues. Sa
+revalidation ignore seulement les données étrangères à cette phrase ; vie et
+identité doivent rester identiques. Hors de cette alerte, le texte libre garde
+les règles strictes ci-dessous. Le mode historique `macro` reste limité à
+Volskaya et `free` reste disponible explicitement. Ni `cerveau --watch` ni la
+collecte passive ne changent implicitement de mode. [Guide](../docs/playtest.md).
+
 Réponse console : `parler`, `priorite` (1–3), `texte`, `confiance`, `style`,
 `sujet`, `raison`. Les erreurs API sont visibles (`erreur_api_404`, etc.).
 
@@ -122,9 +131,11 @@ pas au chrono HUD ni à un état d'objectif observé.
 
 Sans profil/contexte valide, le repli ne crée ni niveaux ni état de vie : les
 anciens compteurs seuls ne suffisent généralement pas à un conseil tactique.
-Les variations continues de PV/ressources et de countdown n'affament pas le coach :
-la fraîcheur suit leurs bandes tactiques, mais annule toujours sur changement de
-niveau, de vie/mort, d'identité de partie ou de bande de santé critique.
+Le mode libre tolère les petites variations à l'intérieur des bandes, mais un
+changement de bande PV/ressource/countdown, niveau, vie ou position peut annuler
+la phrase. Ce mécanisme a fortement limité la session du 11 novembre ; le mode
+réactif contourne l'attente API pour une intention contrôlée, pas les gardes du
+texte libre. Le délai API est borné par le budget de fraîcheur restant.
 
 ### Contexte mémoire et enrichissement natif
 

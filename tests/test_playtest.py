@@ -118,7 +118,7 @@ class PlaytestSyntheticTests(unittest.TestCase):
         fixture.setUp()
         self.addCleanup(fixture.doCleanups)
         self.now, self.move = 0., False
-        if mode == 'macro':
+        if mode in ('macro', 'reactive'):
             from hotstate.native import NativeReader
             native = NativeReader(fixture.memory, profile=fixture.memory.profile)
             for slot in range(1, 11):
@@ -142,15 +142,16 @@ class PlaytestSyntheticTests(unittest.TestCase):
                 real = NativeSource('SYNTHETIC_PRIVATE_IDENTITY', collection=collection)
             read = real.read
             def changed(observe):
-                if scenario == 'core_refused' or (scenario == 'core_refused_recheck' and received):
+                decided = received or any(r['event'] == 'fact_decision' for r in rows)
+                if scenario == 'core_refused' or (scenario == 'core_refused_recheck' and decided):
                     from hotstate.native import NativeUnavailable
                     raise NativeUnavailable('lecture_native_dechiree')
-                if scenario == 'identity_refused' and received:
+                if scenario == 'identity_refused' and decided:
                     from hotstate.native import NativeUnavailable
                     raise NativeUnavailable('identite_locale_native_incoherente')
                 if owner.move:
                     fixture.memory.position(7, 80.25, 150.5)
-                if scenario == 'ally_return' and received:
+                if scenario == 'ally_return' and decided:
                     fixture.memory.pack(unit+0x39, 'B', 0)
                 state = read(observe)
                 if scenario == 'stop_after_read':
@@ -164,6 +165,8 @@ class PlaytestSyntheticTests(unittest.TestCase):
             return real
         def emit(row):
             rows.append(row)
+            if mode == 'reactive' and scenario == 'movement' and row['event'] == 'fact_decision':
+                owner.move = True
             if scenario == 'io_error' and row['event'] == 'coach_input':
                 raise OSError('SYNTHETIC journal failure')
             if scenario == 'slow_prepared' and row['event'] == 'coach_attempt':
@@ -200,7 +203,7 @@ class PlaytestSyntheticTests(unittest.TestCase):
                     from hotstate.positions import AlliedPositions
                     original_positions_read = AlliedPositions.read
                     def positions_read(reader, *a, **kw):
-                        if scenario == 'positions_refused' or received:
+                        if scenario == 'positions_refused' or received or any(r['event'] == 'fact_decision' for r in rows):
                             raise NativeUnavailable('recette_positions_absente')
                         return original_positions_read(reader, *a, **kw)
                     stack.enter_context(patch('hotstate.positions.AlliedPositions.read',
@@ -308,6 +311,22 @@ class PlaytestSyntheticTests(unittest.TestCase):
                             dict(result, event='summary')]:
                     stream.write(json.dumps(row, ensure_ascii=True)+'\n')
         return result, rows, received, sends, syntheses, coach
+
+    def test_real_cli_reactive_voice_routes_native_facts_to_fake_audio_without_http(self):
+        for scenario in ('accepted', 'movement', 'positions_refused', 'positions_refused_recheck'):
+            with self.subTest(scenario=scenario):
+                result, rows, received, sends, syntheses, _ = self.exercise(
+                    scenario, mode='reactive', cli=True)
+                self.assertEqual((result['mumble_sent'], received, len(sends), len(syntheses)),
+                                 (1, [], 1, 1))
+                self.assertEqual((result['fact_decisions'], result['coach_attempts']), (1, 0))
+                self.assertTrue(any(r['event']=='intent_revalidation' and r['accepted'] for r in rows))
+
+    def test_real_cli_reactive_stop_life_and_core_guard_still_block_fake_audio(self):
+        for scenario in ('stop_at_final_check', 'ally_return', 'core_refused_recheck', 'identity_refused'):
+            with self.subTest(scenario=scenario):
+                result, _, received, sends, _, _ = self.exercise(scenario, mode='reactive', cli=True)
+                self.assertEqual((result['mumble_sent'], received, sends), (0, [], []))
 
     def test_accepted_real_http_and_anonymized_journal_exact_positions(self):
         result, rows, requests, sends, syntheses, coach = self.exercise()

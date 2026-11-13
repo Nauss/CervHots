@@ -43,6 +43,9 @@ Ne pas redémarrer une session avant la fermeture vérifiée du lecteur précéd
 Le playtest affiche `positions_maps` et `positions_player_recipe_maps` séparément.
 Son mode macro reste borné à Volskaya ; ce changement concerne l'acquisition,
 pas l'extension des règles macro ou des autres familles.
+Le nouveau mode `reactive`, décrit dans [playtest.md](playtest.md), peut annoncer
+une infériorité numérique sans utiliser de coordonnées : ce contrat non spatial
+ne qualifie pas les positions des autres cartes et n'affaiblit pas le mode libre.
 
 ## Données enregistrées
 

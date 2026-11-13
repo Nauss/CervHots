@@ -11,6 +11,7 @@ import math
 import re
 
 from grocoapi import GrocoError
+from hotstate.position_maps import PLAYER_RECIPE_MAPS
 from .brain import Coach, Decision
 
 INTENT = 'outnumbered'
@@ -26,7 +27,7 @@ une nouvelle annonce autorisée. Les positions ne permettent aucune intention sp
 """
 
 
-def facts(state):
+def facts(state, *, maps=PLAYER_RECIPE_MAPS):
     """Complete typed roster; caller proves CURRENT, positions remain optional.
 
     Controller contract: only life/identity facts authorize this non-spatial
@@ -36,7 +37,7 @@ def facts(state):
         meta = state['meta']
         if (meta.get('source') != 'live' or meta.get('native_status') != 'valide'
                 or meta.get('native_build') != 98348
-                or meta.get('map_id') != 'Volskaya'
+                or meta.get('map_id') not in maps
                 or meta.get('context_source') not in ('initdata_memory', 'initdata_native_fields')
                 or type(meta.get('match_id')) is not str
                 or re.fullmatch('[0-9a-f]{64}', meta['match_id']) is None
@@ -84,13 +85,15 @@ def _identity(state):
 
 class MacroCoach(Coach):
     """Same configured Groco client, confidence, history and delivery contract."""
+    fact_maps = PLAYER_RECIPE_MAPS
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.episode_delivered = False
 
     def observe(self, state):
         """Only a COMPLETE current safe observation rearms; unknown never does."""
-        current = facts(state)
+        current = facts(state, maps=self.fact_maps)
         if current is not None and not current['allowed'] and self.episode_delivered:
             self.episode_delivered = False
             return True
@@ -135,11 +138,15 @@ class MacroCoach(Coach):
 
 class MacroPolicy:
     """Only authorizes deterministic non-spatial text and exact original life facts."""
+    def __init__(self, *, maps=PLAYER_RECIPE_MAPS):
+        self.maps = maps
+
     def revalidate(self, original, current, decision):
-        before, after = facts(original), facts(current)
+        before, after = facts(original, maps=self.maps), facts(current, maps=self.maps)
         return bool(before is not None and after is not None
             and decision.parler and decision.sujet == INTENT and decision.texte == TEXT
             and decision.style == 'calme' and decision.priorite == 2
             and type(decision.confiance) in (int, float) and .75 <= decision.confiance <= 1
             and INTENT in before['allowed'] and INTENT in after['allowed']
-            and before['life'] == after['life'] and _identity(original) == _identity(current))
+            and before['life'] == after['life'] and _identity(original) == _identity(current)
+            and after['mission_t_s'] >= before['mission_t_s'])

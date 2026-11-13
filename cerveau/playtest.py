@@ -18,8 +18,8 @@ def parser():
     result.add_argument('--max-seconds', type=bounded(1, 1800), default=300)
     result.add_argument('--interval', type=bounded(15, 300), default=30)
     result.add_argument('--collection', choices=('positions', 'all'), default='positions')
-    result.add_argument('--coach-mode', choices=('macro', 'free'), default='macro',
-                        help='macro factuelle bornée par défaut ; free garde la clé spatiale exacte')
+    result.add_argument('--coach-mode', choices=('reactive', 'macro', 'free'), default='reactive',
+                        help='reactive : alerte factuelle sans API, sinon texte libre strict')
     voice = result.add_mutually_exclusive_group()
     voice.add_argument('--mumble', action='store_true', help='activation MANUELLE de la voix')
     voice.add_argument('--wav', action='store_true', help='fichiers WAV seulement, sans lecture')
@@ -41,7 +41,7 @@ def run_session(args, source_factory, coach_factory, emit, *, stopped=None,
     started = clock()
     deadline = started + args.max_seconds
     result = dict(accepted_reads=0, refused_reads=0, positions_available=0, coach_attempts=0,
-                  proposals=0, proposals_refused=0, expired=0, not_sent=0,
+                  fact_decisions=0, proposals=0, proposals_refused=0, expired=0, not_sent=0,
                   speech_synthesized=0, wav_produced=0, mumble_sent=0, reason='session_limit')
     source = pipeline = binding = None
     last_mission = None
@@ -51,6 +51,8 @@ def run_session(args, source_factory, coach_factory, emit, *, stopped=None,
         event = row['event']
         if event == 'coach_response':
             result['coach_attempts'] += 1
+        elif event == 'fact_decision':
+            result['fact_decisions'] += 1
         elif event == 'proposal':
             result['proposals' if row['speaking'] else 'proposals_refused'] += 1
         elif event == 'outcome':
@@ -87,7 +89,7 @@ def run_session(args, source_factory, coach_factory, emit, *, stopped=None,
         result['accepted_reads'] += 1
         if 'positions' in state:
             result['positions_available'] += 1
-        if pipeline is not None and getattr(args, 'coach_mode', 'free') == 'macro':
+        if pipeline is not None and getattr(args, 'coach_mode', 'free') in ('macro', 'reactive'):
             if pipeline.coach.observe(state):
                 journal.record('macro_episode_rearmed', cause='complete_safe_current_observation')
                 boundary()
@@ -96,7 +98,6 @@ def run_session(args, source_factory, coach_factory, emit, *, stopped=None,
     def guarded_knowledge(state):
         value = (knowledge or knowledge_for)(state)
         boundary()
-        pipeline.coach.timeout = min(20, deadline - clock())
         return value
 
     def synth(decision):
@@ -125,6 +126,7 @@ def run_session(args, source_factory, coach_factory, emit, *, stopped=None,
         boundary()
         while True:
             boundary()
+            cycle_started = clock()
             try:
                 if pipeline is None:
                     initial = read()
@@ -143,9 +145,16 @@ def run_session(args, source_factory, coach_factory, emit, *, stopped=None,
                         from .macro import facts
                         journal.record('macro_mode', intent='outnumbered',
                                        facts=facts(initial))
+                    elif getattr(args, 'coach_mode', 'free') == 'reactive':
+                        from .reactive import ReactiveCoach, ReactivePolicy
+                        coach = ReactiveCoach(coach.client, coach.model, coach.timeout,
+                            coach.min_confidence, coach.reasoning_effort)
+                        policy = ReactivePolicy()
                     pipeline = Pipeline(coach, read, knowledge=guarded_knowledge,
                         synthesize=synth if synthesize else None, deliver=send,
-                        clock=clock, journal=journal, checkpoint=boundary, intent_policy=policy)
+                        clock=clock, journal=journal, checkpoint=boundary, intent_policy=policy,
+                        mode=getattr(args, 'coach_mode', 'free'),
+                        request_budget=lambda: deadline - clock())
                 decision = pipeline.cycle()
                 journal.outcome(decision)
                 boundary()
@@ -165,7 +174,9 @@ def run_session(args, source_factory, coach_factory, emit, *, stopped=None,
                     raise Boundary('session_changed')
                 if failures >= 12:
                     raise Boundary('failure_limit')
-            wake = min(deadline, clock() + args.interval)
+            # Start-to-start cadence: no extra interval after an API wait, and
+            # no queued catch-up cycles when a whole attempt exceeds interval.
+            wake = min(deadline, cycle_started + args.interval)
             while clock() < wake:
                 boundary()
                 sleep(min(.2, wake - clock()))

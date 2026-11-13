@@ -27,18 +27,21 @@ Ce guide ne lève aucun STOP et ne donne aucune permission CURRENT.
   aux refus WHOLE. Il ne qualifie pas les familles non couvertes sur une carte.
 - La CLI passive conserve **core** par défaut et reste sans Coach/API/audio.
   Son opt-in `--collection positions` et son `--check-ready` connaissent ce choix.
-- Nouveau coach **macro** par défaut : une intention seulement, `outnumbered`,
-  toujours limitée à Volskaya (indépendamment de l'acquisition multi-cartes).
+- Coach **réactif** par défaut (`--coach-mode reactive`) : l'intention contrôlée
+  `outnumbered` est produite **sans KB ni appel API** sur les 19 cartes reconnues.
   Le code exige les dix héros et états de vie connus, cinq par équipe, une
   identité/perspective native courante cohérente, et strictement plus d'ennemis
-  vivants que d'alliés. Le modèle reçoit l'état normalisé **avec positions**,
-  choisit l'intention autorisée ou le silence ; aucune phrase libre n'est acceptée.
+  vivants que d'alliés. Aucune carte inconnue ni vie supposée n'autorise cette voie.
+  Hors de cette alerte, le Coach libre configuré reçoit l'état avec positions
+  et conserve la clé tactique exacte. Le modèle ne peut pas s'attribuer une
+  intention contrôlée pour contourner cette validation.
   Texte codé : « Nous sommes en infériorité numérique. Évitez le combat jusqu'au
   retour des alliés. » Aucun ordre spatial, distance ou regroupement observé.
 - Pré-envoi : nouvelle acquisition WHOLE, identité/carte/composition identiques,
   vecteur exact de vie des dix slots inchangé, précondition toujours vraie,
   conseil âgé d'au plus **20 s**. Mouvement seul autorisé **uniquement** pour
-  cette intention/phrase codée. Les positions restent collectées/transmises/journalisées.
+  cette intention/phrase codée. Les positions restent collectées et journalisées,
+  et sont transmises au modèle lors du repli libre seulement.
   **Exception explicite du contrôleur : les positions facultatives refusées ou
   absentes ne bloquent pas cette seule phrase non spatiale** si tous les faits
   requis du cœur frais restent valides. Couverture/refus restent explicites ;
@@ -46,8 +49,14 @@ Ce guide ne lève aucun STOP et ne donne aucune permission CURRENT.
   invalide annulent toujours. Cette exception n'affaiblit pas le mode libre.
 - Anti-répétition **par épisode** : aucune deuxième annonce pendant le même
   désavantage ; réarmement seulement après une observation courante complète
-  sans désavantage. Unknown/refus ne réarme jamais. Historique conservé et
-  cooldown de 15 s inchangé. Le modèle peut toujours choisir le silence.
+  sans désavantage. Unknown/refus ne réarme jamais.
+- `--coach-mode macro` conserve le mode historique, borné à Volskaya : le modèle
+  choisit cette même intention ou le silence, le code rend la phrase. Le mode
+  réactif n'ajoute aucune qualification native, de positions ou HUD ; il utilise
+  les faits de vie déjà contrôlés, indépendants de la géométrie de carte.
+- Historique et cooldown de 15 s après livraison inchangés. Le repli libre
+  peut toujours choisir le silence. Le score 1 de l'alerte codée représente la
+  satisfaction de sa règle, pas une probabilité de victoire.
 - `--coach-mode free` garde le Coach historique et `tactical_key` globale exacte.
   **Tout mouvement allié pendant la latence LLM peut annuler le conseil**. Ce
   mode n'est pas une solution au silence spatial ; voir `freshness.changed_fields`.
@@ -110,7 +119,10 @@ C:/root/dev/AI/CervHots/tts/.venv/Scripts/python.exe -B -m cerveau.playtest --li
 - API via le `configured_coach`/client Groco et la configuration centrale existants
   (`GROCO_*`), Mumble via la même configuration (`MUMBLE_*`). Aucune clé à imprimer.
 - Durée 1–1800 s, intervalle 15–300 s, défaut 300/30. Un appel synchrone à la fois,
-  jamais de rattrapage en rafale. Le mode réel réutilise la KB et Piper existants.
+  jamais de rattrapage en rafale. L'intervalle est désormais **début-à-début** :
+  un traitement de 8 s avec `--interval 15` laisse 7 s d'attente, pas 15 s.
+  Un dépassement ne programme pas plusieurs cycles de rattrapage.
+  Le mode réel réutilise la KB et Piper existants.
 
 Arrêt depuis un autre terminal, **sur les chemins exacts enregistrés** :
 
@@ -119,7 +131,8 @@ C:/root/dev/AI/CervHots/tts/.venv/Scripts/python.exe -B -m cerveau.passive_sessi
 ```
 
 Ou Ctrl+C dans le terminal propriétaire. Le STOP est coopératif : pendant HTTP,
-attendre le retour de l'appel borné (timeout au plus 20 s ou temps de session
+attendre le retour de l'appel borné (timeout = minimum du délai configuré, du
+budget de fraîcheur **restant après préparation/journal** et du temps de session
 restant), puis fermeture ; un son déjà mis en file ne peut être rétracté par ce
 contrôle. STOP revérifié après lectures/persistances et avant LLM/envoi. Attendre
 le **retour du terminal propriétaire**, pas seulement le succès du signal STOP.
@@ -204,11 +217,20 @@ historiques ; elles ne peuvent servir d'entrée CURRENT au lecteur.
 - Macro : `facts` au bord Coach, `macro_proposal.intent`, `macro_revalidation`
   et `macro_episode_rearmed`. `freshness` continue d'exposer la dérive globale,
   même quand la phrase macro non spatiale reste admissible.
+- Réactif : `fact_decision` distingue une décision codée, sans appel API ;
+  `intent_revalidation.accepted` est le verdict de son contrat. Une dérive
+  globale dans `freshness` n'est pas à elle seule un rejet de cette phrase.
+  Le repli libre reste strict, même s'il renvoie un champ JSON `intent`.
+- `stage_timing` sépare `knowledge`, `synthesis`, `delivery_complete` ; ce dernier
+  inclut la durée de lecture audio et n'est pas le début du son. Les temps API
+  restent dans `coach_response`. `erreur_api_0` préserve le refus réseau/délai,
+  sans conserver le message distant ni ses données privées.
 - Silence volontaire, confiance insuffisante, réponse invalide, intention
   non autorisée, répétition, cooldown, `périmé`, `non_diffusé` restent distincts.
   `input_expired` évite un LLM après préparation trop lente.
 - Compteurs : lectures acceptées/refusées, lectures avec positions, tentatives
-  **Coach** (pas nécessairement HTTP), propositions acceptées/refusées,
+  **Coach** (pas nécessairement HTTP dans le mode macro historique),
+  `fact_decisions` séparées, propositions acceptées/refusées,
   périmés/non-envois, synthèses, WAV sauvegardés et envois Mumble terminés.
   `mumble_sent` vient du retour du transport après vidage de sa file, **pas**
   d'une preuve qu'un humain a entendu. Un opt-in ne vaut jamais un envoi.
@@ -221,6 +243,8 @@ Depuis le checkout candidat, avec `TMPDIR/TEMP/TMP` Hermes ci-dessus :
 ```bash
 C:/root/dev/AI/CervHots/tts/.venv/Scripts/python.exe -B -m unittest discover -s tests -p 'test_playtest*.py' -v
 C:/root/dev/AI/CervHots/tts/.venv/Scripts/python.exe -B -m unittest discover -s tests -p test_positions_collection.py -v
+C:/root/dev/AI/CervHots/tts/.venv/Scripts/python.exe -B -m unittest discover -s tests -p test_reactive_coach.py -v
+C:/root/dev/AI/CervHots/tts/.venv/Scripts/python.exe -B -m unittest discover -s tests -p test_coach_timing.py -v
 ```
 
 Option de preuve test-only : `CERVHOTS_SYNTHETIC_LOG_DIR` vers un répertoire neuf

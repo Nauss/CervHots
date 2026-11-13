@@ -78,7 +78,7 @@ class Controller:
         parent = self.root/'out/playtest-ui'/('run-'+uuid.uuid4().hex)
         self.output, self.stop_file = parent/'session', parent/'STOP'
         args = ['--live', '--player-file', str(identity), '--output-dir', str(self.output),
-                '--stop-file', str(self.stop_file), '--collection', 'positions', '--coach-mode', 'macro',
+                '--stop-file', str(self.stop_file), '--collection', 'positions', '--coach-mode', 'reactive',
                 '--max-seconds', '1800']
         if voice:
             args.append('--mumble')
@@ -122,8 +122,8 @@ def build_panel(window, controller):
     window.title('CervHots — test manuel')
     identity = tk.StringVar()
     status = tk.StringVar(value=controller.message)
-    tk.Label(window, text='Volskaya / build 98348 — macro limitée outnumbered — 30 min maximum\n'
-        'Positions alliées tentées ; pas de coach spatial.\n'
+    tk.Label(window, text='Build 98348 — alertes factuelles réactives + coach libre strict — 30 min maximum\n'
+        'Infériorité numérique sans API sur les cartes reconnues ; positions alliées tentées.\n'
         'Mumble : serveur à démarrer MANUELLEMENT ; aucun serveur/bot lancé ici.').pack(padx=20, pady=12)
     def choose():
         path = filedialog.askopenfilename(title='Fichier identité privée existant', parent=window)

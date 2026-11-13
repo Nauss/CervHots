@@ -122,9 +122,11 @@ class Journal:
 
     def coach_input(self, state, *, mode='free', cycle_age_s=None):
         """Exact selected public positions at the Coach boundary, never receipts."""
-        if mode == 'macro':
+        if mode in ('macro', 'reactive'):
             from .macro import facts
-            self.record('coach_input', mode='macro', coverage=coach_coverage(state), facts=facts(state),
+            from hotstate.position_maps import PLAYER_RECIPE_MAPS, SUPPORTED_MAPS
+            maps = SUPPORTED_MAPS if mode == 'reactive' else PLAYER_RECIPE_MAPS
+            self.record('coach_input', mode=mode, coverage=coach_coverage(state), facts=facts(state, maps=maps),
                         cycle_age_s=cycle_age_s if number(cycle_age_s) else None)
         else:
             self.record('coach_input', mode='free', coverage=coach_coverage(state),
@@ -174,6 +176,6 @@ def decision_reason(reason):
              'faits_macro_inconnus', 'intention_non_autorisee'}
     if type(reason) is str and reason in known:
         return reason
-    if type(reason) is str and re.fullmatch(r'erreur_api_(?:[1-5][0-9]{2}|None)', reason):
+    if type(reason) is str and re.fullmatch(r'erreur_api_(?:0|[1-5][0-9]{2}|None)', reason):
         return reason
     return 'unknown_decision'

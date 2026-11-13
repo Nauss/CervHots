@@ -50,6 +50,7 @@ class Decision:
     style: str = "neutre"
     sujet: str = ""
     raison: str = "silence"
+    intent: str | None = None  # CODE only: never copied from the model response.
 
 
 class Coach:

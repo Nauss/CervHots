@@ -9,8 +9,9 @@ historique de coach (KB → API Groco → TTS → Mumble) reste une voie distinc
 [`docs/playtest.md`](docs/playtest.md), `python -B -m cerveau.playtest`
 (préflight sans mémoire/API/son). `--live` seul autorise la session silencieuse ;
 `--mumble` est un opt-in manuel distinct. Collecte des positions alliées par défaut,
-`--collection all` pour tenter le composé existant ; premier vocal = macro
-factuelle bornée, pas coach spatial complet. Candidat testé SYNTHETIC, aucune
+`--collection all` pour tenter le composé existant ; mode réactif par défaut :
+alerte d'infériorité numérique sans API, sinon Coach libre strict. Pas de coach
+spatial complet. Candidat testé SYNTHETIC, aucune
 partie live validée par ces fixtures. **Panneau manuel Windows à boutons** :
 double-clic `tools/playtest-panel.cmd` (aucun démarrage au chargement).
 Lanceur CLI : `tools/playtest.cmd`. Serveur Mumble à démarrer manuellement avant voix.
