@@ -98,12 +98,16 @@ les dix héros, niveaux et états de vie, ainsi que PV/ressources alliés.
 `respawn_s` est présent pour un héros mort si son timer natif est lisible ;
 Li-Ming et Qhira ont été vérifiées en partie, puis exactement contre le tracker.
 Les positions natives des héros principaux alliés vivants sont disponibles sur
-Volskaya build98348 seulement : contexte et perspective locale natifs concordants,
+les 19 cartes reconnues du build98348 : contexte et perspective locale concordants,
 relecture exacte, acquisition monotone âgée de0..1s, même processus `--live`.
+Les bornes viennent de la simulation active ; `map_validation=player_recipe`
+sur Volskaya, `native_bounds_only` ailleurs. Cette acquisition multi-cartes
+n'invente aucune validation terrain ni extension des règles du Coach macro.
 Un JSON `--state` externe perd volontairement ces positions ; le mode observateur
 ne choisit jamais un bot comme joueur. Recette et limites de calibration clairsemée :
-`etudes/rea/P2-POSITIONS-RECETTE.md`. Dragon/Braxis, positions ennemies, visibilité,
-objectifs, camps, structures et capacités restent inconnus en live.
+`etudes/rea/P2-POSITIONS-RECETTE.md` et `etudes/rea/POSITIONS-MULTICARTES.md`.
+Les positions ennemies restent exclues ; les autres familles conservent leurs
+propres limites de collecte.
 
 L'état natif a été vérifié contre le replay de sa propre capture : dix choix,
 équipes, niveaux et états de vie concordants à 1163,5625 secondes. Un vrai appel

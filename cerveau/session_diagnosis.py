@@ -19,6 +19,7 @@ import zipfile
 
 from .diagnostics import FIELDS
 from .objective_compare import _load, _read, _number
+from hotstate.position_maps import SUPPORTED_MAPS
 
 STOP_REASONS = ('stop_file', 'session_limit', 'session_changed', 'interrupted',
                 'failure_limit', 'software_error', 'source_close_failed', 'native_reader_unavailable')
@@ -132,7 +133,7 @@ def _diagnose(rows, integrity):
         binding = bool(binding and type(comparison.get('session_token')) is str
                        and re.fullmatch('[0-9a-f]{32}', comparison['session_token'])
                        and type(comparison.get('map_id')) is str
-                       and comparison['map_id'] in ('DragonShire', 'Volskaya')
+                       and comparison['map_id'] in SUPPORTED_MAPS
                        and comparison.get('perspective') == 'native_player')
         if binding:
             identities.add((r['session'], r['map'], comparison['session_token'], comparison['map_id']))

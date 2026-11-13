@@ -36,6 +36,26 @@ class ContextTests(unittest.TestCase):
                 observed = map_from_cache([good, bad], cache_root=root)
         self.assertEqual(observed, {"map_id": "Volskaya", "map": "Volskaya Foundry"})
 
+    def test_map_id_with_internal_space_is_preserved_without_repairing_malformed_ids(self):
+        from hotstate.context import map_from_cache
+        handle = b's2ma\0\0EU' + bytes([1]) * 32
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            digest = handle[8:].hex()
+            path = root / digest[:2] / digest[2:4] / (digest + '.s2ma')
+            path.parent.mkdir(parents=True)
+            path.write_bytes(b'SYNTHETIC_CACHE_FIXTURE')
+            archive = Mock()
+            for source in ('Warhead Junction', ' Warhead Junction', 'Warhead Junction ',
+                           'Warhead  Junction', 'Warhead\nJunction'):
+                archive.read_file.return_value = (
+                    'libCore_gv_mAPMapStringID = "'+source+'";').encode('ascii')
+                fake = SimpleNamespace(MPQArchive=Mock(return_value=archive))
+                with self.subTest(source=source), patch.dict(sys.modules, {'mpyq': fake}):
+                    observed = map_from_cache([handle], cache_root=root)
+                    expected = {'map_id': 'Warhead Junction', 'map': 'Warhead Junction'}
+                    self.assertEqual(observed, expected if source == 'Warhead Junction' else {})
+
     def test_a_temporarily_missing_map_cache_is_retried_not_cached_forever(self):
         from hotstate.context import ContextProbe
 

@@ -75,10 +75,13 @@ def map_from_cache(handles, *, cache_root=None):
             script = mpyq.MPQArchive(str(path)).read_file("MapScript.galaxy")
         except (OSError, ValueError, KeyError):
             continue
-        match = re.search(rb'\bmAPMapStringID\s*=\s*"([A-Za-z0-9_]+)"', script or b"")
+        # Preserve literal internal spaces (notably "Warhead Junction"). Do
+        # not strip/repair whitespace or infer a map ID from a display label.
+        identifier = rb'([A-Za-z0-9_]+(?: [A-Za-z0-9_]+)*)'
+        match = re.search(rb'\bmAPMapStringID\s*=\s*"' + identifier + rb'"', script or b"")
         # Le nom du champ est précédé de libCore_gv_ : le mot complet a ce suffixe.
         if match is None:
-            match = re.search(rb'_mAPMapStringID\s*=\s*"([A-Za-z0-9_]+)"', script or b"")
+            match = re.search(rb'_mAPMapStringID\s*=\s*"' + identifier + rb'"', script or b"")
         if match:
             map_id = match[1].decode("ascii")
             result = {"map_id": map_id}

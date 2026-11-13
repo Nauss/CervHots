@@ -8,7 +8,7 @@ historique de coach (KB → API Groco → TTS → Mumble) reste une voie distinc
 **Test de partie préparé, voix lancée manuellement** :
 [`docs/playtest.md`](docs/playtest.md), `python -B -m cerveau.playtest`
 (préflight sans mémoire/API/son). `--live` seul autorise la session silencieuse ;
-`--mumble` est un opt-in manuel distinct. Positions alliées Volskaya par défaut,
+`--mumble` est un opt-in manuel distinct. Collecte des positions alliées par défaut,
 `--collection all` pour tenter le composé existant ; premier vocal = macro
 factuelle bornée, pas coach spatial complet. Candidat testé SYNTHETIC, aucune
 partie live validée par ces fixtures. **Panneau manuel Windows à boutons** :
@@ -18,8 +18,10 @@ Lanceur CLI : `tools/playtest.cmd`. Serveur Mumble à démarrer manuellement ava
 **Relais après le test live du 11 novembre 2026 :**
 [`docs/RELAIS-POSITIONS.md`](docs/RELAIS-POSITIONS.md). Une annonce Mumble entendue
 est confirmée par le propriétaire ; aucune position disponible sur cette partie.
-Priorité suivante : acquisition et qualification natives des positions, sans
-élargir implicitement la couverture Volskaya/build98348.
+Depuis ce relais, l'acquisition positions est ouverte sur les 19 identifiants
+vérifiés dans les archives installées, avec bornes natives actives. La recette
+terrain reste Volskaya/build98348 ; les autres portent `native_bounds_only` :
+[`docs/positions-collection.md`](docs/positions-collection.md).
 
 ## Ce repo
 
@@ -73,6 +75,12 @@ historiques ne font pas partie de son smoke silencieux.
   lecture optionnelle, normalisation et journal sans optionnels :
   [`docs/core-collection.md`](docs/core-collection.md). Migration `all` → `core` :
   `--collection all` et `--collection talents` restent des opt-in explicites.
+  **Positions alliées persistées** : `--collection positions` sélectionne cœur +
+  positions ; chaque observation conserve slots/équipe/x/y/u/v, temps mission,
+  âge original, couverture et refus. Build98348, 19 cartes reconnues, bornes
+  actives et qualification `player_recipe`/`native_bounds_only` explicite ;
+  héros principaux alliés vivants uniquement :
+  [`docs/positions-collection.md`](docs/positions-collection.md).
   Diagnostic **hors ligne** d'un journal explicite, JSON + résumé lisible,
   acquisitions/observations/refus/arrêt et preuves non comparables :
   `python -m cerveau.passive_session --diagnose --journal <absolu-events.jsonl> --report-dir <absolu-neuf>`,
@@ -123,8 +131,9 @@ historiques ne font pas partie de son smoke silencieux.
   horloge, dix héros, niveaux, état de vie, PV/ressources alliés. Les dix héros,
   équipes, niveaux et états de vie sont recoupés avec le replay de la capture.
   Timers de mort validés en partie puis contre le tracker ; positions natives
-  alliées vivantes sur Volskaya (build98348, joueur local prouvé, fraîcheur1s).
-  Recette/limites : `etudes/rea/P2-POSITIONS-RECETTE.md`. Objectifs, camps,
+  alliées vivantes sur les cartes reconnues (build98348, joueur local prouvé,
+  fraîcheur1s). Recette terrain Volskaya, autres cartes contrôlées nativement :
+  `etudes/rea/POSITIONS-MULTICARTES.md`. Objectifs, camps,
   structures, visibilité/positions ennemies ne sont pas ouvertes par ce parcours.
   Talents natifs choisis : sélection persistée, pas possessions/options offertes.
   Portée build98348/DragonShire : Sonya locale ; alliés Arthas, Dehaka,

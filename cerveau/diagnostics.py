@@ -90,6 +90,8 @@ class Journal:
                 row['alive'] = h['alive']
             summary['heroes'].append(row)
         summary['available_fields'] = sorted(k for k in FIELDS if k in state)
+        from .positions_journal import positions_summary
+        summary['positions'] = positions_summary(state)
         from .objective_journal import objective_summary
         summary['objective'] = objective_summary(state)
         from .talents_journal import talents_summary
@@ -148,50 +150,20 @@ class Journal:
 def coach_coverage(state):
     """Closed public schema for the normalized input, NOT a replay permission."""
     from .passive_session import measured_acquisition
-    from hotstate.diagnostics import refusal
+    from .positions_journal import positions_summary
+    from hotstate.position_maps import SUPPORTED_MAPS
     meta = state.get('meta', {})
-    team = state.get('ally_team')
-    allies = [h for h in state.get('heroes', []) if type(h) is dict
-              and type(team) is int and team in (0, 1) and h.get('team') == team]
-    q = state.get('positions_qualification', {})
-    status = q.get('status')
-    status = status if status in ('normalized', 'not_selected', 'refused', 'rejected') else 'unknown'
-    reason = q.get('reason')
-    positions = None
-    if status == 'normalized':
-        p = state.get('positions', {})
-        try:
-            if (p.get('map_id') != 'Volskaya' or not number(p.get('t'))
-                    or not number(q.get('age_s'), 0, 1)
-                    or not number(q.get('read_window_s'), 0, .125)
-                    or len(allies) != 5):
-                raise ValueError('invalid_positions')
-            samples, seen = [], set()
-            from hotstate.positions import playable_bounds
-            xmin, ymin, xmax, ymax = playable_bounds('Volskaya')
-            for h in p['heroes']:
-                member = next(a for a in allies if a.get('id') == h.get('id'))
-                if (type(h.get('id')) is not int or h['id'] in seen
-                        or member.get('alive') is not True or h.get('team') != team
-                        or not number(h.get('x'), xmin, xmax) or not number(h.get('y'), ymin, ymax)
-                        or not number(h.get('u'), 0, 1) or not number(h.get('v'), 0, 1)):
-                    raise ValueError('invalid_positions')
-                seen.add(h['id'])
-                samples.append(dict(slot=h['id'], team=team, **{k: h[k] for k in ('x', 'y', 'u', 'v')}))
-            positions = dict(map_id='Volskaya', t=p['t'], team=team, heroes=samples)
-        except (KeyError, TypeError, ValueError, StopIteration):
-            status = 'rejected'
+    positions = positions_summary(state)
     selected = measured_acquisition({'collection': meta.get('collection')}).get('not_selected')
     return dict(basis='normalized_coach_input_historical_only',
         collection=meta.get('collection') if meta.get('collection') in ('core', 'positions', 'talents', 'all') else None,
-        allies_expected=5 if len(allies) == 5 else None,
-        allies_alive=sum(h.get('alive') is True for h in allies) if len(allies) == 5 else None,
-        positions_acquired=len(positions['heroes']) if positions is not None else None,
-        positions_status=status, positions=positions,
-        positions_reason=refusal(reason.get('code')) if type(reason) is dict else None,
-        source_age_s=q.get('age_s') if positions is not None else None,
-        read_window_s=q.get('read_window_s') if positions is not None else None,
-        map_supported=meta.get('map_id') == 'Volskaya', not_selected=selected,
+        allies_expected=positions['allies_expected'], allies_alive=positions['allies_alive'],
+        positions_acquired=positions['positions_acquired'],
+        positions_status=positions['status'], positions=positions['value'],
+        positions_reason=positions['reason'], source_age_s=positions['age_s'],
+        read_window_s=positions['read_window_s'],
+        map_supported=meta.get('map_id') in SUPPORTED_MAPS,
+        positions_map_validation=positions['map_validation'], not_selected=selected,
         unknown_families=[name for name in ('positions', 'visibility', 'objective', 'talents',
                                           'local_cooldowns', 'battlefield') if name not in state])
 

@@ -16,15 +16,19 @@ Ce guide ne lève aucun STOP et ne donne aucune permission CURRENT.
 
 ## Périmètre utile
 
-- Build natif **98348**, **Volskaya** pour les positions alliées qualifiées.
-  Aucune extension de carte/visibilité. Ennemis : pas de coordonnées inventées.
+- Build natif **98348**, acquisition des positions alliées sur les **19 cartes
+  identifiées** de `hotstate/position_maps.py`, avec bornes natives actives.
+  `player_recipe` reste Volskaya ; ailleurs `native_bounds_only`, pas de recette
+  terrain prétendue. Voir [positions-collection.md](positions-collection.md).
+  Aucune extension de visibilité ou de positions ennemies.
 - `cerveau.playtest` sélectionne **core + positions** par défaut, **avant**
   acquisition des autres familles. `--collection all` est le vrai chemin composé
   existant : plus d'informations possibles, mais plus coûteux et toujours sujet
   aux refus WHOLE. Il ne qualifie pas les familles non couvertes sur une carte.
 - La CLI passive conserve **core** par défaut et reste sans Coach/API/audio.
   Son opt-in `--collection positions` et son `--check-ready` connaissent ce choix.
-- Nouveau coach **macro** par défaut : une intention seulement, `outnumbered`.
+- Nouveau coach **macro** par défaut : une intention seulement, `outnumbered`,
+  toujours limitée à Volskaya (indépendamment de l'acquisition multi-cartes).
   Le code exige les dix héros et états de vie connus, cinq par équipe, une
   identité/perspective native courante cohérente, et strictement plus d'ennemis
   vivants que d'alliés. Le modèle reçoit l'état normalisé **avec positions**,
@@ -183,6 +187,10 @@ permissions réutilisables. Les positions normalisées consignées sont des vale
 historiques ; elles ne peuvent servir d'entrée CURRENT au lecteur.
 
 - `acquisition` : sélection, refus fermés, lectures/octets/coût réellement tentés.
+- `observation.positions` : coordonnées alliées conservées dès l'observation,
+  même sans appel du Coach, avec temps mission/âge/couverture/refus. Schéma :
+  [positions-collection.md](positions-collection.md). `bounds` conserve le rectangle
+  actif ; `map_validation` distingue recette joueur et contrôles natifs seuls.
 - `coach_input.coverage` : **entrée normalisée effectivement proposée au Coach**,
   alliés attendus/vivants/positions acquises (null si inconnues, pas zéro fictif),
   carte supportée, familles non sélectionnées/inconnues et refus positions.

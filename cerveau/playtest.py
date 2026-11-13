@@ -199,11 +199,13 @@ def main(argv=None):
         print(json.dumps(dict(event='playtest_error', reason='invalid_arguments')))
         return 2
     try:
+        from hotstate.position_maps import PLAYER_RECIPE_MAPS, SUPPORTED_MAPS
         row = dict(native_preflight(core=True), event='playtest_preflight',
                    collection=args.collection, coach_mode=args.coach_mode,
                    mode='mumble' if args.mumble else 'wav' if args.wav else 'silent',
                    current_permission=False, coach_configuration='unchecked',
-                   positions_maps=['Volskaya'], native_build=98348)
+                   positions_maps=list(SUPPORTED_MAPS),
+                   positions_player_recipe_maps=list(PLAYER_RECIPE_MAPS), native_build=98348)
         from .runner import ROOT
         row['kb_present'] = (ROOT / 'kb/data/kb.db').is_file()
         if args.live:

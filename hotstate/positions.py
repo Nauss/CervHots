@@ -1,6 +1,7 @@
-"""Read-only build98348 allied main-hero positions, measured on Volskaya.
+"""Read-only build98348 allied main-hero positions using active map bounds.
 
-Release evidence and its sparse pixel-calibration limits: P2-POSITIONS.md.
+Player recipe evidence remains limited to Volskaya: P2-POSITIONS.md.
+Other catalogued maps are explicitly marked native_bounds_only, not HUD-tested.
 Observer/rolling dumps grant no permissions. Diagnostics never produce a
 validated packet and are not consumed by the coach.
 """
@@ -15,15 +16,34 @@ from contextlib import contextmanager
 from pathlib import Path
 
 from .native import MASK, NativeReader, NativeUnavailable
+from .position_maps import PLAYER_RECIPE_MAPS, SUPPORTED_MAPS
 
 MAX_WINDOW_S = 0.125
-VALIDATED_MAPS = ('Volskaya',)  # Player recipe only; no Dragon/Braxis extrapolation.
+VALIDATED_MAPS = PLAYER_RECIPE_MAPS  # Empirical recipes, not the acquisition catalog.
 PROFILE = json.loads((Path(__file__).parent / 'profiles/98348-positions.json').read_text(encoding='utf-8'))
 
 
 def playable_bounds(map_id):
     """Known structural bounds; this is NOT a map validation allowlist."""
     return PROFILE.get('maps', {}).get(map_id, {}).get('bounds')
+
+
+def map_validation(map_id):
+    if type(map_id) is not str or map_id not in SUPPORTED_MAPS:
+        return None
+    return 'player_recipe' if map_id in VALIDATED_MAPS else 'native_bounds_only'
+
+
+def valid_bounds(map_id, bounds, *, profile=None):
+    """Validate the observed region; never invent another map's rectangle."""
+    if (map_validation(map_id) is None or type(bounds) is not list or len(bounds) != 4
+            or any(type(value) is not int for value in bounds)
+            or not -256 <= bounds[0] < bounds[2] <= 512
+            or not -256 <= bounds[1] < bounds[3] <= 512):
+        return False
+    p = PROFILE if profile is None else profile
+    expected = p.get('maps', {}).get(map_id, {}).get('bounds')
+    return expected is None or bounds == expected
 
 
 class _RecordedMemory:
@@ -172,16 +192,14 @@ class AlliedPositions:
                 raise NativeUnavailable('signature_positions_invalide')
 
     def _bounds(self, n, map_id):
-        spec = self.profile.get('maps', {}).get(map_id)
-        if spec is None:
+        if map_validation(map_id) is None:
             raise NativeUnavailable('carte_positions_non_prise_en_charge')
         high = (n.global_u32(0x32C2130) + n.global_u32(0x34F01D4) + 0x6D6AFAFC) & MASK
         low = n.global_u32(0x34F01D0) ^ n.global_u32(0x32C4880)
         simulation = self._pointer((high << 32) | low)
         # RegionPlayableMap -> simulation region(16): (16 + 31)*16 = 0x2f0.
         bounds = struct.unpack('<iiii', n.read(simulation + 0x2F0, 16))
-        if (list(bounds) != spec['bounds'] or not -256 <= bounds[0] < bounds[2] <= 512
-                or not -256 <= bounds[1] < bounds[3] <= 512):
+        if not valid_bounds(map_id, list(bounds), profile=self.profile):
             raise NativeUnavailable('bornes_positions_incoherentes')
         return bounds
 
@@ -302,12 +320,13 @@ class AlliedPositions:
         map_id, match_id, local_id, team, allies = self._context(context)
         if getattr(self.native.memory, 'recorded_non_atomic', False):
             raise NativeUnavailable('capture_positions_non_atomique')
-        if map_id not in VALIDATED_MAPS:
-            raise NativeUnavailable('recette_positions_absente')
+        validation = map_validation(map_id)
+        if validation is None:
+            raise NativeUnavailable('carte_positions_non_prise_en_charge')
         result = self._observe(map_id, context=context, hero_ids=hero_ids)
         from .acquisition import issue
         acquired = result.pop('_acquired')
-        result.update(status='validated', match_id=match_id)
+        result.update(status='validated', match_id=match_id, map_validation=validation)
         return issue(result, acquired)
 
     def diagnose(self, map_id, *, hero_ids=None):

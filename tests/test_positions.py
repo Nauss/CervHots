@@ -53,12 +53,12 @@ class PositionsTests(unittest.TestCase):
     def opened(self):
         return patch('hotstate.positions.VALIDATED_MAPS', ('Volskaya',))
 
-    def test_release_gate_is_limited_to_measured_volskaya(self):
+    def test_player_recipe_remains_volskaya_and_unknown_maps_are_refused(self):
         from hotstate.positions import VALIDATED_MAPS
         self.assertEqual(VALIDATED_MAPS, ('Volskaya',))
         m = PositionMemory()
-        m.context['meta']['map_id'] = 'DragonShire'
-        with self.assertRaisesRegex(NativeUnavailable, 'recette_positions_absente'):
+        m.context['meta']['map_id'] = 'UnknownMap'
+        with self.assertRaisesRegex(NativeUnavailable, 'carte_positions_non_prise_en_charge'):
             m.reader().read(m.context, hero_ids=m.hero_ids)
 
     def test_released_read_needs_no_release_mock_and_still_omits_enemies(self):
@@ -118,7 +118,7 @@ class PositionsTests(unittest.TestCase):
                 if change == 'x': m.position(6, 245, 60)
                 elif change == 'negative': m.position(6, -1, 60)
                 elif change == 'bounds': m.pack(0x100000 + 0x2F0, 'iiii', 4, 4, 4, 196)
-                elif change == 'map': m.context['meta']['map_id'] = 'DragonShire'
+                elif change == 'map': m.context['meta']['map_id'] = 'UnknownMap'
                 elif change == 'build': m.position_profile['build'] = 999
                 elif change == 'code': m.put(m.module_base + 0x200, b'BAD')
                 elif change == 'owner': m.pack(unit + 0x44, 'B', 1)

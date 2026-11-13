@@ -14,6 +14,7 @@ import json
 from pathlib import Path
 
 from capture_positions import AlliedPositions, NativeReader, NativeUnavailable, ReplayTrace, attempt
+from hotstate.positions import map_validation
 
 
 def audit(path, *, public=False, options=None):
@@ -76,6 +77,9 @@ def audit(path, *, public=False, options=None):
                     assert result.pop('status') == 'validated'
                     result.pop('acquisition')
                     result.pop('match_id')
+                    # Qualification metadata is new; every recorded read,
+                    # clock, coordinate and refusal must still replay exactly.
+                    assert result.pop('map_validation') == map_validation(header['map_id_requested'])
                     assert result == {k: v for k, v in p.items() if k != 'status'}
                 replay.finish()
                 counts['public_core_replayed_attempts'] += 1

@@ -59,6 +59,13 @@ Les validations ci-dessous sont bornées à leurs captures/build/cartes. Le mot
 CURRENT y décrit un contrôle de l'époque, pas une permission actuelle. Les
 commandes anciennes sont des modèles non exécutés lot40, pas le quickstart livré.
 
+**Positions multi-cartes actuelles :** `--collection positions` lit les bornes
+de la simulation active sur les 19 identifiants de `position_maps.py` et conserve
+la qualification : `player_recipe` pour Volskaya, `native_bounds_only` ailleurs.
+Générations, identité, fraîcheur et budget inchangés ; aucune coordonnée ennemie.
+Voir `docs/positions-collection.md` et `etudes/rea/POSITIONS-MULTICARTES.md` depuis
+la racine. Les limites par carte des autres familles restent indépendantes.
+
 **État historique (17/10/2026) :** lecture mémoire des trois compteurs validée en partie
 IA jusqu'à Groco et Mumble. Le lecteur natif de simulation fournit maintenant
 le chronomètre, les dix héros (IA comprises), leurs niveaux et états de vie,

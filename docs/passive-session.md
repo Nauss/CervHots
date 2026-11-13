@@ -15,6 +15,15 @@ la migration porte sur la CLI, pas sur les appels Python existants.
 Il ne qualifie ni le build du jeu actif, ni le cache de cartes, ni une recette.
 Aucune KB SQLite ni `.env` Coach n'est nécessaire.
 
+`--collection positions` sélectionne **cœur + positions alliées** et conserve
+les coordonnées normalisées dans chaque `observation.positions` du journal,
+avec temps mission, âge original, couverture et refus. Build98348, 19 identifiants
+de carte reconnus, bornes natives actives, héros principaux alliés vivants.
+La recette terrain reste Volskaya ; ailleurs `native_bounds_only` est explicite.
+`all` les consigne aussi après les mêmes contrôles ;
+`core` et `talents` les indiquent non sélectionnées, sans projection.
+Schéma et vérification : [positions-collection.md](positions-collection.md).
+
 ## Préparation et lancement
 
 Depuis le checkout exact à tester (ne pas supposer un venv dans le worktree) :

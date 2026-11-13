@@ -17,6 +17,7 @@ import time
 from pathlib import Path
 
 from .diagnostics import Journal
+from hotstate.position_maps import SUPPORTED_MAPS
 
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -174,10 +175,9 @@ def run_session(source_factory, stopped, emit, *, duration=300, interval=5,
                 binding, mission = current, now_mission
                 comparison = {
                     'session_token': session_token,
-                    'map_id': ('DragonShire' if any(state.get(family, {}).get('map_id') == 'DragonShire'
-                                                    for family in ('objective', 'talents', 'local_cooldowns')) else
-                               state['meta'].get('map_id') if state['meta'].get('collection') in ('core', 'positions')
-                               and state['meta'].get('map_id') in ('DragonShire', 'Volskaya') else None),
+                    'map_id': (state['meta'].get('map_id') if state['meta'].get('map_id') in SUPPORTED_MAPS else
+                               'DragonShire' if any(state.get(family, {}).get('map_id') == 'DragonShire'
+                                   for family in ('objective', 'talents', 'local_cooldowns')) else None),
                     'perspective': ('native_player' if state['meta'].get('source') == 'live'
                                     and state['meta'].get('native_status') == 'valide'
                                     else 'unknown'),

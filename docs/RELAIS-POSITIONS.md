@@ -27,7 +27,19 @@ La sélection `positions` fonctionne bien avant acquisition : cœur + positions,
 
 Aucune coordonnée n'a été fournie au coach : `positions_available=0`. Le journal minimise le nom de carte ; ce relais ne déduit donc pas la carte exacte depuis son identifiant anonymisé. L'identifier à partir d'une référence autorisée avant toute recette spécifique.
 
-Le produit est actuellement qualifié pour les **héros principaux alliés vivants, Volskaya, build 98348**, pas pour toutes les cartes, les ennemis ou une autre build. Ajouter un nom à une allowlist ne résout pas le problème. Distinguer résolution mémoire, preuve de perspective et recette par carte ; conserver les refus et les inconnus jusqu'à une vraie qualification.
+Au moment de ce relais, le produit était limité aux **héros principaux alliés vivants, Volskaya, build 98348**. La recette joueur reste bornée à ce périmètre ; distinguer acquisition native, preuve de perspective et validation terrain par carte.
+
+**Complément collecte :** les nouvelles observations passives conservent aussi
+les coordonnées alliées normalisées et leur qualification, via l'export commun
+`cerveau.positions_journal`, sans nécessiter un appel du Coach. Voir
+[`positions-collection.md`](positions-collection.md).
+
+**Acquisition multi-cartes depuis le relais :** le lecteur utilise désormais les
+bornes de la simulation active pour les 19 identifiants sourcés du catalogue,
+sans élargir `VALIDATED_MAPS`. Les nouvelles cartes portent `native_bounds_only`,
+Volskaya `player_recipe`. Le bug de résolution de `Warhead Junction` avec espace
+est corrigé. Cette ouverture ne prétend pas ajouter 18 recettes terrain ; les
+preuves et refus historiques sont dans `etudes/rea/POSITIONS-MULTICARTES.md`.
 
 ### Fichiers à lire en premier
 

@@ -4,6 +4,8 @@ from __future__ import annotations
 import math
 import re
 
+from hotstate.position_maps import SUPPORTED_MAPS
+
 VALIDATED_COUNTERS = ("deaths_total", "respawns_total", "globes_total")
 
 
@@ -42,7 +44,8 @@ def _native_positions(raw, heroes, local, team):
             or meta.get("source") != "live" or meta.get("native_build") != 98348
             or packet.get("status") != "validated"
             or not fresh(packet)
-            or packet.get("map_id") not in positions.VALIDATED_MAPS
+            or positions.map_validation(packet.get("map_id")) is None
+            or packet.get('map_validation') != positions.map_validation(packet.get('map_id'))
             or packet.get("map_id") != meta.get("map_id")
             or meta.get("context_source") not in ("initdata_memory", "initdata_native_fields")
             or not isinstance(meta.get("match_id"), str)
@@ -56,11 +59,7 @@ def _native_positions(raw, heroes, local, team):
             or not _number(packet.get("read_window_s")) or packet["read_window_s"] > 0.125):
         return None
     bounds = packet.get("bounds")
-    if (not isinstance(bounds, list) or len(bounds) != 4
-            or bounds != positions.playable_bounds(packet["map_id"])
-            or any(type(value) is not int for value in bounds)
-            or not -256 <= bounds[0] < bounds[2] <= 512
-            or not -256 <= bounds[1] < bounds[3] <= 512):
+    if not positions.valid_bounds(packet['map_id'], bounds):
         return None
     samples = packet.get("heroes")
     if not isinstance(samples, list) or len(samples) > 5:
@@ -83,7 +82,10 @@ def _native_positions(raw, heroes, local, team):
         clean.append({"id": sample["id"], "hero": member["hero"], "team": team,
                       "x": x, "y": y, "u": (x - xmin) / (xmax - xmin),
                       "v": 1 - (y - ymin) / (ymax - ymin)})
+    if seen != {h['id'] for h in heroes if h['team'] == team and h['alive']}:
+        return None
     return {"t": packet["mission_t_s"], "map_id": packet["map_id"],
+            'bounds': list(bounds), 'map_validation': packet['map_validation'],
             "heroes": sorted(clean, key=lambda h: h["id"])}
 
 
@@ -237,24 +239,30 @@ def snapshot(raw: dict, *, at: float | None = None, team: int | None = None,
         if meta.get("native_status") == "valide":
             result["heroes"] = _native_heroes(raw, players, local, team)
             positions = (_native_positions(raw, result["heroes"], local, team)
-                         if collection != 'core' else None)
+                         if collection in ('all', 'positions') else None)
             if positions is not None and (map_name is None or map_name == meta.get("map")):
                 result["positions"] = positions
             from hotstate.diagnostics import refusal
             position_refusal = (meta.get('optional_refusals', {}).get('positions')
-                                if collection != 'core' else None)
+                                if collection in ('all', 'positions') else None)
             result['positions_qualification'] = {
-                'status': ('not_selected' if collection == 'core' else
+                'status': ('not_selected' if collection not in ('all', 'positions') else
                            'normalized' if 'positions' in result else
                            'refused' if position_refusal is not None else 'rejected'),
                 'reason': refusal(position_refusal) if position_refusal is not None and 'positions' not in result else None,
                 'age_s': None, 'read_window_s': None}
             if 'positions' in result:
                 import time
+                from hotstate.acquisition import MAX_AGE_S
                 packet = raw['positions']
-                result['positions_qualification'].update(
-                    age_s=time.monotonic() - packet['acquisition']['monotonic_s'],
-                    read_window_s=packet['read_window_s'])
+                age = time.monotonic() - packet['acquisition']['monotonic_s']
+                if 0 <= age <= MAX_AGE_S:
+                    result['positions_qualification'].update(
+                        age_s=age, map_validation=positions['map_validation'],
+                        read_window_s=packet['read_window_s'])
+                else:
+                    result.pop('positions')
+                    result['positions_qualification']['status'] = 'rejected'
             visibility = (_native_visibility(raw, result['heroes'], local, team)
                           if collection not in ('core', 'positions') else None)
             if visibility is not None and (map_name is None or map_name == meta.get('map')):
@@ -348,9 +356,9 @@ def snapshot(raw: dict, *, at: float | None = None, team: int | None = None,
                 and all(sum(p.get("team") == t for p in players) == 5 for t in (0, 1)))
         if 'collection' in meta:
             result['meta']['collection'] = collection
-        # Core has no objective/talent packet from which to retain the already
-        # established map binding. Keep only the existing historical vocabulary.
-        if meta.get('map_id') in ('DragonShire', 'Volskaya'):
+        # Preserve the native context's public map ID, independent of optional
+        # families. A recognized ID does not qualify that map's other fields.
+        if meta.get('map_id') in SUPPORTED_MAPS:
             result['meta']['map_id'] = meta['map_id']
         if meta.get("context_source") in ("initdata_memory", "initdata_native_fields"):
             result["meta"]["context_source"] = meta["context_source"]

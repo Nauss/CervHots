@@ -44,6 +44,7 @@ CODES = {
         'nombre_composants_natif_invalide', 'niveau_natif_invalide',
         'composant_experience_absent', 'scan_pipeline_natif_interdit',
         'lecture_positions_dechiree', 'lecture_visibilite_dechiree',
+        'bornes_positions_incoherentes', 'position_hors_carte',
         'lecture_dragon_dechiree', 'lecture_champ_bataille_dechiree',
         'talent_torn', 'cooldown_torn',
         'lecture_chrono_dechiree', 'lecture_objectif_dechiree',

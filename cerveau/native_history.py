@@ -16,6 +16,7 @@ from .session_diagnosis import _journal, FAMILIES, QUALIFICATIONS, STOP_REASONS
 from .objective_compare import _number
 from .objective_journal import objective_summary
 from .talents_journal import _value
+from hotstate.position_maps import SUPPORTED_MAPS
 
 
 def _status(packet):
@@ -177,7 +178,7 @@ def _consistent(observations):
                     return False
             if (type(c.get('session_token')) is not str
                     or not re.fullmatch('[0-9a-f]{32}', c['session_token'])
-                    or type(c.get('map_id')) is not str or c['map_id'] not in ('DragonShire', 'Volskaya')
+                    or type(c.get('map_id')) is not str or c['map_id'] not in SUPPORTED_MAPS
                     or c.get('perspective') != 'native_player' or c.get('clock_basis') != 'host_monotonic'
                     or not _number(c.get('read_started_s')) or not _number(c.get('read_finished_s'))
                     or c['read_started_s'] > c['read_finished_s']

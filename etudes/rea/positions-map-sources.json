@@ -1,0 +1,200 @@
+{
+  "basis": "installed_cache_identifiers_NOT_live_qualification",
+  "archives": 67,
+  "map_ids": [
+    "AlteracPass",
+    "BattlefieldOfEternity",
+    "BlackheartsBay",
+    "BraxisHoldout",
+    "BraxisOutpost",
+    "ControlPoints",
+    "Crypts",
+    "CursedHollow",
+    "DragonShire",
+    "Hanamura",
+    "HauntedMines",
+    "HauntedWoods",
+    "IndustrialDistrict",
+    "LostCavern",
+    "Shrines",
+    "SilverCity",
+    "TowersOfDoom",
+    "Volskaya",
+    "Warhead Junction"
+  ],
+  "sources": [
+    {
+      "archive": "0ba35ed4b9edda8c8f89fd6d328fa654bddbae5a7681ce2c6aafc1d0715916c7.s2ma",
+      "map_ids": [
+        "IndustrialDistrict"
+      ],
+      "script_sha256": "e25aa51ef04d953199ede2f4a3d6cf59e977d2df80a3acca346f1f124b150b7f"
+    },
+    {
+      "archive": "0eafeccad9ccd8891a00d231816698d95fc153f5feb21cb1ad26404e3ed828be.s2ma",
+      "map_ids": [
+        "HauntedWoods"
+      ],
+      "script_sha256": "06caf5afe849098e3d71537c683f6f1d7f7b2196c19b04cbc04d290db3df9179"
+    },
+    {
+      "archive": "1860ffa5906bb6ee8054ed080a4afcefaa534d4643ce0781aad84623724442b2.s2ma",
+      "map_ids": [
+        "BattlefieldOfEternity"
+      ],
+      "script_sha256": "d0ebb70aff335f0eff7be6073c5421723a8737a17158c736229982fb0ed221a8"
+    },
+    {
+      "archive": "18feff6163e7a80b571471c187ae80babce8a961f15145dc056d32e1975fdfa4.s2ma",
+      "map_ids": [
+        "Hanamura"
+      ],
+      "script_sha256": "7257942cebc0603254125a50bbcaab0a4520e98a4efe77142c6f341129c2fba8"
+    },
+    {
+      "archive": "38f68164766054edf9476fbf5b8b12a10032e18768b17de15fd0723272e565e4.s2ma",
+      "map_ids": [
+        "BraxisOutpost"
+      ],
+      "script_sha256": "2dec5811a023e7b6406764210086dae2a01a8658c159f23b147bcdf422cd3a22"
+    },
+    {
+      "archive": "3e5c57c8b230c4b8360ee3de4fabb3060610636cbee495cf1ebd615bf6bd2d9b.s2ma",
+      "map_ids": [
+        "AlteracPass"
+      ],
+      "script_sha256": "0c9913116594d6a6638c03217d14c8f0e61c5f54e2ecc1594403fee87d63b361"
+    },
+    {
+      "archive": "5883857eddd6f46af345eaf543168dda4f55318b3e0f4c323a15072919daa76d.s2ma",
+      "map_ids": [
+        "BlackheartsBay"
+      ],
+      "script_sha256": "92f234f9003c9c948db94679d04c355e8315916c3dbbd5188f6c9545495a5885"
+    },
+    {
+      "archive": "60f3737b16c5f687d214ad90746b0e32900ab796ddf4a907a380a7cd6037d672.s2ma",
+      "map_ids": [
+        "TowersOfDoom"
+      ],
+      "script_sha256": "5045386c08363cae30d2dc0d088d56fc4e6fdb6f77a1bd199486c403e125777f"
+    },
+    {
+      "archive": "7751c274aa96c7b58e89c757eeb89e05f28e5c369e463ec6d51bf172681bd3a9.s2ma",
+      "map_ids": [
+        "CursedHollow"
+      ],
+      "script_sha256": "b2370b368290b097a52d70a49b3c2d71a616a1bc2414d08d6f1eb06c7d6aa96f"
+    },
+    {
+      "archive": "7b679467ad51fe45aad1994289177a83b8ee2244f70f98ddd082b3b4931fb500.s2ma",
+      "map_ids": [
+        "BraxisHoldout"
+      ],
+      "script_sha256": "7c2231df3006389934e3a812e13cdc0f58163872f7e9282ba5aa7f36c322d698"
+    },
+    {
+      "archive": "7b7a83395746a818eb7f842a7ff0a27699c93b5a9d170d1c0993a3cc0058e1d0.s2ma",
+      "map_ids": [
+        "Warhead Junction"
+      ],
+      "script_sha256": "c495c4479c9de7e6a9bf517a8accc58653f3ccb669ae26411fec1a80203ecfe9"
+    },
+    {
+      "archive": "804e00cbe2775008db05bbbccd5b51497f981f510ea9f1606968627ef0197053.s2ma",
+      "map_ids": [
+        "SilverCity"
+      ],
+      "script_sha256": "f8e22d17d545e829ec4685ad21f5b46a04aac50f201717df4181504280bb7feb"
+    },
+    {
+      "archive": "889da151b127b6b5091a26c0395b7787a74cd3f4dea69521512cf027129a009e.s2ma",
+      "map_ids": [
+        "ControlPoints"
+      ],
+      "script_sha256": "88b6e3034f919ac510bc0701241ddcc1ad529e4c5ac38cc0e2097b48930262a6"
+    },
+    {
+      "archive": "8b351b7b82c0152b53db5737fcf9c4f1a2a99fa88a7dd65e0d787bd0f1b656c6.s2ma",
+      "map_ids": [
+        "HauntedWoods"
+      ],
+      "script_sha256": "cb3b0426ac872cefdd0cc067ed2fffef8fbaff65f6ed0d76918f8515945f7be7"
+    },
+    {
+      "archive": "91a6bac5efa515aa4539b579ef8132cf3125e7be1906c6297216b45de0a4690b.s2ma",
+      "map_ids": [
+        "HauntedMines"
+      ],
+      "script_sha256": "e5947599e5efefccd7f95493f20a615da5cc752311bba232f643992740a21c91"
+    },
+    {
+      "archive": "99612b8e845a50398b258a79bf8b7f13cd63045d72ebff9ac3f6672947f467eb.s2ma",
+      "map_ids": [
+        "Volskaya"
+      ],
+      "script_sha256": "acd7b05a7e29ff9e8e9b28236f5c0c1191d2044dd99965077b2feddd5e5f4b59"
+    },
+    {
+      "archive": "a713e0d47c677fd2b99f9ee8398c22a3e30cc018fcc83d1dda3c09b31f1e76c1.s2ma",
+      "map_ids": [
+        "Crypts"
+      ],
+      "script_sha256": "8379ca6ed680eac9dee0367f9c2df38c4f76e35c0ec779b5aab6a8767c1d20cf"
+    },
+    {
+      "archive": "ab9867fa3ecc52c8330553a120af5853f6673b6e42a9e393ee82dd6629fb7e93.s2ma",
+      "map_ids": [
+        "LostCavern"
+      ],
+      "script_sha256": "43d114e7ec0fb1d9d52ccff03e7c76d6f140279215e59c5c27b1496d3c64c761"
+    },
+    {
+      "archive": "d952569f975d31a83e9d12d6b488589044e325ba92871aef62e104ed1859202e.s2ma",
+      "map_ids": [
+        "Volskaya"
+      ],
+      "script_sha256": "acd7b05a7e29ff9e8e9b28236f5c0c1191d2044dd99965077b2feddd5e5f4b59"
+    },
+    {
+      "archive": "ed5a6a02084862ace9f9169d19507617769ac978637e8b6cb3a2981a85d22de7.s2ma",
+      "map_ids": [
+        "Hanamura"
+      ],
+      "script_sha256": "7257942cebc0603254125a50bbcaab0a4520e98a4efe77142c6f341129c2fba8"
+    },
+    {
+      "archive": "f557190f8aaab160789272ce086b8b69d6a8037b152de150332603dae3dc098f.s2ma",
+      "map_ids": [
+        "DragonShire"
+      ],
+      "script_sha256": "3577dc0e4c0c02524e83ab6d025aa5955fe4aa414c421d37a2254ed3260b1556"
+    },
+    {
+      "archive": "fddf3267c510a29b4ad55ada48096860054969095cf025a54f91b15fc310714e.s2ma",
+      "map_ids": [
+        "Shrines"
+      ],
+      "script_sha256": "41714ba5ad7b4c16412183ee7317f4958e9ce84d6e4cf550e3f4d9feaa8ff1c3"
+    }
+  ],
+  "unreadable_archives": [
+    {
+      "archive": "1ad94c126eb98a4c1de7b8e6f8aaa153dba52b09d3825e0c89dbc5828db70f76.s2ma",
+      "error_type": "ValueError"
+    },
+    {
+      "archive": "1f1b228ddb1f72205cbfd444055287100b0f39959be816548162e4081ea85511.s2ma",
+      "error_type": "ValueError"
+    },
+    {
+      "archive": "92d81744c1441bf628ed6ab7e9d19485c860914d8b745a91f6351ff9dcd4e6bb.s2ma",
+      "error_type": "ValueError"
+    },
+    {
+      "archive": "a1e9abcd3fd25053c903ab1352a6857537284b329d08b86b2be2de49c3ab7f43.s2ma",
+      "error_type": "ValueError"
+    }
+  ],
+  "warning": "Identifiers only. Archive hashes and script hashes do not establish native/HUD/player qualification."
+}

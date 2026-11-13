@@ -42,21 +42,21 @@ class PositionsCollectionTests(unittest.TestCase):
             ['gameplay_clock', 'visibility', 'objective', 'talents', 'local_cooldowns', 'battlefield'])
 
     def test_unsupported_map_is_unknown_with_explicit_reason(self):
-        self.fixture.memory.context['meta']['map_id'] = 'DragonShire'
+        self.fixture.memory.context['meta']['map_id'] = 'UnknownMap'
         # The native context fixture publishes Volskaya: change its bound result,
         # not the physical identity/read guards.
         from hotstate.positions import AlliedPositions
         original = AlliedPositions.read
         def unsupported(reader, context, **kwargs):
             other = copy.deepcopy(context)
-            other['meta']['map_id'] = 'DragonShire'
+            other['meta']['map_id'] = 'UnknownMap'
             return original(reader, other, **kwargs)
         with patch.object(AlliedPositions, 'read', unsupported):
             state = self.take()
         self.assertNotIn('positions', state)
         q = state['positions_qualification']
         self.assertEqual(q['status'], 'refused')
-        self.assertEqual(q['reason']['code'], 'recette_positions_absente')
+        self.assertEqual(q['reason']['code'], 'carte_positions_non_prise_en_charge')
         self.assertIsNone(q['age_s'])
 
     def test_disk_packet_cannot_become_current(self):
