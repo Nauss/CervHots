@@ -4,9 +4,13 @@ from __future__ import annotations
 import time
 
 
-def send_to_mumble(bot, speech, fresh, *, timeout: float = 3.0) -> bool:
-    """Pas de TTS ici : la fraîcheur a déjà été revérifiée après synthèse."""
-    if not bot.wait_for_quiet(timeout=timeout) or not fresh():
+def send_to_mumble(bot, speech, fresh) -> bool:
+    """Diffuse sans attendre le silence ; revérifie la fraîcheur avant envoi.
+
+    Les alertes du coach parlent par-dessus les conversations, sur demande
+    du propriétaire. Aucun TTS ni délai de tour de parole dans cet adaptateur.
+    """
+    if not fresh():
         return False
     if bot.mumble is None or bot.mumble.users.myself is None or bot._lost:
         raise RuntimeError("bot Mumble déconnecté")

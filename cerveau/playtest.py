@@ -165,7 +165,11 @@ def run_session(args, source_factory, coach_factory, emit, *, stopped=None,
                 reason = exception_refusal(exc)
                 journal.record('refusal', phase=journal.phase, **reason)
                 boundary()
-                failures += 1
+                # Matchmaking/menu before the first binding is an expected wait,
+                # bounded by the session deadline, not a broken reader.
+                waiting = binding is None and reason['code'] == 'aucune_simulation_active'
+                if not waiting:
+                    failures += 1
                 if binding is not None and (reason['category'] == 'context_identity' or reason['code'] in (
                         'aucune_simulation_active', 'contexte_natif_partie_changee',
                         'contexte_natif_dechire', 'partie_native_incoherente',
@@ -259,6 +263,19 @@ def live_main(args, preflight_row):
                 emit(dict(event='playtest_start', collection=args.collection,
                           coach_mode=args.coach_mode, mode=preflight_row['mode']))
                 synthesize = deliver = None
+                if args.mumble:
+                    from grocoapi.client import _load_env_file
+                    from mumblebot import MumbleBot
+                    env = (_load_env_file() if args.coach_env_file is None
+                           else _load_env_file(args.coach_env_file))
+                    import os
+                    def config(key, default):
+                        return os.environ.get(key, env.get(key, default))
+                    bot = MumbleBot(config('MUMBLE_HOST', '127.0.0.1'),
+                        int(config('MUMBLE_PORT', '64738')), config('MUMBLE_USER', 'Coach'),
+                        config('MUMBLE_PASSWORD', ''), config('MUMBLE_CHANNEL', ''))
+                    bot.connect(timeout=3, attempts=1)
+                    emit(dict(event='mumble_connected', audio_sent=False))
                 if args.wav or args.mumble:
                     def synthesize(decision):
                         from tts import synthesize as piper
@@ -273,18 +290,6 @@ def live_main(args, preflight_row):
                             # Session output is new, never overwrite another session.
                             speech.save_wav(args.output_dir / f'advice-{wav_index:04d}.wav')
                             return True
-                        if bot is None:
-                            from grocoapi.client import _load_env_file
-                            from mumblebot import MumbleBot
-                            env = (_load_env_file() if args.coach_env_file is None
-                                   else _load_env_file(args.coach_env_file))
-                            import os
-                            def config(key, default):
-                                return os.environ.get(key, env.get(key, default))
-                            bot = MumbleBot(config('MUMBLE_HOST', '127.0.0.1'),
-                                int(config('MUMBLE_PORT', '64738')), config('MUMBLE_USER', 'Coach'),
-                                config('MUMBLE_PASSWORD', ''), config('MUMBLE_CHANNEL', ''))
-                            bot.connect(timeout=3, attempts=1)
                         from .voice import send_to_mumble
                         return send_to_mumble(bot, speech, valid)
                 summary = run_session(args,

@@ -41,7 +41,9 @@ def facts(state, *, maps=PLAYER_RECIPE_MAPS):
                 or meta.get('context_source') not in ('initdata_memory', 'initdata_native_fields')
                 or type(meta.get('match_id')) is not str
                 or re.fullmatch('[0-9a-f]{64}', meta['match_id']) is None
-                or type(meta.get('map')) is not str or not meta['map']
+                # The canonical native ID above binds the map. A missing
+                # optional display label must not suppress non-spatial facts.
+                or (meta.get('map') is not None and type(meta['map']) is not str)
                 or type(meta.get('t_s')) not in (int, float)
                 or not math.isfinite(meta['t_s']) or not 0 <= meta['t_s'] <= 21600
                 or state.get('composition_complete') is not True):

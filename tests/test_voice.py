@@ -26,10 +26,19 @@ class VoiceTests(unittest.TestCase):
         self.assertTrue(send_to_mumble(bot, speech, lambda: True))
         self.assertEqual(sent, [speech.pcm])
 
-    def test_people_speaking_or_expired_advice_never_enqueue_audio(self):
-        for quiet, fresh in ((False, True), (True, False)):
+    def test_people_speaking_do_not_delay_or_block_fresh_alert(self):
+        bot, sent = self.bot(quiet=False)
+        def forbidden_wait(**kwargs):
+            self.fail('Coach alerts must not wait for silence')
+        bot.wait_for_quiet = forbidden_wait
+        speech = SimpleNamespace(pcm=b"\0\0" * 10, duration_s=0.01)
+        self.assertTrue(send_to_mumble(bot, speech, lambda: True))
+        self.assertEqual(sent, [speech.pcm])
+
+    def test_expired_advice_never_enqueues_audio_even_while_people_speak(self):
+        for quiet in (False, True):
             bot, sent = self.bot(quiet)
-            self.assertFalse(send_to_mumble(bot, None, lambda fresh=fresh: fresh))
+            self.assertFalse(send_to_mumble(bot, None, lambda: False))
             self.assertEqual(sent, [])
 
     def test_disconnected_bot_fails_without_enqueueing(self):

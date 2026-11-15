@@ -1,5 +1,38 @@
 # Session de test manuelle : natif → Coach → Piper → Mumble
 
+## Correctifs après les parties du 15 novembre 2026
+
+- Mumble est connecté dès le démarrage explicite `--mumble`, avant la partie
+  et la première synthèse (`mumble_connected`, `audio_sent=false`). Aucun son de
+  bienvenue ni lecture locale. Les annonces du coach **n'attendent plus le
+  silence** et peuvent parler par-dessus la conversation, à la demande du
+  propriétaire. La fraîcheur et l'anti-répétition restent obligatoires.
+- Avant la première liaison de partie, `aucune_simulation_active` est une attente
+  de matchmaking, pas une erreur comptée dans `failure_limit`. La durée globale
+  `--max-seconds` reste bornée à 1800 secondes, **attente incluse**. Après liaison,
+  la disparition de la simulation ferme toujours la session ; pas de relance
+  automatique pour une autre partie.
+- L'identifiant natif de carte reconnu suffit aux alertes non spatiales :
+  l'absence du nom d'affichage ne les désactive plus. Un identifiant inconnu,
+  une perspective invalide ou un état de vie incomplet restent bloquants.
+- Le mode réactif ajoute `level_disadvantage`, phrase codée sans KB/API lorsque
+  les cinq niveaux de chaque équipe sont connus, cohérents entre eux et
+  indiquent au moins deux niveaux de retard. Il ne prétend pas connaître les
+  talents sélectionnés. L'alerte numérique reste prioritaire.
+  Texte : « L'équipe adverse a au moins deux niveaux d'avance. Évitez les combats
+  et récupérez de l'expérience. »
+- Cette seconde alerte ne dépend pas des positions/PV/ressources. Avant envoi,
+  l'identité, la composition, les états de vie et les niveaux restent identiques,
+  le temps ne recule pas et le conseil reste frais. Elle a son propre épisode
+  anti-répétition, marqué seulement après livraison et réarmé seulement après
+  observation complète d'un écart inférieur à deux niveaux. Unknown ne réarme pas.
+- Le texte libre du modèle garde sa clé tactique **exacte**. Ces correctifs ne
+  rendent pas valides les conseils spatiaux générés sur des positions anciennes,
+  ne baissent pas le seuil de confiance et n'autorisent aucune donnée ennemie
+  cachée. Les tests hors ligne ne prouvent pas une réception audio humaine.
+
+## Historique et périmètre initial
+
 **Mise à jour du 11 novembre 2026 :** un essai réel de la chaîne en mode `free`
 a livré une annonce Mumble, entendue et confirmée par le propriétaire, mais sans
 positions disponibles. Voir [le relais positions](RELAIS-POSITIONS.md) pour les

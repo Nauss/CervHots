@@ -67,6 +67,66 @@ class PlaytestPreflightTests(unittest.TestCase):
         self.assertEqual(row['collection'], 'positions')
 
 
+class PlaytestWaitingTests(unittest.TestCase):
+    def test_mumble_connects_before_waiting_for_game_without_audio(self):
+        from cerveau import playtest
+        from types import ModuleType
+        calls = []
+        bot = SimpleNamespace(connect=lambda **kw: calls.append('connect'),
+                              disconnect=lambda: calls.append('disconnect'))
+        module = ModuleType('mumblebot')
+        module.MumbleBot = lambda *a: bot
+        def run(*args, **kwargs):
+            self.assertEqual(calls, ['connect'])
+            return dict(reason='session_limit', reader_active=False)
+        with tempfile.TemporaryDirectory() as directory:
+            parent = Path(directory)
+            identity = parent/'identity.txt'
+            identity.write_text('SYNTHETIC_IDENTITY', encoding='utf-8')
+            args = playtest.parser().parse_args(['--live', '--mumble',
+                '--player-file', str(identity), '--output-dir', str(parent/'session'),
+                '--stop-file', str(parent/'STOP')])
+            with patch.dict('sys.modules', {'mumblebot': module}), patch(
+                    'grocoapi.client._load_env_file', return_value={}), patch(
+                    'cerveau.playtest.run_session', side_effect=run), contextlib.redirect_stdout(io.StringIO()):
+                result = playtest.live_main(args, dict(ready=True, kb_present=True, mode='mumble'))
+        self.assertEqual(result, 0)
+        self.assertEqual(calls, ['connect', 'disconnect'])
+
+    def test_matchmaking_waits_until_session_deadline(self):
+        from cerveau.playtest import run_session
+        from hotstate.native import NativeUnavailable
+        now = [0.]
+        closed = []
+        def read(observe):
+            raise NativeUnavailable('aucune_simulation_active')
+        source = SimpleNamespace(read=read, close=lambda: closed.append(True))
+        args = SimpleNamespace(max_seconds=600, interval=15, mumble=False)
+        def sleep(seconds):
+            now[0] += seconds
+        result = run_session(args, lambda: source,
+            lambda: self.fail('No coach before a match'), lambda row: None,
+            stopped=lambda: False, clock=lambda: now[0], sleep=sleep)
+        self.assertEqual(result['reason'], 'session_limit')
+        self.assertGreater(result['refused_reads'], 12)
+        self.assertEqual(closed, [True])
+
+    def test_real_read_errors_still_hit_failure_limit(self):
+        from cerveau.playtest import run_session
+        from hotstate.native import NativeUnavailable
+        now = [0.]
+        def read(observe):
+            raise NativeUnavailable('lecture_native_dechiree')
+        source = SimpleNamespace(read=read, close=lambda: None)
+        args = SimpleNamespace(max_seconds=600, interval=15, mumble=False)
+        def sleep(seconds):
+            now[0] += seconds
+        result = run_session(args, lambda: source, lambda: None, lambda row: None,
+            stopped=lambda: False, clock=lambda: now[0], sleep=sleep)
+        self.assertEqual(result['reason'], 'failure_limit')
+        self.assertEqual(result['refused_reads'], 12)
+
+
 class PlaytestSyntheticTests(unittest.TestCase):
     """Real native collector/normalizer/Coach/Pipeline, local HTTP, fake audio."""
     def exercise(self, scenario='accepted', collection='positions', mode='free', cli=False,
